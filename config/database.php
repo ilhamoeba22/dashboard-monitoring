@@ -114,6 +114,22 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
+        // --- KONEKSI KHUSUS UNTUK SQL SERVER (DASHBOARD MCI) ---
+        'dashboard_data' => [
+            'driver' => 'sqlsrv',
+            'url' => env('SQL_SERVER_URL'),
+            'host' => env('SQL_SERVER_HOST', '192.168.1.130'),
+            'port' => env('SQL_SERVER_PORT', '44333'),
+            'database' => env('SQL_SERVER_DATABASE', 'MCI_MAR26_01042026'),
+            'username' => env('SQL_SERVER_USERNAME', 'sa'),
+            'password' => env('SQL_SERVER_PASSWORD', 'bon'),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'encrypt' => env('SQL_SERVER_ENCRYPT', 'no'),
+            'trust_server_certificate' => env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
+        ],
+
     ],
 
     /*

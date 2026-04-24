@@ -1,0 +1,69 @@
+<?php
+
+namespace App\Models\Mci\Financing;
+
+use App\Models\Mci\MciBaseModel;
+
+/**
+ * Model MCI: TMPLMJAM
+ * --------------------------------------------------------------------------
+ * Domain   : Financing / Loan
+ * Tabel    : [dbo].[TMPLMJAM]
+ * Kolom    : 11
+ * Sumber   : Mapping_MCI_MAR26_01042026.sql / MCI_MAR26_01042026.xlsx
+ *
+ * CATATAN:
+ *  - Model ini READ-ONLY (lihat trait ReadOnlyModel di MciBaseModel).
+ *  - Koneksi default `dashboard_data` (SQL Server), otomatis ke DB bulan terbaru.
+ *  - Kolom dengan spasi/karakter khusus diakses via:
+ *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
+ *
+ * @property string $nokontrak  type: varchar(11)
+ * @property string|null $nocif  type: varchar(9)
+ * @property string|null $nmcif  type: varchar(30)
+ * @property string|null $noreg  type: varchar(5)
+ * @property string|null $urut  type: numeric(5)
+ * @property string|null $jnsjamin  type: varchar(2)
+ * @property string|null $nomjamin  type: numeric(9)
+ * @property string|null $stsrec  type: varchar(1)
+ * @property string|null $inpuser  type: varchar(10)
+ * @property string|null $inptgl  type: varchar(14)
+ * @property string|null $inpterm  type: varchar(10)
+ */
+class Tmplmjam extends MciBaseModel
+{
+    /**
+     * Nama tabel (case-sensitive di SQL Server).
+     */
+    protected $table = 'TMPLMJAM';
+
+    /**
+     * Daftar LENGKAP kolom sesuai database (11 kolom).
+     * Model ini read-only, $fillable hanya untuk dokumentasi & IDE helper.
+     *
+     * @var array<int,string>
+     */
+    protected $fillable = [
+        'nokontrak',
+        'nocif',
+        'nmcif',
+        'noreg',
+        'urut',
+        'jnsjamin',
+        'nomjamin',
+        'stsrec',
+        'inpuser',
+        'inptgl',
+        'inpterm',
+    ];
+
+    /**
+     * Casting tipe kolom (non-string saja).
+     *
+     * @var array<string,string>
+     */
+    protected $casts = [
+        'urut' => 'decimal:2',
+        'nomjamin' => 'decimal:2',
+    ];
+}

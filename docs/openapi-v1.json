@@ -1,0 +1,509 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MCI Dashboard REST API",
+    "description": "REST API for MCI Banking Dashboard - Real-time metrics for Financing, Saving, and Deposito",
+    "version": "1.0.0",
+    "contact": {
+      "name": "MCI Development Team",
+      "email": "dev@mci.co.id"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8089/api",
+      "description": "Local Development"
+    },
+    {
+      "url": "https://dashboard.mci.co.id/api",
+      "description": "Production Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Dashboard",
+      "description": "Dashboard metrics endpoints"
+    },
+    {
+      "name": "Health",
+      "description": "Health check endpoints"
+    }
+  ],
+  "paths": {
+    "/v1/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "API Health Check",
+        "description": "Check if API is running and healthy",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "API is healthy",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "healthy",
+                  "service": "MCI Dashboard API",
+                  "version": "v1",
+                  "timestamp": "2026-04-24T10:30:00+07:00"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/info": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "API Information",
+        "description": "Get API info and available endpoints",
+        "operationId": "apiInfo",
+        "responses": {
+          "200": {
+            "description": "API information",
+            "content": {
+              "application/json": {
+                "example": {
+                  "name": "MCI Dashboard REST API",
+                  "version": "v1",
+                  "description": "REST API for MCI Banking Dashboard",
+                  "endpoints": [
+                    "GET /api/v1/dashboard/metrics",
+                    "GET /api/v1/dashboard/metrics/financing",
+                    "GET /api/v1/dashboard/metrics/saving",
+                    "GET /api/v1/dashboard/metrics/deposito",
+                    "GET /api/v1/dashboard/chart/{type}",
+                    "GET /api/v1/dashboard/branches",
+                    "POST /api/v1/dashboard/clear-cache"
+                  ],
+                  "rate_limit": "100 requests/minute",
+                  "cache_ttl": "60 seconds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dashboard/metrics": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get All Dashboard Metrics",
+        "description": "Retrieve all key metrics (Financing + Saving + Deposito) in single request",
+        "operationId": "getAllMetrics",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved all metrics",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "periode": {
+                      "tgl": "24042026",
+                      "year": 2026,
+                      "month": 4,
+                      "period": "202604"
+                    },
+                    "financing": {
+                      "total_os": 150000000000,
+                      "os_formatted": "Rp 150.000.000.000",
+                      "total_npf": 1500000000,
+                      "npf_formatted": "Rp 1.500.000.000",
+                      "total_noa": 1500,
+                      "total_ao": 50,
+                      "growth": {
+                        "value": "5,25%",
+                        "class": "text-success",
+                        "raw": 5.25
+                      },
+                      "noa_growth": {
+                        "value": "3,15%",
+                        "class": "text-success",
+                        "raw": 3.15
+                      },
+                      "ao_growth": {
+                        "value": "2,00%",
+                        "class": "text-success",
+                        "raw": 2.0
+                      },
+                      "npf_growth": {
+                        "value": "-1,20%",
+                        "class": "text-danger",
+                        "raw": -1.2
+                      }
+                    },
+                    "saving": {
+                      "total_saldo": 250000000000,
+                      "saldo_formatted": "Rp 250.000.000.000",
+                      "total_noa": 5000,
+                      "total_ao": 75,
+                      "growth": {
+                        "value": "8,50%",
+                        "class": "text-success",
+                        "raw": 8.5
+                      },
+                      "noa_growth": {
+                        "value": "5,20%",
+                        "class": "text-success",
+                        "raw": 5.2
+                      },
+                      "ao_growth": {
+                        "value": "1,50%",
+                        "class": "text-success",
+                        "raw": 1.5
+                      }
+                    },
+                    "deposito": {
+                      "total_saldo": 180000000000,
+                      "saldo_formatted": "Rp 180.000.000.000",
+                      "total_baghas": 18500000000,
+                      "baghas_formatted": "Rp 18.500.000.000",
+                      "total_noa": 800,
+                      "total_ao": 45,
+                      "growth": {
+                        "value": "6,75%",
+                        "class": "text-success",
+                        "raw": 6.75
+                      },
+                      "noa_growth": {
+                        "value": "2,30%",
+                        "class": "text-success",
+                        "raw": 2.3
+                      },
+                      "ao_growth": {
+                        "value": "0,50%",
+                        "class": "text-muted",
+                        "raw": 0.5
+                      },
+                      "baghas_growth": {
+                        "value": "7,25%",
+                        "class": "text-success",
+                        "raw": 7.25
+                      }
+                    }
+                  },
+                  "meta": {
+                    "generated_at": "2026-04-24T10:30:00+07:00",
+                    "cache_ttl": 60,
+                    "version": "v1"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Failed to fetch dashboard metrics",
+                  "error": "Connection to MCI database failed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dashboard/metrics/financing": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get Financing Metrics",
+        "description": "Retrieve financing key metrics (OS, NPF, NOA, AO)",
+        "operationId": "getFinancingMetrics",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved financing metrics",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "total_os": 150000000000,
+                    "os_formatted": "Rp 150.000.000.000",
+                    "total_npf": 1500000000,
+                    "npf_formatted": "Rp 1.500.000.000",
+                    "total_noa": 1500,
+                    "total_ao": 50,
+                    "growth": {
+                      "value": "5,25%",
+                      "class": "text-success",
+                      "raw": 5.25
+                    },
+                    "noa_growth": {
+                      "value": "3,15%",
+                      "class": "text-success",
+                      "raw": 3.15
+                    },
+                    "ao_growth": {
+                      "value": "2,00%",
+                      "class": "text-success",
+                      "raw": 2.0
+                    },
+                    "npf_growth": {
+                      "value": "-1,20%",
+                      "class": "text-danger",
+                      "raw": -1.2
+                    }
+                  },
+                  "meta": {
+                    "generated_at": "2026-04-24T10:30:00+07:00",
+                    "cache_ttl": 60,
+                    "version": "v1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dashboard/metrics/saving": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get Saving Metrics",
+        "description": "Retrieve saving/key metrics (Saldo, NOA, AO)",
+        "operationId": "getSavingMetrics",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved saving metrics",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "total_saldo": 250000000000,
+                    "saldo_formatted": "Rp 250.000.000.000",
+                    "total_noa": 5000,
+                    "total_ao": 75,
+                    "growth": {
+                      "value": "8,50%",
+                      "class": "text-success",
+                      "raw": 8.5
+                    },
+                    "noa_growth": {
+                      "value": "5,20%",
+                      "class": "text-success",
+                      "raw": 5.2
+                    },
+                    "ao_growth": {
+                      "value": "1,50%",
+                      "class": "text-success",
+                      "raw": 1.5
+                    }
+                  },
+                  "meta": {
+                    "generated_at": "2026-04-24T10:30:00+07:00",
+                    "cache_ttl": 60,
+                    "version": "v1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dashboard/metrics/deposito": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get Deposito Metrics",
+        "description": "Retrieve deposito key metrics (Saldo, BAGHAS, NOA, AO)",
+        "operationId": "getDepositoMetrics",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved deposito metrics",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "total_saldo": 180000000000,
+                    "saldo_formatted": "Rp 180.000.000.000",
+                    "total_baghas": 18500000000,
+                    "baghas_formatted": "Rp 18.500.000.000",
+                    "total_noa": 800,
+                    "total_ao": 45,
+                    "growth": {
+                      "value": "6,75%",
+                      "class": "text-success",
+                      "raw": 6.75
+                    },
+                    "noa_growth": {
+                      "value": "2,30%",
+                      "class": "text-success",
+                      "raw": 2.3
+                    },
+                    "ao_growth": {
+                      "value": "0,50%",
+                      "class": "text-muted",
+                      "raw": 0.5
+                    },
+                    "baghas_growth": {
+                      "value": "7,25%",
+                      "class": "text-success",
+                      "raw": 7.25
+                    }
+                  },
+                  "meta": {
+                    "generated_at": "2026-04-24T10:30:00+07:00",
+                    "cache_ttl": 60,
+                    "version": "v1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dashboard/chart/{type}": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get Chart Data",
+        "description": "Retrieve historical chart data for financing, saving, or deposito",
+        "operationId": "getChartData",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "description": "Chart type: financing | saving | deposito",
+            "schema": {
+              "type": "string",
+              "enum": ["financing", "saving", "deposito"]
+            },
+            "example": "financing"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved chart data",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+                    "values": [140000000000, 142000000000, 145000000000, 143000000000, 146000000000, 148000000000, 150000000000, 149000000000, 151000000000, 150000000000, 152000000000, 150000000000],
+                    "noa": [1400, 1420, 1450, 1435, 1460, 1480, 1500, 1495, 1510, 1505, 1520, 1500],
+                    "growth": [0, 1.43, 2.11, -1.38, 2.10, 1.37, 1.35, -0.33, 1.34, -0.66, 1.33, -1.32]
+                  },
+                  "meta": {
+                    "type": "financing",
+                    "generated_at": "2026-04-24T10:30:00+07:00",
+                    "cache_ttl": 300,
+                    "version": "v1"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid chart type",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Invalid chart type. Valid: financing, saving, deposito"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dashboard/branches": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get Branch List",
+        "description": "Retrieve list of all branches for filtering",
+        "operationId": "getBranches",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved branches",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": [
+                    {"kdloc": "00", "nama": "Konsolidasi"},
+                    {"kdloc": "01", "nama": "Jakarta Pusat"},
+                    {"kdloc": "02", "nama": "Jakarta Selatan"},
+                    {"kdloc": "03", "nama": "Jakarta Utara"},
+                    {"kdloc": "04", "nama": "Jakarta Barat"},
+                    {"kdloc": "05", "nama": "Tangerang"},
+                    {"kdloc": "06", "nama": "Bandung"},
+                    {"kdloc": "07", "nama": "Surabaya"},
+                    {"kdloc": "08", "nama": "Medan"},
+                    {"kdloc": "09", "nama": "Makassar"}
+                  ],
+                  "meta": {
+                    "total": 10,
+                    "generated_at": "2026-04-24T10:30:00+07:00",
+                    "cache_ttl": 3600,
+                    "version": "v1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dashboard/clear-cache": {
+      "post": {
+        "tags": ["Dashboard"],
+        "summary": "Clear Dashboard Cache",
+        "description": "Clear all cached dashboard data (admin only)",
+        "operationId": "clearCache",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cache cleared successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Dashboard cache cleared successfully",
+                  "meta": {
+                    "generated_at": "2026-04-24T10:30:00+07:00",
+                    "version": "v1"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Admin access required",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "Unauthorized - Admin access required"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token authentication for protected endpoints"
+      }
+    }
+  }
+}

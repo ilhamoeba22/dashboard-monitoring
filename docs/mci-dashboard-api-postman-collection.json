@@ -1,0 +1,179 @@
+{
+  "info": {
+    "name": "MCI Dashboard API",
+    "description": "REST API for MCI Banking Dashboard - v1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "mci-dashboard-api-v1"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8089/api",
+      "type": "string"
+    },
+    {
+      "key": "api_version",
+      "value": "v1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "GET Health",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/{{api_version}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET API Info",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/{{api_version}}/info",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "info"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dashboard Metrics",
+      "item": [
+        {
+          "name": "GET All Metrics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/{{api_version}}/dashboard/metrics",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "dashboard", "metrics"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Financing Metrics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/{{api_version}}/dashboard/metrics/financing",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "dashboard", "metrics", "financing"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Saving Metrics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/{{api_version}}/dashboard/metrics/saving",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "dashboard", "metrics", "saving"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Deposito Metrics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/{{api_version}}/dashboard/metrics/deposito",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "dashboard", "metrics", "deposito"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Chart Data",
+      "item": [
+        {
+          "name": "GET Financing Chart",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/{{api_version}}/dashboard/chart/financing",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "dashboard", "chart", "financing"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Saving Chart",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/{{api_version}}/dashboard/chart/saving",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "dashboard", "chart", "saving"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Deposito Chart",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/{{api_version}}/dashboard/chart/deposito",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "dashboard", "chart", "deposito"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reference Data",
+      "item": [
+        {
+          "name": "GET Branches",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/{{api_version}}/dashboard/branches",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "dashboard", "branches"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "POST Clear Cache",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/{{api_version}}/dashboard/clear-cache",
+              "host": ["{{base_url}}"],
+              "path": ["{{api_version}}", "dashboard", "clear-cache"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

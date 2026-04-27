@@ -18,9 +18,12 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Bind interface ke implementasi (untuk Dependency Injection)
-        $this->app->bind(MciConnectionService::class, function ($app) {
-            return $app->make('mci.connection');
-        });
+        $this->app->singleton(\App\Services\Mci\MciConnectionService::class);
+        $this->app->bind(\App\Repositories\Interfaces\FinancingRepositoryInterface::class, \App\Repositories\Mci\FinancingRepository::class);
+        $this->app->bind(\App\Repositories\Interfaces\CifRepositoryInterface::class, \App\Repositories\Mci\CifRepository::class);
+        $this->app->bind(\App\Repositories\Interfaces\SavingRepositoryInterface::class, \App\Repositories\Mci\SavingRepository::class);
+        $this->app->bind(\App\Repositories\Interfaces\DepositRepositoryInterface::class, \App\Repositories\Mci\DepositRepository::class);
+        $this->app->bind(\App\Repositories\Interfaces\ReportingRepositoryInterface::class, \App\Repositories\Mci\ReportingRepository::class);
     }
 
     /**

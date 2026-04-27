@@ -558,4 +558,68 @@ class Toflmb extends MciBaseModel
         'lb_rateeff_awal' => 'decimal:2',
         'ckpn' => 'decimal:2',
     ];
+
+    /**
+     * RELASI: Account Officer (Marketing)
+     */
+    public function ao(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Mci\Marketing\Ao::class, 'kdaoh', 'kdao');
+    }
+
+    /**
+     * RELASI: Customer Information File (Nasabah)
+     */
+    public function cif(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Mci\Cif\Mcif::class, 'nocif', 'nocif');
+    }
+
+    /**
+     * RELASI: Tabungan Pokok (Untuk potong angsuran otomatis)
+     */
+    public function tabunganPokok(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Mci\Saving\Toftabc::class, 'acpok', 'notab');
+    }
+
+    /**
+     * RELASI: Cabang
+     */
+    public function cabang(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Mci\Master\Cabang::class, 'kdloc', 'kdloc');
+    }
+
+    /**
+     * RELASI: Wilayah
+     */
+    public function wilayah(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Mci\Master\Wilayah::class, 'kdwil', 'kodewil');
+    }
+
+    /**
+     * RELASI: Jadwal Angsuran (Tabel TOFRS)
+     */
+    public function jadwalAngsuran(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Mci\Financing\Tofrs::class, 'nokontrak', 'nokontrak');
+    }
+
+    /**
+     * RELASI: Segmen Pasar
+     */
+    public function segmenPasar(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Mci\Master\Segmen::class, 'segmen', 'kdseg');
+    }
+
+    /**
+     * RELASI: Produk Pembiayaan
+     */
+    public function produk(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Mci\SetupConfig\Setuploan::class, 'kdprd', 'kdprd');
+    }
 }

@@ -251,4 +251,60 @@ class Mcif extends MciBaseModel
         'dms_latitude_2' => 'decimal:2',
         'dms_latitude_3' => 'decimal:2',
     ];
+
+    /**
+     * RELASI: Account Officer (Marketing)
+     */
+    public function ao(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Mci\Marketing\Ao::class, 'aohand', 'kdao');
+    }
+
+    /**
+     * RELASI: Cabang
+     */
+    public function cabang(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Mci\Master\Cabang::class, 'kdloc', 'kdloc');
+    }
+
+    /**
+     * RELASI: Wilayah
+     */
+    public function wilayah(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Mci\Master\Wilayah::class, 'kdwil', 'kodewil');
+    }
+
+    /**
+     * RELASI: Segmen Pasar
+     */
+    public function segmenPasar(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Mci\Master\Segmen::class, 'segmen', 'kdseg');
+    }
+
+    /**
+     * RELASI PORTOFOLIO: Tabungan
+     */
+    public function tabungan(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Mci\Funding\Toftabb::class, 'nocif', 'nocif');
+    }
+
+    /**
+     * RELASI PORTOFOLIO: Deposito
+     */
+    public function deposito(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Mci\Funding\Tofdep::class, 'nocif', 'nocif');
+    }
+
+    /**
+     * RELASI PORTOFOLIO: Pembiayaan
+     */
+    public function pembiayaan(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Mci\Financing\Toflmb::class, 'nocif', 'nocif');
+    }
 }

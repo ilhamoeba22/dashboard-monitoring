@@ -18,6 +18,48 @@ use App\Http\Controllers\Api\v1\DashboardMetricsController;
 // === API v1 PREFIX ===
 Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
 
+    // ==========================================
+    // CIF MODULE API
+    // ==========================================
+    Route::prefix('cif')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\v1\CifController::class, 'index']);
+        Route::get('/rekapitulasi', [\App\Http\Controllers\Api\v1\CifController::class, 'rekapitulasi']);
+        Route::get('/{nocif}', [\App\Http\Controllers\Api\v1\CifController::class, 'detail']);
+    });
+
+    // ==========================================
+    // FUNDING MODULE API (SAVING & DEPOSIT)
+    // ==========================================
+    Route::prefix('saving')->group(function () {
+        Route::get('/nominative', [\App\Http\Controllers\Api\v1\SavingController::class, 'nominative']);
+        Route::get('/rekapitulasi', [\App\Http\Controllers\Api\v1\SavingController::class, 'rekapitulasi']);
+        Route::get('/doormant', [\App\Http\Controllers\Api\v1\SavingController::class, 'doormant']);
+    });
+
+    Route::prefix('deposit')->group(function () {
+        Route::get('/nominative', [\App\Http\Controllers\Api\v1\DepositController::class, 'nominative']);
+        Route::get('/rekapitulasi', [\App\Http\Controllers\Api\v1\DepositController::class, 'rekapitulasi']);
+        Route::get('/jatuh-tempo', [\App\Http\Controllers\Api\v1\DepositController::class, 'jatuhTempo']);
+    });
+
+    // ==========================================
+    // REPORTING MODULE API
+    // ==========================================
+    Route::prefix('reporting')->group(function () {
+        Route::get('/{jenis}', [\App\Http\Controllers\Api\v1\ReportingController::class, 'generate']);
+    });
+
+    // ==========================================
+    // FINANCING MODULE API
+    // ==========================================
+    Route::prefix('financing')->group(function () {
+        Route::get('/nominative', [\App\Http\Controllers\Api\v1\FinancingController::class, 'nominative']);
+        Route::get('/rekapitulasi', [\App\Http\Controllers\Api\v1\FinancingController::class, 'rekapitulasi']);
+        Route::get('/jatuh-tempo', [\App\Http\Controllers\Api\v1\FinancingController::class, 'jatuhTempo']);
+        Route::get('/aos', [\App\Http\Controllers\Api\v1\FinancingController::class, 'aos']);
+        Route::get('/{nokontrak}/angsuran', [\App\Http\Controllers\Api\v1\FinancingController::class, 'angsuran']);
+    });
+
     // === DASHBOARD ENDPOINTS ===
     Route::prefix('dashboard')->group(function () {
 

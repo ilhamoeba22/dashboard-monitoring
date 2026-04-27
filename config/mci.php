@@ -19,9 +19,8 @@ return [
     | Contoh: MCI_{MMM}{YY}_{DDMMYYYY} → MCI_MAR26_01042026
     |
     */
-    // Pattern baru: MCI_MAR26_01042026
-    // Pattern lama: MCI_JAN_31012026 (tanpa 2-digit year)
-    'pattern' => '/^MCI_([A-Z]{3})(\d{2})?_?(\d{8})$/',
+    // Pattern baru dilonggarkan agar menerima format bulan seperti JULI, Sept, dan DES_312025
+    'pattern' => '/^MCI_.+$/i',
 
     /*
     |--------------------------------------------------------------------------
@@ -72,8 +71,15 @@ return [
     'history' => [
         // Database terbaru = realtime aktif
         'MCI_MAR26_01042026',  // Maret 2026 (REALTIME saat ini)
-        'MCI_FEB26_01032026',  // Februari 2026 (history)
-        'MCI_JAN_31012026',    // Januari 2026 (history, format lama)
+        'MCI_FEB26_01032026',  // Februari 2026
+        'MCI_JAN_31012026',    // Januari 2026
+        'MCI_DES_312025',      // Desember 2025
+        'MCI_NOV_30112025',    // November 2025
+        'MCI_OKT_31102025',    // Oktober 2025
+        'MCI_Sept_302025',     // September 2025
+        'MCI_AGT_31082025',    // Agustus 2025
+        'MCI_JULI_31072025',   // Juli 2025
+        'MCI_JUN_2025',        // Juni 2025
     ],
 
     /*

@@ -49,12 +49,10 @@ class MciConnectionService
 
     /**
      * Regex patterns yang didukung untuk nama database MCI:
-     *   Format baru: MCI_MAR26_01042026
-     *   Format lama: MCI_JAN_31012026
+     * Dilonggarkan agar menerima semua bentuk MCI_ (termasuk MCI_JUN_2025)
      */
     private const DB_NAME_PATTERNS = [
-        'new' => '/^MCI_([A-Z]{3})(\d{2})_(\d{8})$/',   // MCI_MAR26_01042026
-        'old' => '/^MCI_([A-Z]{3})_(\d{8})$/',           // MCI_JAN_31012026
+        'all' => '/^MCI_.+$/i',
     ];
 
     public function __construct()
@@ -186,18 +184,31 @@ class MciConnectionService
                 ->select("SELECT name FROM sys.databases WHERE name LIKE ? ORDER BY name", [$prefix]);
 
             $names = array_column($rows, 'name');
+            $historyConfig = config('mci.history', []);
 
-            // Sort berdasarkan tanggal yang diparsed dari nama
-            usort($names, function (string $a, string $b): int {
+            // Sort berdasarkan urutan eksplisit di config/mci.php (jika ada), 
+            // lalu fallback ke tanggal yang diparsed dari nama
+            // HARUS ASCENDING (Terlama di atas, Terbaru di bawah) agar end() mengambil yang terbaru
+            usort($names, function (string $a, string $b) use ($historyConfig): int {
+                $indexA = array_search($a, $historyConfig);
+                $indexB = array_search($b, $historyConfig);
+
+                if ($indexA !== false && $indexB !== false) {
+                    return $indexB <=> $indexA; // Dibalik agar index 0 (terbaru di config) berada di paling bawah array
+                }
+                if ($indexA !== false) return 1;  // A ada di config (terbaru), taruh di bawah
+                if ($indexB !== false) return -1; // B ada di config (terbaru), taruh di bawah
+
                 $dateA = $this->parseDatabaseDate($a);
                 $dateB = $this->parseDatabaseDate($b);
 
                 if ($dateA === null && $dateB === null) {
-                    return strcmp($a, $b);
+                    return strcmp($a, $b); // Alphabetical
                 }
-                if ($dateA === null) return -1;
+                if ($dateA === null) return -1; // Tidak punya tanggal taruh di atas (paling lama)
                 if ($dateB === null) return 1;
 
+                // Sort Ascending (Terlama di atas, Terbaru di bawah)
                 return $dateA->timestamp <=> $dateB->timestamp;
             });
 

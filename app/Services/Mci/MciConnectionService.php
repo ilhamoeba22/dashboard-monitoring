@@ -1,223 +1,380 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Mci;
 
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * MciConnectionService - Service untuk mengelola koneksi database MCI.
- * 
- * Service ini menangani switching database MCI di runtime.
- * Setiap bulan, database MCI baru dibuat (snapshot), dan aplikasi
- * harus bisa switch ke database yang benar secara otomatis.
+ * MciConnectionService
+ * --------------------------------------------------------------------------
+ * Mengelola koneksi dynamic ke database MCI SQL Server.
+ *
+ * ARSITEKTUR DATABASE BULANAN:
+ * ─────────────────────────────────────────────────────────────────────────
+ * Core Banking System vendor membuat snapshot database baru setiap akhir
+ * bulan dengan naming convention:
+ *   MCI_{MMM}{YY}_{DDMMYYYY}
+ *   Contoh: MCI_MAR26_01042026 (dibuat 01 April 2026 = snapshot Maret 2026)
+ *           MCI_JAN_31012026   (format lama, tapi tetap didukung)
+ *
+ * STRATEGI AUTO-ROTATION (PROFESSIONAL):
+ * ─────────────────────────────────────────────────────────────────────────
+ * 1. AUTO-DETECT: Setiap hari, scheduler scan SQL Server untuk database MCI_*
+ *    terbaru berdasarkan tanggal pembuatan (dari nama database).
+ * 2. AUTO-SWITCH: Jika database baru ditemukan, switch otomatis + clear cache.
+ * 3. HISTORY:     Database lama TIDAK dihapus → otomatis jadi arsip/history.
+ * 4. MANUAL OVERRIDE: Admin bisa paksa switch via artisan atau API endpoint.
+ * 5. FALLBACK:    Jika auto-detect gagal, gunakan database dari .env (MCI_ACTIVE_DB).
+ *
+ * DATABASE LIFECYCLE:
+ *   MCI_JAN_31012026   → history Januari 2026
+ *   MCI_FEB26_01032026 → history Februari 2026
+ *   MCI_MAR26_01042026 → REALTIME saat ini
+ *   MCI_APR26_01052026 → akan otomatis jadi REALTIME saat bulan Mei
  */
 class MciConnectionService
 {
-    /**
-     * Nama koneksi database yang digunakan.
-     */
     protected string $connectionName = 'dashboard_data';
 
-    /**
-     * Database aktif saat ini.
-     */
-    protected ?string $activeDatabase = null;
+    private const CACHE_KEY_ACTIVE_DB = 'mci:active_database';
+    private const CACHE_KEY_DB_LIST   = 'mci:database_list';
+    private const CACHE_TTL_ACTIVE    = 3600;   // 1 jam
+    private const CACHE_TTL_LIST      = 300;    // 5 menit
 
     /**
-     * Buat instance service.
+     * Regex patterns yang didukung untuk nama database MCI:
+     *   Format baru: MCI_MAR26_01042026
+     *   Format lama: MCI_JAN_31012026
      */
+    private const DB_NAME_PATTERNS = [
+        'new' => '/^MCI_([A-Z]{3})(\d{2})_(\d{8})$/',   // MCI_MAR26_01042026
+        'old' => '/^MCI_([A-Z]{3})_(\d{8})$/',           // MCI_JAN_31012026
+    ];
+
     public function __construct()
     {
         $this->connectionName = config('mci.connection', 'dashboard_data');
-        $this->activeDatabase = config('mci.active_database');
     }
 
+    // =========================================================================
+    // ACTIVE DATABASE MANAGEMENT
+    // =========================================================================
+
     /**
-     * Ambil nama database aktif.
+     * Ambil nama database yang sedang aktif (realtime).
+     * Priority: Cache → Env → Auto-detect
      */
-    public function getActiveDatabase(): ?string
+    public function getActiveDatabase(): string
     {
-        return $this->activeDatabase ?? config('mci.active_database');
+        // 1. Dari cache (paling cepat)
+        $cached = Cache::get(self::CACHE_KEY_ACTIVE_DB);
+        if (is_string($cached) && $cached !== '') {
+            return $cached;
+        }
+
+        // 2. Dari environment variable (.env MCI_ACTIVE_DB)
+        $fromEnv = config('mci.active_database', '');
+        if (is_string($fromEnv) && $fromEnv !== '') {
+            Cache::put(self::CACHE_KEY_ACTIVE_DB, $fromEnv, self::CACHE_TTL_ACTIVE);
+            return $fromEnv;
+        }
+
+        // 3. Auto-detect dari SQL Server (fallback terakhir)
+        $latest = $this->detectLatestDatabase();
+        if ($latest !== null) {
+            $this->persistActiveDatabase($latest);
+            return $latest;
+        }
+
+        return '';
     }
 
     /**
-     * Ambil nama koneksi.
-     */
-    public function getConnectionName(): string
-    {
-        return $this->connectionName;
-    }
-
-    /**
-     * Set database aktif.
-     * 
-     * Mengubah koneksi ke database MCI tertentu.
-     * Ini akan mempengaruhi semua query menggunakan connection 'dashboard_data'.
+     * Set database aktif secara manual (admin override).
+     * Validates naming convention sebelum switch.
      */
     public function setActiveDatabase(string $database): bool
     {
-        // Validasi format nama database
-        if (!$this->isValidDatabaseName($database)) {
-            Log::warning("MCI: Invalid database name format: {$database}");
+        if (! $this->isValidDatabaseName($database)) {
+            Log::warning('MCI: Rejected invalid database name', ['database' => $database]);
             return false;
         }
 
-        $this->activeDatabase = $database;
+        $previous = $this->getActiveDatabase();
+        $this->persistActiveDatabase($database);
 
-        // Update konfigurasi koneksi secara dinamis
-        Config::set("database.connections.{$this->connectionName}.database", $database);
-
-        Log::info("MCI: Switched to database: {$database}");
+        Log::info('MCI: Database switched', [
+            'from' => $previous,
+            'to'   => $database,
+            'by'   => 'manual',
+        ]);
 
         return true;
     }
 
     /**
-     * Reset ke database default dari config.
+     * Auto-detect dan switch ke database terbaru jika ada yang lebih baru.
+     * Dipanggil oleh scheduler setiap hari.
+     * Return true jika terjadi switch, false jika tidak ada perubahan.
      */
-    public function resetToDefault(): void
+    public function autoDetectAndSwitch(): bool
     {
-        $defaultDb = config('mci.active_database');
-        $this->setActiveDatabase($defaultDb);
+        $latest  = $this->detectLatestDatabase();
+        $current = $this->getActiveDatabase();
+
+        if ($latest === null) {
+            Log::warning('MCI: Auto-detect found no databases matching MCI_* pattern');
+            return false;
+        }
+
+        if ($latest === $current) {
+            Log::info('MCI: Auto-detect — database sudah up to date', ['database' => $current]);
+            return false;
+        }
+
+        // Ada database baru — switch otomatis
+        $this->persistActiveDatabase($latest);
+
+        Log::info('MCI: Auto-switched to new database', [
+            'from' => $current,
+            'to'   => $latest,
+            'by'   => 'auto-detect',
+        ]);
+
+        return true;
     }
 
     /**
-     * Ambil koneksi terkini dengan setingan database aktif.
-     * 
-     * Mengembalikan instance koneksi yang sudah dikonfigurasi
-     * dengan database yang benar.
+     * Reset ke database default dari .env (MCI_ACTIVE_DB).
      */
-    public function getConnection()
+    public function resetToDefault(): void
     {
-        // Pastikan database sudah diset sebelum mengambil koneksi
-        if ($this->activeDatabase) {
-            Config::set("database.connections.{$this->connectionName}.database", $this->activeDatabase);
+        $default = config('mci.active_database', '');
+        if (is_string($default) && $default !== '') {
+            $this->persistActiveDatabase($default);
+        }
+    }
+
+    // =========================================================================
+    // DATABASE DISCOVERY
+    // =========================================================================
+
+    /**
+     * List semua database MCI_* yang tersedia di SQL Server.
+     * Sorted dari terbaru ke terlama (berdasarkan tanggal di nama).
+     *
+     * @return list<string>
+     */
+    public function listDatabases(): array
+    {
+        /** @var list<string> $cached */
+        $cached = Cache::get(self::CACHE_KEY_DB_LIST, []);
+        if (! empty($cached)) {
+            return $cached;
+        }
+
+        try {
+            $prefix = config('mci.prefix', 'MCI_') . '%';
+            /** @var list<object{name: string}> $rows */
+            $rows = DB::connection($this->connectionName)
+                ->select("SELECT name FROM sys.databases WHERE name LIKE ? ORDER BY name", [$prefix]);
+
+            $names = array_column($rows, 'name');
+
+            // Sort berdasarkan tanggal yang diparsed dari nama
+            usort($names, function (string $a, string $b): int {
+                $dateA = $this->parseDatabaseDate($a);
+                $dateB = $this->parseDatabaseDate($b);
+
+                if ($dateA === null && $dateB === null) {
+                    return strcmp($a, $b);
+                }
+                if ($dateA === null) return -1;
+                if ($dateB === null) return 1;
+
+                return $dateA->timestamp <=> $dateB->timestamp;
+            });
+
+            /** @var list<string> $sorted */
+            $sorted = array_values($names);
+            Cache::put(self::CACHE_KEY_DB_LIST, $sorted, self::CACHE_TTL_LIST);
+
+            return $sorted;
+        } catch (\Throwable $e) {
+            Log::error('MCI: Failed to list databases', ['error' => $e->getMessage()]);
+            return [];
+        }
+    }
+
+    /**
+     * Ambil database terbaru (yang akan jadi realtime).
+     */
+    public function detectLatestDatabase(): ?string
+    {
+        $databases = $this->listDatabases();
+        return ! empty($databases) ? end($databases) ?: null : null;
+    }
+
+    /**
+     * Ambil semua database dengan metadata (untuk admin/history view).
+     *
+     * @return list<array{name: string, date: string|null, is_active: bool, is_latest: bool, label: string}>
+     */
+    public function getDatabasesWithMeta(): array
+    {
+        $databases = $this->listDatabases();
+        $active    = $this->getActiveDatabase();
+        $latest    = ! empty($databases) ? end($databases) : null;
+
+        $result = [];
+        foreach ($databases as $name) {
+            $date     = $this->parseDatabaseDate($name);
+            $isActive = $name === $active;
+            $isLatest = $name === $latest;
+
+            $result[] = [
+                'name'      => $name,
+                'date'      => $date?->format('Y-m-d'),
+                'period'    => $date ? $date->format('F Y') : null,
+                'is_active' => $isActive,
+                'is_latest' => $isLatest,
+                'status'    => $isActive ? 'realtime' : ($isLatest ? 'pending' : 'history'),
+                'label'     => $this->buildDatabaseLabel($name, $date, $isActive),
+            ];
+        }
+
+        // Return terbaru di atas
+        return array_reverse($result);
+    }
+
+    // =========================================================================
+    // CONNECTION MANAGEMENT
+    // =========================================================================
+
+    /**
+     * Ambil koneksi database dengan database aktif sudah di-set.
+     */
+    public function getConnection(): \Illuminate\Database\Connection
+    {
+        $activeDb = $this->getActiveDatabase();
+
+        if ($activeDb !== '') {
+            Config::set("database.connections.{$this->connectionName}.database", $activeDb);
+            DB::purge($this->connectionName);
         }
 
         return DB::connection($this->connectionName);
     }
 
     /**
-     * Eksekusi query dengan database aktif.
-     * 
-     * shorthand untuk getConnection()->table(), dll.
-     */
-    public function table(string $table)
-    {
-        return $this->getConnection()->table($table);
-    }
-
-    /**
-     * Eksekusi query RAW.
-     */
-    public function select(string $query, array $bindings = [])
-    {
-        return $this->getConnection()->select($query, $bindings);
-    }
-
-    /**
-     * Test koneksi ke database MCI.
-     * 
-     * Mengembalikan true jika berhasil konek.
+     * Test koneksi ke SQL Server.
      */
     public function testConnection(): bool
     {
         try {
             $this->getConnection()->getPdo();
             return true;
-        } catch (\Exception $e) {
-            Log::error("MCI: Connection test failed - " . $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('MCI: Connection test failed', ['error' => $e->getMessage()]);
             return false;
         }
     }
 
     /**
-     * Ambil informasi koneksi terkini.
+     * Ambil info koneksi saat ini.
+     *
+     * @return array{connection: string, active_database: string, host: string|null, status: string}
      */
     public function getConnectionInfo(): array
     {
-        $config = config("database.connections.{$this->connectionName}");
+        /** @var array{host?: string, port?: string, username?: string} $config */
+        $config = config("database.connections.{$this->connectionName}", []);
 
         return [
-            'connection' => $this->connectionName,
-            'database' => $this->getActiveDatabase(),
-            'host' => $config['host'] ?? null,
-            'port' => $config['port'] ?? null,
-            'username' => $config['username'] ?? null,
+            'connection'      => $this->connectionName,
+            'active_database' => $this->getActiveDatabase(),
+            'host'            => $config['host'] ?? null,
+            'port'            => $config['port'] ?? null,
+            'status'          => $this->testConnection() ? 'connected' : 'disconnected',
         ];
     }
 
+    // =========================================================================
+    // VALIDATION & PARSING
+    // =========================================================================
+
     /**
      * Validasi format nama database MCI.
-     * 
-     * Format: MCI_{MMM}{YY}_{DDMMYYYY}
-     * Contoh: MCI_MAR26_01042026
+     * Mendukung format baru (MCI_MAR26_01042026) dan lama (MCI_JAN_31012026).
      */
     public function isValidDatabaseName(string $name): bool
     {
-        $pattern = config('mci.pattern', '/^MCI_[A-Z]{3}[0-9]{2}_[0-9]{8}$/');
-        return (bool) preg_match($pattern, $name);
-    }
-
-    /**
-     * Ambil daftar database MCI yang tersedia di server.
-     * 
-     * Scan semua database di SQL Server yang matching pattern MCI_*.
-     */
-    public function listDatabases(): array
-    {
-        $pattern = config('mci.prefix', 'MCI_') . '%';
-
-        try {
-            // Query untuk list semua database
-            $databases = $this->getConnection()
-                ->select("SELECT name FROM sys.databases WHERE name LIKE ? ORDER BY name DESC", [$pattern]);
-
-            return array_column($databases, 'name');
-        } catch (\Exception $e) {
-            Log::error("MCI: Failed to list databases - " . $e->getMessage());
-            return [];
+        foreach (self::DB_NAME_PATTERNS as $pattern) {
+            if (preg_match($pattern, $name)) {
+                return true;
+            }
         }
-    }
-
-    /**
-     * Ambil database MCI terjadwal (yang terbaru).
-     * 
-     * Dari daftar database yang tersedia, ambil yang terbaru
-     * berdasarkan nama (format tanggal).
-     */
-    public function getLatestDatabase(): ?string
-    {
-        $databases = $this->listDatabases();
-
-        if (empty($databases)) {
-            return null;
-        }
-
-        // Urutkan descending (paling baru pertama)
-        rsort($databases);
-
-        return $databases[0] ?? null;
-    }
-
-    /**
-     * Auto-detect dan set database MCI terkini.
-     * 
-     * Mencoba detect database terbaru dari server,
-     * atau fallback ke config.
-     */
-    public function autoDetect(): bool
-    {
-        $latest = $this->getLatestDatabase();
-
-        if ($latest) {
-            return $this->setActiveDatabase($latest);
-        }
-
-        // Fallback ke default dari config
-        Log::warning("MCI: Could not auto-detect latest database, using default");
         return false;
+    }
+
+    /**
+     * Parse tanggal dari nama database MCI.
+     * Mengambil tanggal pembuatan (bagian akhir nama) sebagai Carbon instance.
+     *
+     * MCI_MAR26_01042026 → Carbon('2026-04-01') (01 April 2026)
+     * MCI_JAN_31012026   → Carbon('2026-01-31') (31 Januari 2026)
+     */
+    public function parseDatabaseDate(string $name): ?Carbon
+    {
+        // Format baru: MCI_MAR26_01042026
+        if (preg_match('/^MCI_[A-Z]{3}\d{2}_(\d{2})(\d{2})(\d{4})$/', $name, $m)) {
+            try {
+                return Carbon::createFromFormat('d-m-Y', "{$m[1]}-{$m[2]}-{$m[3]}");
+            } catch (\Throwable) {
+                return null;
+            }
+        }
+
+        // Format lama: MCI_JAN_31012026
+        if (preg_match('/^MCI_[A-Z]{3}_(\d{2})(\d{2})(\d{4})$/', $name, $m)) {
+            try {
+                return Carbon::createFromFormat('d-m-Y', "{$m[1]}-{$m[2]}-{$m[3]}");
+            } catch (\Throwable) {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    // =========================================================================
+    // PRIVATE HELPERS
+    // =========================================================================
+
+    /**
+     * Simpan database aktif ke cache + update runtime config.
+     */
+    private function persistActiveDatabase(string $database): void
+    {
+        Cache::put(self::CACHE_KEY_ACTIVE_DB, $database, self::CACHE_TTL_ACTIVE);
+        Cache::forget(self::CACHE_KEY_DB_LIST); // Refresh list
+        Config::set("database.connections.{$this->connectionName}.database", $database);
+        DB::purge($this->connectionName); // Reset connection pool
+    }
+
+    /**
+     * Buat label human-readable untuk database.
+     */
+    private function buildDatabaseLabel(string $name, ?Carbon $date, bool $isActive): string
+    {
+        $period = $date ? $date->format('F Y') : $name;
+        $tag    = $isActive ? ' [REALTIME]' : '';
+        return $period . $tag;
     }
 }

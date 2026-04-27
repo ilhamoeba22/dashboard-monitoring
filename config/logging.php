@@ -127,6 +127,15 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        // RULE #10: Channel khusus untuk monitoring performa query & metrics
+        'metrics' => [
+            'driver'              => 'daily',
+            'path'                => storage_path('logs/metrics.log'),
+            'level'               => 'debug',
+            'days'                => 30,
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

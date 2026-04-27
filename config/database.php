@@ -115,22 +115,66 @@ return [
         ],
 
         // --- KONEKSI KHUSUS UNTUK SQL SERVER (DASHBOARD MCI) ---
+        // REALTIME: Database bulan berjalan (auto-switch via MciConnectionService)
         'dashboard_data' => [
-            'driver' => 'sqlsrv',
-            'url' => env('SQL_SERVER_URL'),
-            'host' => env('SQL_SERVER_HOST', '192.168.1.130'),
-            'port' => env('SQL_SERVER_PORT', '44333'),
-            'database' => env('SQL_SERVER_DATABASE', 'MCI_MAR26_01042026'),
-            'username' => env('SQL_SERVER_USERNAME', 'sa'),
-            'password' => env('SQL_SERVER_PASSWORD', 'bon'),
-            'charset' => 'utf8',
-            'prefix' => '',
-            'prefix_indexes' => true,
-            'encrypt' => env('SQL_SERVER_ENCRYPT', 'no'),
+            'driver'                   => 'sqlsrv',
+            'url'                      => env('SQL_SERVER_URL'),
+            'host'                     => env('SQL_SERVER_HOST', '192.168.1.130'),
+            'port'                     => env('SQL_SERVER_PORT', '44333'),
+            'database'                 => env('SQL_SERVER_DATABASE', 'MCI_MAR26_01042026'),
+            'username'                 => env('SQL_SERVER_USERNAME', 'sa'),
+            'password'                 => env('SQL_SERVER_PASSWORD', ''),
+            'charset'                  => 'utf8',
+            'prefix'                   => '',
+            'prefix_indexes'           => true,
+            'encrypt'                  => env('SQL_SERVER_ENCRYPT', 'no'),
+            'trust_server_certificate' => env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
+        ],
+
+        // HISTORY: Maret 2026 (MCI_MAR26_01042026)
+        'dashboard_mar' => [
+            'driver'                   => 'sqlsrv',
+            'host'                     => env('SQL_SERVER_HOST', '192.168.1.130'),
+            'port'                     => env('SQL_SERVER_PORT', '44333'),
+            'database'                 => env('MCI_DB_MAR', 'MCI_MAR26_01042026'),
+            'username'                 => env('SQL_SERVER_USERNAME', 'sa'),
+            'password'                 => env('SQL_SERVER_PASSWORD', ''),
+            'charset'                  => 'utf8',
+            'prefix'                   => '',
+            'encrypt'                  => env('SQL_SERVER_ENCRYPT', 'no'),
+            'trust_server_certificate' => env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
+        ],
+
+        // HISTORY: Februari 2026 (MCI_FEB26_01032026)
+        'dashboard_feb' => [
+            'driver'                   => 'sqlsrv',
+            'host'                     => env('SQL_SERVER_HOST', '192.168.1.130'),
+            'port'                     => env('SQL_SERVER_PORT', '44333'),
+            'database'                 => env('MCI_DB_FEB', 'MCI_FEB26_01032026'),
+            'username'                 => env('SQL_SERVER_USERNAME', 'sa'),
+            'password'                 => env('SQL_SERVER_PASSWORD', ''),
+            'charset'                  => 'utf8',
+            'prefix'                   => '',
+            'encrypt'                  => env('SQL_SERVER_ENCRYPT', 'no'),
+            'trust_server_certificate' => env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
+        ],
+
+        // HISTORY: Januari 2026 (MCI_JAN_31012026)
+        'dashboard_jan' => [
+            'driver'                   => 'sqlsrv',
+            'host'                     => env('SQL_SERVER_HOST', '192.168.1.130'),
+            'port'                     => env('SQL_SERVER_PORT', '44333'),
+            'database'                 => env('MCI_DB_JAN', 'MCI_JAN_31012026'),
+            'username'                 => env('SQL_SERVER_USERNAME', 'sa'),
+            'password'                 => env('SQL_SERVER_PASSWORD', ''),
+            'charset'                  => 'utf8',
+            'prefix'                   => '',
+            'encrypt'                  => env('SQL_SERVER_ENCRYPT', 'no'),
             'trust_server_certificate' => env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
         ],
 
     ],
+
 
     /*
     |--------------------------------------------------------------------------

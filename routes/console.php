@@ -8,6 +8,42 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+// ============================================================================
+// MCI DATABASE AUTO-ROTATION SCHEDULER
+// ============================================================================
+// Setiap hari pukul 06:00 WIB: auto-detect database MCI terbaru dan switch.
+// Jika ada database baru (bulan baru), otomatis switch ke database tersebut
+// dan clear semua dashboard cache agar data langsung fresh.
+// ============================================================================
+
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('mci:auto-switch')
+    ->dailyAt('06:00')
+    ->timezone('Asia/Jakarta')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->onSuccess(function () {
+        // Clear dashboard cache setelah switch database
+        \Illuminate\Support\Facades\Cache::flush();
+        \Illuminate\Support\Facades\Log::info('MCI Scheduler: Auto-switch completed, cache cleared.');
+    })
+    ->onFailure(function () {
+        \Illuminate\Support\Facades\Log::error('MCI Scheduler: Auto-switch FAILED. Manual intervention required.');
+    });
+
+// 2. Data Warehouse: Daily Snapshot (Setiap jam 23:55 WIB malam)
+Schedule::command('mci:daily-snapshot')
+    ->dailyAt('23:55')
+    ->timezone('Asia/Jakarta')
+    ->runInBackground()
+    ->onSuccess(function () {
+        \Illuminate\Support\Facades\Log::info('MCI Scheduler: Daily Snapshot saved to Data Warehouse.');
+    })
+    ->onFailure(function () {
+        \Illuminate\Support\Facades\Log::error('MCI Scheduler: Daily Snapshot FAILED.');
+    });
+
 Artisan::command('mci:test-models', function () {
     $this->info('=== TESTING MCI MODELS ===');
 

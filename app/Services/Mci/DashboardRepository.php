@@ -4,157 +4,355 @@ declare(strict_types=1);
 
 namespace App\Services\Mci;
 
-use Illuminate\Support\Facades\DB;
+use App\DTO\Api\v1\DashboardMetricsDTO;
+use App\DTO\Api\v1\DepositoMetricsDTO;
+use App\DTO\Api\v1\FinancingMetricsDTO;
+use App\DTO\Api\v1\GrowthDTO;
+use App\DTO\Api\v1\SavingMetricsDTO;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
+/**
+ * DashboardRepository
+ * --------------------------------------------------------------------------
+ * Repository untuk mengambil key metrics dashboard (Financing, Saving, Deposito).
+ *
+ * RULES APPLIED (PROJECT_MEMORY.md):
+ *  RULE #5  — CTE + GROUPING SETS untuk aggregasi multi-level
+ *  RULE #6  — Multi-layer caching (metrics=60s, chart=300s, branches=3600s)
+ *  RULE #10 — logPerformance() dari base class auto-triggered
+ *  RULE #11 — Semua logic di Repository, bukan di Controller
+ */
 class DashboardRepository extends MciBaseRepository
 {
     protected string $tableName = 'TANGGAL';
 
-    /**
-     * Get table name (required by MciBaseRepository)
-     */
     protected function getTableName(): string
     {
         return $this->tableName;
     }
 
+    // =========================================================================
+    // PUBLIC API
+    // =========================================================================
+
     /**
-     * Ambil tanggal sistem dari MCI
+     * Ambil tanggal sistem dari tabel TANGGAL MCI.
+     * Delegasi ke base class agar tidak duplikat kode.
      */
     public function getSystemDate(): string
     {
-        $cacheKey = $this->cacheKey('system_date');
-
-        return Cache::remember($cacheKey, 60, function (): string {
-            $data = DB::connection($this->connection)
-                ->table('TANGGAL')
-                ->orderBy('tgl', 'desc')
-                ->value('tgl');
-
-            return $data ?? date('dmY');
-        });
+        return $this->getSystemDateInternal();
     }
 
     /**
-     * Ambil tahun dan periode saat ini
+     * Pecah tanggal sistem ke array period.
+     *
+     * @return array{tgl: string, year: int, month: int, period: string, previous_year: int}
      */
     public function getCurrentPeriod(): array
     {
-        $tgl = $this->getSystemDate();
-        $year = substr($tgl, -4);
-        $month = substr($tgl, 2, 2);
+        return $this->getCurrentPeriodInternal();
+    }
+
+    /**
+     * Ambil semua key metrics (Financing + Saving + Deposito) sekaligus.
+     * Di-cache sebagai satu unit agar konsisten antar metric.
+     * Cache key menyertakan nama connection agar history tidak pakai cache realtime.
+     */
+    public function getKeyMetrics(): DashboardMetricsDTO
+    {
+        $period      = $this->getCurrentPeriodInternal();
+        $currentYear = (string) $period['year'];
+        $prevYear    = (string) $period['previous_year'];
+        // Sertakan connection dalam cache key agar jan/feb/mar tidak bentrok
+        $cacheKey    = "mci:dashboard:key_metrics:{$this->connection}:{$currentYear}";
+
+        /** @var DashboardMetricsDTO $result */
+        $result = Cache::remember($cacheKey, self::CACHE_SHORT, function () use ($period, $currentYear, $prevYear): DashboardMetricsDTO {
+            return new DashboardMetricsDTO(
+                tgl:         $period['tgl'],
+                year:        $period['year'],
+                month:       $period['month'],
+                period:      $period['period'],
+                financing:   $this->getFinancingMetrics($currentYear, $prevYear),
+                saving:      $this->getSavingMetrics($currentYear, $prevYear),
+                deposito:    $this->getDepositoMetrics($currentYear, $prevYear),
+                generatedAt: now()->toIso8601String(),
+            );
+        });
+
+        return $result;
+    }
+
+    /**
+     * Ambil data chart dari MySQL Data Warehouse (Tabel daily_metrics_histories).
+     * Mensupport filter rentang tanggal bebas (daily).
+     *
+     * @return array{labels: list<string>, values: list<float>, noa: list<int>, growth: list<float>}
+     */
+    public function getChartDataFromWarehouse(string $type, ?string $startDate = null, ?string $endDate = null): array
+    {
+        // Default: 30 hari ke belakang jika tidak ada input
+        $end   = $endDate ? \Carbon\Carbon::parse($endDate)->endOfDay() : now()->endOfDay();
+        $start = $startDate ? \Carbon\Carbon::parse($startDate)->startOfDay() : now()->subDays(30)->startOfDay();
+
+        // Validasi agar range tidak kebalik
+        if ($start->gt($end)) {
+            $temp = $start;
+            $start = $end;
+            $end = $temp;
+        }
+
+        // Ambil data dari MySQL
+        $histories = \App\Models\Mci\DailyMetricsHistory::whereBetween('tgl_snapshot', [$start->format('Y-m-d'), $end->format('Y-m-d')])
+            ->orderBy('tgl_snapshot', 'asc')
+            ->get();
+
+        $labels  = [];
+        $values  = [];
+        $noa     = [];
+        $growth  = [];
+        $prevVal = null;
+
+        foreach ($histories as $row) {
+            $labels[] = $row->tgl_snapshot->format('d M Y'); // Format misal: 27 Apr 2026
+
+            // Tentukan field berdasarkan tipe chart
+            $val = match ($type) {
+                'financing' => $row->financing_os,
+                'saving'    => $row->saving_saldo,
+                'deposito'  => $row->deposito_saldo,
+                default     => 0.0,
+            };
+
+            $currentNoa = match ($type) {
+                'financing' => $row->financing_noa,
+                'saving'    => $row->saving_noa,
+                'deposito'  => $row->deposito_noa,
+                default     => 0,
+            };
+
+            $values[] = (float) $val;
+            $noa[]    = (int) $currentNoa;
+
+            // Hitung growth harian
+            $growth[] = $prevVal !== null && $prevVal > 0
+                ? round((( (float)$val - $prevVal) / $prevVal) * 100, 2)
+                : 0.0;
+
+            $prevVal = (float) $val;
+        }
 
         return [
-            'tgl' => $tgl,
-            'year' => (int) $year,
-            'month' => (int) $month,
-            'period' => $year . $month,
-            'previous_year' => (int) $year - 1,
+            'labels' => $labels,
+            'values' => $values,
+            'noa'    => $noa,
+            'growth' => $growth,
         ];
     }
 
     /**
-     * Ambil semua data key metrics untuk dashboard
+     * Daftar cabang untuk filter UI.
+     * Cache 1 jam karena data cabang jarang berubah.
+     *
+     * @return list<array{kdloc: string, nama: string}>
      */
-    public function getKeyMetrics(): array
+    public function getBranchList(): array
     {
-        $period = $this->getCurrentPeriod();
-        $currentYear = (string) $period['year'];
-        $previousYear = (string) $period['previous_year'];
-        $cacheKey = $this->cacheKey("key_metrics:{$currentYear}");
+        $cacheKey = 'mci:dashboard:branches';
 
-        return Cache::remember($cacheKey, 60, function () use ($currentYear, $previousYear): array {
-            return [
-                'financing' => $this->getFinancingMetrics($currentYear, $previousYear),
-                'saving' => $this->getSavingMetrics($currentYear, $previousYear),
-                'deposito' => $this->getDepositoMetrics($currentYear, $previousYear),
-            ];
+        /** @var list<array{kdloc: string, nama: string}> $result */
+        $result = Cache::remember($cacheKey, self::CACHE_LONG, function (): array {
+            return DB::connection($this->connection)
+                ->table('CABANG')
+                ->select('kdloc', 'nama')
+                ->where('stsrec', 'A')
+                ->orderBy('kdloc')
+                ->get()
+                ->map(fn ($b) => ['kdloc' => $b->kdloc, 'nama' => $b->nama])
+                ->values()
+                ->all();
         });
+
+        return $result;
     }
 
     /**
-     * ==== FINANCING METRICS ====
+     * Clear semua cache dashboard.
+     * Hanya forget key yang diketahui — tidak flush seluruh cache store.
      */
-    public function getFinancingMetrics(string $currentYear, string $previousYear): array
+    public function clearCache(): void
     {
-        $query = "
+        $period      = $this->getCurrentPeriodInternal();
+        $currentYear = (string) $period['year'];
+
+        $this->forgetMany([
+            "mci:dashboard:key_metrics:{$currentYear}",
+            "mci:dashboard:chart:financing:{$currentYear}",
+            "mci:dashboard:chart:saving:{$currentYear}",
+            "mci:dashboard:chart:deposito:{$currentYear}",
+            "mci:dashboard:branches",
+            $this->cacheKey('system_date'),
+        ]);
+    }
+
+    // =========================================================================
+    // PER-MODULE METRICS (typed DTOs)
+    // =========================================================================
+
+    /**
+     * Financing metrics → FinancingMetricsDTO.
+     */
+    public function getFinancingMetrics(string $currentYear, string $previousYear): FinancingMetricsDTO
+    {
+        $rawRows = $this->queryFinancing($currentYear, $previousYear);
+        $data    = $this->extractConsolidatedMetrics($rawRows, 'TotalOS', 'TotalNPF');
+
+        return new FinancingMetricsDTO(
+            totalOs:      $data['current'],
+            osFormatted:  $this->formatRupiah($data['current']),
+            totalNpf:     $data['secondary'],
+            npfFormatted: $this->formatRupiah($data['secondary']),
+            totalNoa:     $data['noa'],
+            totalAo:      $data['ao'],
+            growth:       GrowthDTO::fromArray($this->calculateGrowth($data['current'],   $data['prev'])),
+            noaGrowth:    GrowthDTO::fromArray($this->calculateGrowth($data['noa'],        $data['prev_noa'])),
+            aoGrowth:     GrowthDTO::fromArray($this->calculateGrowth($data['ao'],         $data['prev_ao'])),
+            npfGrowth:    GrowthDTO::fromArray($this->calculateGrowth($data['secondary'],  $data['prev_secondary'])),
+        );
+    }
+
+    /**
+     * Saving metrics → SavingMetricsDTO.
+     */
+    public function getSavingMetrics(string $currentYear, string $previousYear): SavingMetricsDTO
+    {
+        $rawRows = $this->querySaving($currentYear, $previousYear);
+        $data    = $this->extractConsolidatedMetrics($rawRows, 'TotalSaldo');
+
+        return new SavingMetricsDTO(
+            totalSaldo:     $data['current'],
+            saldoFormatted: $this->formatRupiah($data['current']),
+            totalNoa:       $data['noa'],
+            totalAo:        $data['ao'],
+            growth:         GrowthDTO::fromArray($this->calculateGrowth($data['current'], $data['prev'])),
+            noaGrowth:      GrowthDTO::fromArray($this->calculateGrowth($data['noa'],     $data['prev_noa'])),
+            aoGrowth:       GrowthDTO::fromArray($this->calculateGrowth($data['ao'],      $data['prev_ao'])),
+        );
+    }
+
+    /**
+     * Deposito metrics → DepositoMetricsDTO.
+     */
+    public function getDepositoMetrics(string $currentYear, string $previousYear): DepositoMetricsDTO
+    {
+        $rawRows = $this->queryDeposito($currentYear, $previousYear);
+        $data    = $this->extractConsolidatedMetrics($rawRows, 'TotalSaldo', 'TotalBaghas');
+
+        return new DepositoMetricsDTO(
+            totalSaldo:     $data['current'],
+            saldoFormatted: $this->formatRupiah($data['current']),
+            totalBaghas:    $data['secondary'],
+            baghasFormatted:$this->formatRupiah($data['secondary']),
+            totalNoa:       $data['noa'],
+            totalAo:        $data['ao'],
+            growth:         GrowthDTO::fromArray($this->calculateGrowth($data['current'],  $data['prev'])),
+            noaGrowth:      GrowthDTO::fromArray($this->calculateGrowth($data['noa'],      $data['prev_noa'])),
+            aoGrowth:       GrowthDTO::fromArray($this->calculateGrowth($data['ao'],       $data['prev_ao'])),
+            baghasGrowth:   GrowthDTO::fromArray($this->calculateGrowth($data['secondary'], $data['prev_secondary'])),
+        );
+    }
+
+    // =========================================================================
+    // RAW SQL QUERIES (RULE #5: CTE + GROUPING SETS)
+    // =========================================================================
+
+    /**
+     * Query financing data: live (TOFLMB) + historis EOM (TOFLMBEOM).
+     * Pakai CTE + GROUPING SETS untuk aggregasi per-cabang & konsolidasi.
+     *
+     * @return array<int, object>
+     */
+    private function queryFinancing(string $currentYear, string $previousYear): array
+    {
+        $sql = <<<SQL
             WITH RiwayatNasabah AS (
-                -- DATA BULAN BERJALAN (LIVE)
+                -- DATA BULAN BERJALAN (LIVE dari TOFLMB)
                 SELECT
-                    CAST(SUBSTRING(TGL.tgl, 5, 4) AS VARCHAR(4)) + CAST(SUBSTRING(TGL.tgl, 3, 2) AS VARCHAR(2)) AS periode_yyyymm,
+                    CAST(SUBSTRING(TGL.tgl, 5, 4) AS VARCHAR(4))
+                        + CAST(SUBSTRING(TGL.tgl, 3, 2) AS VARCHAR(2)) AS periode_yyyymm,
                     T1.kdaoh,
                     T1.nokontrak,
-                    CAST(T1.osmdlc AS DECIMAL(18,2)) AS osmdlc,
-                    T1.colbaru,
+                    CAST(T1.osmdlc  AS DECIMAL(18,2)) AS TotalOS,
+                    CAST(CASE WHEN T1.colbaru IN ('3','4','5') THEN T1.osmdlc ELSE 0 END AS DECIMAL(18,2)) AS TotalNPF,
                     T1.kdloc,
-                    COALESCE(CG.kdloc, '00') AS kdloc_filter,
                     COALESCE(CG.nama, 'Konsolidasi') AS nama_cabang
                 FROM TOFLMB T1
                 CROSS JOIN TANGGAL TGL
                 LEFT JOIN CABANG CG ON T1.kdloc = CG.kdloc
                 WHERE CAST(SUBSTRING(TGL.tgl, 5, 4) AS VARCHAR(4)) = ?
-                AND T1.stsrec = 'A'
-                AND T1.stsacc <> 'W'
+                  AND T1.stsrec = 'A'
+                  AND T1.stsacc <> 'W'
 
                 UNION ALL
 
-                -- DATA HISTORIS (EOM)
+                -- DATA HISTORIS EOM (TOFLMBEOM)
                 SELECT
                     T2.periode AS periode_yyyymm,
                     T3.kdaoh,
                     T2.nokontrak,
-                    CAST(T2.osmdlc AS DECIMAL(18,2)) AS osmdlc,
-                    T3.colbaru,
+                    CAST(T2.osmdlc  AS DECIMAL(18,2)) AS TotalOS,
+                    CAST(CASE WHEN T3.colbaru IN ('3','4','5') THEN T2.osmdlc ELSE 0 END AS DECIMAL(18,2)) AS TotalNPF,
                     T3.kdloc,
-                    COALESCE(CG.kdloc, '00') AS kdloc_filter,
                     COALESCE(CG.nama, 'Konsolidasi') AS nama_cabang
                 FROM TOFLMBEOM T2
-                LEFT JOIN TOFLMB T3 ON T2.nokontrak = T3.nokontrak
-                LEFT JOIN CABANG CG ON T3.kdloc = CG.kdloc
-                WHERE (LEFT(T2.periode, 4) = ? OR LEFT(T2.periode, 4) = ?)
+                LEFT JOIN TOFLMB  T3 ON T2.nokontrak = T3.nokontrak
+                LEFT JOIN CABANG  CG ON T3.kdloc = CG.kdloc
+                WHERE LEFT(T2.periode, 4) = ?
+                   OR LEFT(T2.periode, 4) = ?
             )
             SELECT
-                periode_yyyymm AS periode,
+                periode_yyyymm                    AS periode,
                 COALESCE(nama_cabang, 'Konsolidasi') AS nama,
-                SUM(osmdlc) AS TotalOS,
-                SUM(CASE WHEN colbaru IN ('3','4','5') THEN osmdlc ELSE 0 END) AS TotalNPF,
-                COUNT(DISTINCT nokontrak) AS TotalNOA,
-                COUNT(DISTINCT kdaoh) AS TotalAO
+                SUM(TotalOS)                      AS TotalOS,
+                SUM(TotalNPF)                     AS TotalNPF,
+                COUNT(DISTINCT nokontrak)         AS TotalNOA,
+                COUNT(DISTINCT kdaoh)             AS TotalAO
             FROM RiwayatNasabah
-            GROUP BY
-                GROUPING SETS ((periode_yyyymm, nama_cabang), (periode_yyyymm))
-            ORDER BY periode_yyyymm ASC, nama ASC;
-        ";
+            GROUP BY GROUPING SETS (
+                (periode_yyyymm, nama_cabang),
+                (periode_yyyymm)
+            )
+            ORDER BY periode_yyyymm ASC, nama ASC
+        SQL;
 
-        $data = $this->select($query, [$currentYear, $currentYear, $previousYear]);
-
-        return $this->processKeyMetrics($data, 'TotalOS');
+        return $this->select($sql, [$currentYear, $currentYear, $previousYear]);
     }
 
     /**
-     * ==== SAVING METRICS ====
+     * Query saving data: live (TOFTABB) + historis EOM (TOFTABEOM).
+     *
+     * @return array<int, object>
      */
-    public function getSavingMetrics(string $currentYear, string $previousYear): array
+    private function querySaving(string $currentYear, string $previousYear): array
     {
-        $query = "
+        $sql = <<<SQL
             WITH RiwayatNasabah AS (
                 SELECT
-                    CAST(SUBSTRING(TGL.tgl, 5, 4) AS VARCHAR(4)) + CAST(SUBSTRING(TGL.tgl, 3, 2) AS VARCHAR(2)) AS periode_yyyymm,
+                    CAST(SUBSTRING(TGL.tgl, 5, 4) AS VARCHAR(4))
+                        + CAST(SUBSTRING(TGL.tgl, 3, 2) AS VARCHAR(2)) AS periode_yyyymm,
                     T1.kodeaoh,
                     T1.notab,
-                    CAST(T1.sahirrp AS DECIMAL(18,2)) AS sahirrp,
+                    CAST(T1.sahirrp AS DECIMAL(18,2)) AS TotalSaldo,
                     T1.kodeloc,
-                    COALESCE(CG.kdloc, '00') AS kdloc_filter,
                     COALESCE(CG.nama, 'Konsolidasi') AS nama_cabang
                 FROM TOFTABB T1
                 CROSS JOIN TANGGAL TGL
                 LEFT JOIN CABANG CG ON T1.kodeloc = CG.kdloc
                 WHERE CAST(SUBSTRING(TGL.tgl, 5, 4) AS VARCHAR(4)) = ?
-                AND T1.stsrec = 'A'
-                AND T1.stsacc <> 'W'
+                  AND T1.stsrec = 'A'
+                  AND T1.stsacc <> 'W'
 
                 UNION ALL
 
@@ -162,54 +360,56 @@ class DashboardRepository extends MciBaseRepository
                     T2.periode AS periode_yyyymm,
                     T3.kodeaoh,
                     T2.notab,
-                    CAST(T2.sahirrp AS DECIMAL(18,2)) AS sahirrp,
+                    CAST(T2.sahirrp AS DECIMAL(18,2)) AS TotalSaldo,
                     T3.kodeloc,
-                    COALESCE(CG.kdloc, '00') AS kdloc_filter,
                     COALESCE(CG.nama, 'Konsolidasi') AS nama_cabang
                 FROM TOFTABEOM T2
                 LEFT JOIN TOFTABB T3 ON T2.notab = T3.notab
-                LEFT JOIN CABANG CG ON T3.kodeloc = CG.kdloc
-                WHERE (LEFT(T2.periode, 4) = ? OR LEFT(T2.periode, 4) = ?)
+                LEFT JOIN CABANG  CG ON T3.kodeloc = CG.kdloc
+                WHERE LEFT(T2.periode, 4) = ?
+                   OR LEFT(T2.periode, 4) = ?
             )
             SELECT
-                periode_yyyymm AS periode,
+                periode_yyyymm                       AS periode,
                 COALESCE(nama_cabang, 'Konsolidasi') AS nama,
-                SUM(sahirrp) AS TotalSaldo,
-                COUNT(DISTINCT notab) AS TotalNOA,
-                COUNT(DISTINCT kodeaoh) AS TotalAO
+                SUM(TotalSaldo)                      AS TotalSaldo,
+                COUNT(DISTINCT notab)                AS TotalNOA,
+                COUNT(DISTINCT kodeaoh)              AS TotalAO
             FROM RiwayatNasabah
-            GROUP BY
-                GROUPING SETS ((periode_yyyymm, nama_cabang), (periode_yyyymm))
-            ORDER BY periode_yyyymm ASC, nama ASC;
-        ";
+            GROUP BY GROUPING SETS (
+                (periode_yyyymm, nama_cabang),
+                (periode_yyyymm)
+            )
+            ORDER BY periode_yyyymm ASC, nama ASC
+        SQL;
 
-        $data = $this->select($query, [$currentYear, $currentYear, $previousYear]);
-
-        return $this->processKeyMetrics($data, 'TotalSaldo');
+        return $this->select($sql, [$currentYear, $currentYear, $previousYear]);
     }
 
     /**
-     * ==== DEPOSITO METRICS ====
+     * Query deposito data: live (TOFDEP) + historis EOM (TOFDEPEOM).
+     *
+     * @return array<int, object>
      */
-    public function getDepositoMetrics(string $currentYear, string $previousYear): array
+    private function queryDeposito(string $currentYear, string $previousYear): array
     {
-        $query = "
+        $sql = <<<SQL
             WITH RiwayatNasabah AS (
                 SELECT
-                    CAST(SUBSTRING(TGL.tgl, 5, 4) AS VARCHAR(4)) + CAST(SUBSTRING(TGL.tgl, 3, 2) AS VARCHAR(2)) AS periode_yyyymm,
+                    CAST(SUBSTRING(TGL.tgl, 5, 4) AS VARCHAR(4))
+                        + CAST(SUBSTRING(TGL.tgl, 3, 2) AS VARCHAR(2)) AS periode_yyyymm,
                     T1.kodeaoh,
                     T1.nodep,
-                    CAST(T1.nomrp AS DECIMAL(18,2)) AS TotalSaldo,
+                    CAST(T1.nomrp  AS DECIMAL(18,2)) AS TotalSaldo,
                     CAST(T1.bnghtg AS DECIMAL(18,2)) AS TotalBaghas,
                     T1.kdloc,
-                    COALESCE(CG.kdloc, '00') AS kdloc_filter,
                     COALESCE(CG.nama, 'Konsolidasi') AS nama_cabang
                 FROM TOFDEP T1
                 CROSS JOIN TANGGAL TGL
                 LEFT JOIN CABANG CG ON T1.kdloc = CG.kdloc
                 WHERE CAST(SUBSTRING(TGL.tgl, 5, 4) AS VARCHAR(4)) = ?
-                AND T1.stsrec = 'A'
-                AND T1.stsacc <> 'W'
+                  AND T1.stsrec = 'A'
+                  AND T1.stsacc <> 'W'
 
                 UNION ALL
 
@@ -217,174 +417,106 @@ class DashboardRepository extends MciBaseRepository
                     T2.periode AS periode_yyyymm,
                     T3.kodeaoh,
                     T2.nodep,
-                    CAST(T2.nomrp AS DECIMAL(18,2)) AS TotalSaldo,
+                    CAST(T2.nomrp  AS DECIMAL(18,2)) AS TotalSaldo,
                     CAST(T2.bnghtg AS DECIMAL(18,2)) AS TotalBaghas,
                     T3.kdloc,
-                    COALESCE(CG.kdloc, '00') AS kdloc_filter,
                     COALESCE(CG.nama, 'Konsolidasi') AS nama_cabang
                 FROM TOFDEPEOM T2
                 LEFT JOIN TOFDEP T3 ON T2.nodep = T3.nodep
                 LEFT JOIN CABANG CG ON T3.kdloc = CG.kdloc
-                WHERE (LEFT(T2.periode, 4) = ? OR LEFT(T2.periode, 4) = ?)
+                WHERE LEFT(T2.periode, 4) = ?
+                   OR LEFT(T2.periode, 4) = ?
             )
             SELECT
-                periode_yyyymm AS periode,
+                periode_yyyymm                       AS periode,
                 COALESCE(nama_cabang, 'Konsolidasi') AS nama,
-                SUM(TotalSaldo) AS TotalSaldo,
-                SUM(TotalBaghas) AS TotalBaghas,
-                COUNT(DISTINCT nodep) AS TotalNOA,
-                COUNT(DISTINCT kodeaoh) AS TotalAO
+                SUM(TotalSaldo)                      AS TotalSaldo,
+                SUM(TotalBaghas)                     AS TotalBaghas,
+                COUNT(DISTINCT nodep)                AS TotalNOA,
+                COUNT(DISTINCT kodeaoh)              AS TotalAO
             FROM RiwayatNasabah
-            GROUP BY
-                GROUPING SETS ((periode_yyyymm, nama_cabang), (periode_yyyymm))
-            ORDER BY periode_yyyymm ASC, nama ASC;
-        ";
+            GROUP BY GROUPING SETS (
+                (periode_yyyymm, nama_cabang),
+                (periode_yyyymm)
+            )
+            ORDER BY periode_yyyymm ASC, nama ASC
+        SQL;
 
-        $data = $this->select($query, [$currentYear, $currentYear, $previousYear]);
-
-        return $this->processKeyMetrics($data, 'TotalSaldo', 'TotalBaghas');
+        return $this->select($sql, [$currentYear, $currentYear, $previousYear]);
     }
 
+    // =========================================================================
+    // DATA PROCESSING HELPERS
+    // =========================================================================
+
     /**
-     * Process key metrics untuk hitung growth
+     * Ekstrak metrics dari baris konsolidasi (nama = 'Konsolidasi'):
+     * current, previous, noa, ao, dan secondary field opsional.
+     *
+     * @param  array<int, object>  $rows
+     * @return array{
+     *   current: float, prev: float,
+     *   noa: int,       prev_noa: int,
+     *   ao: int,        prev_ao: int,
+     *   secondary: float, prev_secondary: float
+     * }
      */
-    protected function processKeyMetrics(array $data, string $primaryField, string $secondaryField = null): array
-    {
-        if (empty($data)) {
-            return $this->getDefaultMetrics();
-        }
+    private function extractConsolidatedMetrics(
+        array $rows,
+        string $primaryField,
+        string $secondaryField = ''
+    ): array {
+        // Ambil hanya baris konsolidasi (semua cabang), sorted ASC by periode
+        $consolidated = array_values(
+            array_filter($rows, fn ($r) => ($r->nama ?? '') === 'Konsolidasi')
+        );
 
-        // Filter data Konsolidasi (semua cabang)
-        $consolidated = array_filter($data, fn($item) => $item->nama === 'Konsolidasi');
-        $consolidated = array_values($consolidated);
-
-        $count = count($consolidated);
+        $count   = count($consolidated);
         $current = $count > 0 ? $consolidated[$count - 1] : null;
-        $previous = $count >= 2 ? $consolidated[$count - 2] : null;
+        $prev    = $count >= 2 ? $consolidated[$count - 2] : null;
 
-        $result = [];
+        return [
+            'current'        => (float) ($current?->$primaryField ?? 0),
+            'prev'           => (float) ($prev?->$primaryField ?? 0),
+            'noa'            => (int)   ($current?->TotalNOA ?? 0),
+            'prev_noa'       => (int)   ($prev?->TotalNOA ?? 0),
+            'ao'             => (int)   ($current?->TotalAO ?? 0),
+            'prev_ao'        => (int)   ($prev?->TotalAO ?? 0),
+            'secondary'      => $secondaryField ? (float) ($current?->$secondaryField ?? 0) : 0.0,
+            'prev_secondary' => $secondaryField ? (float) ($prev?->$secondaryField ?? 0) : 0.0,
+        ];
+    }
 
-        if ($current) {
-            $result['total'] = (float) $current->$primaryField;
-            $result['noa'] = (int) ($current->TotalNOA ?? 0);
-            $result['ao'] = (int) ($current->TotalAO ?? 0);
+    /**
+     * Bangun series data untuk chart (labels + values + noa + growth per periode).
+     *
+     * @param  array<int, object>  $rows
+     * @return array{labels: list<string>, values: list<float>, noa: list<int>, growth: list<float>}
+     */
+    private function buildChartSeries(array $rows, string $primaryField): array
+    {
+        // Ambil hanya baris konsolidasi, sorted by periode ASC
+        $consolidated = array_values(
+            array_filter($rows, fn ($r) => ($r->nama ?? '') === 'Konsolidasi')
+        );
 
-            if ($secondaryField) {
-                $result['secondary'] = (float) $current->$secondaryField;
-            }
+        $labels  = [];
+        $values  = [];
+        $noa     = [];
+        $growth  = [];
+        $prevVal = null;
 
-            // Hitung growth
-            if ($previous) {
-                $prevTotal = (float) $previous->$primaryField;
-                $prevNoa = (int) ($previous->TotalNOA ?? 0);
-                $prevAo = (int) ($previous->TotalAO ?? 0);
-
-                $result['growth'] = $this->calculateGrowth($result['total'], $prevTotal);
-                $result['noa_growth'] = $this->calculateGrowth($result['noa'], $prevNoa);
-                $result['ao_growth'] = $this->calculateGrowth($result['ao'], $prevAo);
-
-                if ($secondaryField) {
-                    $prevSecondary = (float) $previous->$secondaryField;
-                    $result['secondary_growth'] = $this->calculateGrowth($result['secondary'], $prevSecondary);
-                }
-            }
+        foreach ($consolidated as $row) {
+            $labels[] = (string) ($row->periode ?? '');
+            $val      = (float)  ($row->$primaryField ?? 0);
+            $values[] = $val;
+            $noa[]    = (int)   ($row->TotalNOA ?? 0);
+            $growth[] = $prevVal !== null && $prevVal > 0
+                ? round((($val - $prevVal) / $prevVal) * 100, 2)
+                : 0.0;
+            $prevVal  = $val;
         }
 
-        return $result ?: $this->getDefaultMetrics();
-    }
-
-    /**
-     * Default metrics saat data kosong
-     */
-    protected function getDefaultMetrics(): array
-    {
-        return [
-            'total' => 0,
-            'noa' => 0,
-            'ao' => 0,
-            'secondary' => 0,
-            'growth' => ['value' => '0%', 'class' => 'text-muted', 'raw' => 0],
-            'noa_growth' => ['value' => '0%', 'class' => 'text-muted', 'raw' => 0],
-            'ao_growth' => ['value' => '0%', 'class' => 'text-muted', 'raw' => 0],
-            'secondary_growth' => ['value' => '0%', 'class' => 'text-muted', 'raw' => 0],
-        ];
-    }
-
-    /**
-     * Ambil data chart historical
-     */
-    public function getChartData(string $type = 'financing'): array
-    {
-        $period = $this->getCurrentPeriod();
-        $currentYear = (string) $period['year'];
-        $previousYear = (string) $period['previous_year'];
-        $cacheKey = $this->cacheKey("chart:{$type}:{$currentYear}");
-
-        return Cache::remember($cacheKey, 300, function () use ($type, $currentYear, $previousYear): array {
-            $data = match ($type) {
-                'financing' => $this->getFinancingMetrics($currentYear, $previousYear),
-                'saving' => $this->getSavingMetrics($currentYear, $previousYear),
-                'deposito' => $this->getDepositoMetrics($currentYear, $previousYear),
-                default => [],
-            };
-
-            return $this->formatChartData($data);
-        });
-    }
-
-    /**
-     * Format data untuk chart
-     */
-    protected function formatChartData(array $data): array
-    {
-        return [
-            'labels' => [],
-            'values' => [],
-            'noa' => [],
-            'growth' => [],
-        ];
-    }
-
-    /**
-     * Ambil daftar cabang
-     */
-    public function getBranchList(): array
-    {
-        $cacheKey = $this->cacheKey('branches');
-
-        return Cache::remember($cacheKey, 3600, function (): array {
-            $branches = DB::connection($this->connection)
-                ->table('CABANG')
-                ->select('kdloc', 'nama')
-                ->orderBy('kdloc')
-                ->get();
-
-            return $branches->map(fn($b) => [
-                'kdloc' => $b->kdloc,
-                'nama' => $b->nama,
-            ])->toArray();
-        });
-    }
-
-    /**
-     * Clear semua cache dashboard
-     */
-    public function clearCache(): void
-    {
-        $keys = [
-            $this->cacheKey('system_date'),
-            $this->cacheKey('key_metrics:*'),
-            $this->cacheKey('chart:*'),
-            $this->cacheKey('branches'),
-        ];
-
-        foreach ($keys as $key) {
-            if (str_contains($key, '*')) {
-                // Clear pattern matches
-                Cache::flush();
-            } else {
-                Cache::forget($key);
-            }
-        }
+        return compact('labels', 'values', 'noa', 'growth');
     }
 }

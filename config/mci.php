@@ -19,7 +19,9 @@ return [
     | Contoh: MCI_{MMM}{YY}_{DDMMYYYY} → MCI_MAR26_01042026
     |
     */
-    'pattern' => 'MCI_[A-Z]{3}[0-9]{2}_[0-9]{8}',
+    // Pattern baru: MCI_MAR26_01042026
+    // Pattern lama: MCI_JAN_31012026 (tanpa 2-digit year)
+    'pattern' => '/^MCI_([A-Z]{3})(\d{2})?_?(\d{8})$/',
 
     /*
     |--------------------------------------------------------------------------
@@ -68,10 +70,10 @@ return [
     |
     */
     'history' => [
-        'MCI_MAR26_01042026',
-        // Tambah database lain di sini bila sudah ada:
-        // 'MCI_FEB26_01032026',
-        // 'MCI_JAN26_01022026',
+        // Database terbaru = realtime aktif
+        'MCI_MAR26_01042026',  // Maret 2026 (REALTIME saat ini)
+        'MCI_FEB26_01032026',  // Februari 2026 (history)
+        'MCI_JAN_31012026',    // Januari 2026 (history, format lama)
     ],
 
     /*

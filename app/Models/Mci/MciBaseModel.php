@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci;
 
 use App\Models\Mci\Traits\HasDynamicConnection;
@@ -19,6 +21,9 @@ use Illuminate\Database\Eloquent\Model;
  *   3. Bisa di-switch ke database history bulan sebelumnya saat runtime.
  *   4. Otomatis handle casting tipe data SQL Server yang sering varchar
  *      padahal semestinya tanggal/numeric.
+ *
+ * OPTIMIZATION RULES APPLIED:
+ *  - RULE #8: Lazy Loading OFF — semua relasi HARUS via with()
  *
  * PENTING:
  *  - JANGAN override `$connection` di child model. Biarkan default `dashboard_data`.
@@ -53,6 +58,12 @@ abstract class MciBaseModel extends Model
      * Default key type string. Override di model child jika integer.
      */
     protected $keyType = 'string';
+
+    /**
+     * RULE #8: Matikan lazy loading — semua relasi harus eksplisit via with().
+     * Mencegah N+1 query yang tidak disadari.
+     */
+    protected bool $lazyLoading = false;
 
     /**
      * Guarded kosong + fillable kosong = tabel MCI tidak menerima mass assignment

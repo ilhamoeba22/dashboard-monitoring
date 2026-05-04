@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Financing;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,25 +20,25 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $periode  type: varchar(6)
- * @property string|null $P_01_30  type: numeric(9)
- * @property string|null $P_30_60  type: numeric(9)
- * @property string|null $P_60_90  type: numeric(9)
- * @property string|null $P_90_120  type: numeric(9)
- * @property string|null $P_120_150  type: numeric(9)
- * @property string|null $P_150_180  type: numeric(9)
- * @property string|null $P_180_210  type: numeric(9)
- * @property string|null $P_210_240  type: numeric(9)
- * @property string|null $P_270  type: numeric(9)
- * @property string|null $B_01_30  type: numeric(9)
- * @property string|null $B_30_60  type: numeric(9)
- * @property string|null $B_60_90  type: numeric(9)
- * @property string|null $B_90_120  type: numeric(9)
- * @property string|null $B_120_150  type: numeric(9)
- * @property string|null $B_150_180  type: numeric(9)
- * @property string|null $B_180_210  type: numeric(9)
- * @property string|null $B_210_240  type: numeric(9)
- * @property string|null $B_270  type: numeric(9)
+ * @property string $periode type: varchar(6)
+ * @property string|null $P_01_30 type: numeric(9)
+ * @property string|null $P_30_60 type: numeric(9)
+ * @property string|null $P_60_90 type: numeric(9)
+ * @property string|null $P_90_120 type: numeric(9)
+ * @property string|null $P_120_150 type: numeric(9)
+ * @property string|null $P_150_180 type: numeric(9)
+ * @property string|null $P_180_210 type: numeric(9)
+ * @property string|null $P_210_240 type: numeric(9)
+ * @property string|null $P_270 type: numeric(9)
+ * @property string|null $B_01_30 type: numeric(9)
+ * @property string|null $B_30_60 type: numeric(9)
+ * @property string|null $B_60_90 type: numeric(9)
+ * @property string|null $B_90_120 type: numeric(9)
+ * @property string|null $B_120_150 type: numeric(9)
+ * @property string|null $B_150_180 type: numeric(9)
+ * @property string|null $B_180_210 type: numeric(9)
+ * @property string|null $B_210_240 type: numeric(9)
+ * @property string|null $B_270 type: numeric(9)
  */
 class Toflmdpd extends MciBaseModel
 {

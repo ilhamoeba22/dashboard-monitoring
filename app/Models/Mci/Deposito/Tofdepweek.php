@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Deposito;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,18 +20,18 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $tglweek  type: char(8)
- * @property string $nodep  type: varchar(11)
- * @property string $nocif  type: varchar(9)
- * @property string|null $kdprd  type: varchar(2)
- * @property string|null $kdloc  type: varchar(2)
- * @property string|null $nomawal  type: numeric(9)
- * @property string|null $nomrp  type: numeric(9)
- * @property string|null $tglbuka  type: varchar(8)
- * @property string|null $jkwaktu  type: numeric(5)
- * @property string|null $jnsjkwaktu  type: varchar(1)
- * @property string|null $tgleff  type: varchar(8)
- * @property string|null $tgljtempo  type: varchar(8)
+ * @property string $tglweek type: char(8)
+ * @property string $nodep type: varchar(11)
+ * @property string $nocif type: varchar(9)
+ * @property string|null $kdprd type: varchar(2)
+ * @property string|null $kdloc type: varchar(2)
+ * @property string|null $nomawal type: numeric(9)
+ * @property string|null $nomrp type: numeric(9)
+ * @property string|null $tglbuka type: varchar(8)
+ * @property string|null $jkwaktu type: numeric(5)
+ * @property string|null $jnsjkwaktu type: varchar(1)
+ * @property string|null $tgleff type: varchar(8)
+ * @property string|null $tgljtempo type: varchar(8)
  */
 class Tofdepweek extends MciBaseModel
 {

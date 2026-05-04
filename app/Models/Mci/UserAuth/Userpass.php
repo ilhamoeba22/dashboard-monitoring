@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\UserAuth;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,9 +20,9 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $tgl  type: varchar(8)
- * @property string $userID  type: varchar(10)
- * @property string|null $pasw  type: varchar(100)
+ * @property string $tgl type: varchar(8)
+ * @property string $userID type: varchar(10)
+ * @property string|null $pasw type: varchar(100)
  */
 class Userpass extends MciBaseModel
 {

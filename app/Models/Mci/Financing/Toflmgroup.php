@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Financing;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,11 +20,11 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $nokontrak  type: varchar(11)
- * @property string|null $kdgroup  type: varchar(4)
- * @property string|null $kdmitra  type: varchar(4)
- * @property string|null $batch  type: numeric(9)
- * @property string|null $idtambahan  type: varchar(15)
+ * @property string|null $nokontrak type: varchar(11)
+ * @property string|null $kdgroup type: varchar(4)
+ * @property string|null $kdmitra type: varchar(4)
+ * @property string|null $batch type: numeric(9)
+ * @property string|null $idtambahan type: varchar(15)
  */
 class Toflmgroup extends MciBaseModel
 {

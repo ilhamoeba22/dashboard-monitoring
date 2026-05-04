@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use App\Services\Mci\MciConnectionService;
@@ -26,10 +28,10 @@ class SelectMciDatabase
         $dbFromQuery = $request->query('mci_database');
         if ($dbFromQuery && $mciService->isValidDatabaseName($dbFromQuery)) {
             $mciService->setActiveDatabase($dbFromQuery);
-            
+
             // Simpan ke session untuk request berikutnya
             session(['mci_database' => $dbFromQuery]);
-            
+
             return $next($request);
         }
 
@@ -37,7 +39,7 @@ class SelectMciDatabase
         $dbFromSession = session('mci_database');
         if ($dbFromSession && $mciService->isValidDatabaseName($dbFromSession)) {
             $mciService->setActiveDatabase($dbFromSession);
-            
+
             return $next($request);
         }
 

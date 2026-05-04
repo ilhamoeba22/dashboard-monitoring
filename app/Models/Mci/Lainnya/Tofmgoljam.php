@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,35 +20,35 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $nokontrak  type: varchar(11)
- * @property string $nocif  type: varchar(9)
- * @property string|null $nama  type: varchar(100)
- * @property string|null $namaslik  type: varchar(150)
- * @property string $noid  type: varchar(20)
- * @property string $jnsid  type: char(1)
- * @property string|null $sex  type: char(1)
- * @property string $kdsegmen  type: char(3)
- * @property string|null $kdgoljam  type: varchar(10)
- * @property string|null $alamat  type: varchar(100)
- * @property string|null $kelurahan  type: varchar(30)
- * @property string|null $kecamatan  type: varchar(30)
- * @property string|null $kota  type: varchar(30)
- * @property string|null $dati2  type: char(4)
- * @property string|null $bagjamin  type: numeric(5)
- * @property string|null $ket  type: varchar(150)
- * @property string|null $hp  type: varchar(16)
- * @property string|null $telprmh  type: varchar(16)
- * @property string|null $stsrec  type: char(1)
- * @property string|null $inpuser  type: varchar(50)
- * @property string|null $inptgljam  type: varchar(14)
- * @property string|null $inpterm  type: varchar(50)
- * @property string|null $chguser  type: varchar(50)
- * @property string|null $chgtgljam  type: varchar(14)
- * @property string|null $chgterm  type: varchar(50)
- * @property string|null $autuser  type: varchar(50)
- * @property string|null $auttgljam  type: varchar(14)
- * @property string|null $autterm  type: varchar(50)
- * @property string|null $npwp  type: varchar(16)
+ * @property string $nokontrak type: varchar(11)
+ * @property string $nocif type: varchar(9)
+ * @property string|null $nama type: varchar(100)
+ * @property string|null $namaslik type: varchar(150)
+ * @property string $noid type: varchar(20)
+ * @property string $jnsid type: char(1)
+ * @property string|null $sex type: char(1)
+ * @property string $kdsegmen type: char(3)
+ * @property string|null $kdgoljam type: varchar(10)
+ * @property string|null $alamat type: varchar(100)
+ * @property string|null $kelurahan type: varchar(30)
+ * @property string|null $kecamatan type: varchar(30)
+ * @property string|null $kota type: varchar(30)
+ * @property string|null $dati2 type: char(4)
+ * @property string|null $bagjamin type: numeric(5)
+ * @property string|null $ket type: varchar(150)
+ * @property string|null $hp type: varchar(16)
+ * @property string|null $telprmh type: varchar(16)
+ * @property string|null $stsrec type: char(1)
+ * @property string|null $inpuser type: varchar(50)
+ * @property string|null $inptgljam type: varchar(14)
+ * @property string|null $inpterm type: varchar(50)
+ * @property string|null $chguser type: varchar(50)
+ * @property string|null $chgtgljam type: varchar(14)
+ * @property string|null $chgterm type: varchar(50)
+ * @property string|null $autuser type: varchar(50)
+ * @property string|null $auttgljam type: varchar(14)
+ * @property string|null $autterm type: varchar(50)
+ * @property string|null $npwp type: varchar(16)
  */
 class Tofmgoljam extends MciBaseModel
 {

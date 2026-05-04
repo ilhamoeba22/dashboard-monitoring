@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\GeneralLedger;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,23 +20,23 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $nosbb  type: varchar(7)
- * @property string|null $nobb  type: varchar(7)
- * @property string|null $posisi  type: varchar(1)
- * @property string|null $pindsaldo  type: numeric(9)
- * @property string|null $jan  type: numeric(9)
- * @property string|null $feb  type: numeric(9)
- * @property string|null $mar  type: numeric(9)
- * @property string|null $apr  type: numeric(9)
- * @property string|null $mei  type: numeric(9)
- * @property string|null $jun  type: numeric(9)
- * @property string|null $jul  type: numeric(9)
- * @property string|null $ags  type: numeric(9)
- * @property string|null $sep  type: numeric(9)
- * @property string|null $okt  type: numeric(9)
- * @property string|null $nov  type: numeric(9)
- * @property string|null $des  type: numeric(9)
- * @property int|null $tahun  type: int(4)
+ * @property string|null $nosbb type: varchar(7)
+ * @property string|null $nobb type: varchar(7)
+ * @property string|null $posisi type: varchar(1)
+ * @property string|null $pindsaldo type: numeric(9)
+ * @property string|null $jan type: numeric(9)
+ * @property string|null $feb type: numeric(9)
+ * @property string|null $mar type: numeric(9)
+ * @property string|null $apr type: numeric(9)
+ * @property string|null $mei type: numeric(9)
+ * @property string|null $jun type: numeric(9)
+ * @property string|null $jul type: numeric(9)
+ * @property string|null $ags type: numeric(9)
+ * @property string|null $sep type: numeric(9)
+ * @property string|null $okt type: numeric(9)
+ * @property string|null $nov type: numeric(9)
+ * @property string|null $des type: numeric(9)
+ * @property int|null $tahun type: int(4)
  */
 class MNeracaBulanan extends MciBaseModel
 {

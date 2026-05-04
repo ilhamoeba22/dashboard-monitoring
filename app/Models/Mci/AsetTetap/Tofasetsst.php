@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\AsetTetap;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,15 +20,15 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdaset  type: varchar(5)
- * @property string|null $tgltagih  type: varchar(8)
- * @property string|null $thnbln  type: varchar(6)
- * @property string|null $tgl  type: varchar(2)
- * @property string|null $pokok  type: numeric(9)
- * @property string|null $stssusut  type: varchar(1)
- * @property string|null $tglsusut  type: varchar(8)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $sstuser  type: varchar(10)
+ * @property string|null $kdaset type: varchar(5)
+ * @property string|null $tgltagih type: varchar(8)
+ * @property string|null $thnbln type: varchar(6)
+ * @property string|null $tgl type: varchar(2)
+ * @property string|null $pokok type: numeric(9)
+ * @property string|null $stssusut type: varchar(1)
+ * @property string|null $tglsusut type: varchar(8)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $sstuser type: varchar(10)
  */
 class Tofasetsst extends MciBaseModel
 {

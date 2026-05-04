@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,13 +20,13 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $tgltrn  type: varchar(8)
- * @property string|null $batch  type: numeric(5)
- * @property string|null $kduang  type: varchar(1)
- * @property string|null $denominasi  type: numeric(9)
- * @property string|null $qty  type: numeric(9)
- * @property string|null $qty2  type: numeric(9)
- * @property string|null $stsrec  type: varchar(2)
+ * @property string|null $tgltrn type: varchar(8)
+ * @property string|null $batch type: numeric(5)
+ * @property string|null $kduang type: varchar(1)
+ * @property string|null $denominasi type: numeric(9)
+ * @property string|null $qty type: numeric(9)
+ * @property string|null $qty2 type: numeric(9)
+ * @property string|null $stsrec type: varchar(2)
  */
 class Tofmdenom extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands\Mci;
 
 use App\Services\Mci\MciConnectionService;
@@ -29,30 +31,32 @@ class TestConnectionCommand extends Command
         // Jika ada opsi --db, switch dulu
         $dbName = $this->option('db');
         if ($dbName) {
-            if (!$mciService->setActiveDatabase($dbName)) {
+            if (! $mciService->setActiveDatabase($dbName)) {
                 $this->error("Nama database tidak valid: {$dbName}");
+
                 return self::FAILURE;
             }
             $this->info("Switch ke database: {$dbName}");
         }
 
         // Test koneksi
-        $this->info("Menguji koneksi ke MCI...");
+        $this->info('Menguji koneksi ke MCI...');
 
-        if (!$mciService->testConnection()) {
-            $this->error("❌ Gagal terhubung ke database!");
+        if (! $mciService->testConnection()) {
+            $this->error('❌ Gagal terhubung ke database!');
             $this->newLine();
-            $this->line("Info koneksi:");
+            $this->line('Info koneksi:');
             $info = $mciService->getConnectionInfo();
             foreach ($info as $key => $value) {
                 $this->line("  {$key}: {$value}");
             }
+
             return self::FAILURE;
         }
 
-        $this->info("✅ Berhasil terhubung ke MCI!");
+        $this->info('✅ Berhasil terhubung ke MCI!');
         $this->newLine();
-        $this->line("Info koneksi:");
+        $this->line('Info koneksi:');
         $info = $mciService->getConnectionInfo();
         foreach ($info as $key => $value) {
             $this->line("  {$key}: {$value}");

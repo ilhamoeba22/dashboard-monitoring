@@ -10,6 +10,8 @@ use Illuminate\Support\Collection;
 interface SavingRepositoryInterface
 {
     public function getNominative(array $filters = [], int $perPage = 50): CursorPaginator;
+
     public function getRekapitulasi(string $groupBy): Collection;
+
     public function getDoormant(array $filters = [], int $perPage = 50): CursorPaginator;
 }

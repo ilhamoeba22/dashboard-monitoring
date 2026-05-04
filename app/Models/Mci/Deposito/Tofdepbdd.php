@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Deposito;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,25 +20,25 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $nodep  type: char(11)
- * @property string|null $nombdd  type: numeric(9)
- * @property string|null $realbdd  type: numeric(9)
- * @property string|null $ratebdd  type: numeric(5)
- * @property string|null $raterealbdd  type: numeric(5)
- * @property string|null $sbbbdd  type: char(7)
- * @property string|null $rekpenerima  type: char(11)
- * @property string|null $ketbdd  type: char(150)
- * @property string|null $stsrec  type: char(1)
- * @property string|null $ststrn  type: char(1)
- * @property string|null $inpuser  type: char(10)
- * @property string|null $inptgljam  type: char(14)
- * @property string|null $inpterm  type: char(10)
- * @property string|null $chguser  type: char(10)
- * @property string|null $chgtgljam  type: char(14)
- * @property string|null $chgterm  type: char(10)
- * @property string|null $autuser  type: char(10)
- * @property string|null $auttgljam  type: char(14)
- * @property string|null $autterm  type: char(10)
+ * @property string|null $nodep type: char(11)
+ * @property string|null $nombdd type: numeric(9)
+ * @property string|null $realbdd type: numeric(9)
+ * @property string|null $ratebdd type: numeric(5)
+ * @property string|null $raterealbdd type: numeric(5)
+ * @property string|null $sbbbdd type: char(7)
+ * @property string|null $rekpenerima type: char(11)
+ * @property string|null $ketbdd type: char(150)
+ * @property string|null $stsrec type: char(1)
+ * @property string|null $ststrn type: char(1)
+ * @property string|null $inpuser type: char(10)
+ * @property string|null $inptgljam type: char(14)
+ * @property string|null $inpterm type: char(10)
+ * @property string|null $chguser type: char(10)
+ * @property string|null $chgtgljam type: char(14)
+ * @property string|null $chgterm type: char(10)
+ * @property string|null $autuser type: char(10)
+ * @property string|null $auttgljam type: char(14)
+ * @property string|null $autterm type: char(10)
  */
 class Tofdepbdd extends MciBaseModel
 {

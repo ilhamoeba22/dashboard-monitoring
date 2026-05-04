@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\ReportingOjk;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,20 +20,20 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdloc  type: char(2)
- * @property string $noaset  type: varchar(25)
- * @property string|null $jnsaset  type: char(3)
- * @property string|null $tgleff  type: varchar(8)
- * @property string|null $tglexp  type: varchar(8)
- * @property string|null $latitude  type: numeric(9)
- * @property string|null $longitude  type: numeric(9)
- * @property string|null $stsaset  type: char(1)
- * @property string|null $haper  type: numeric(9)
- * @property string|null $mtdsusut  type: char(2)
- * @property string|null $akumsusut  type: numeric(9)
- * @property string|null $ckpn  type: numeric(9)
- * @property string|null $nilaibuku  type: numeric(9)
- * @property string|null $mtdukur  type: varchar(2)
+ * @property string $kdloc type: char(2)
+ * @property string $noaset type: varchar(25)
+ * @property string|null $jnsaset type: char(3)
+ * @property string|null $tgleff type: varchar(8)
+ * @property string|null $tglexp type: varchar(8)
+ * @property string|null $latitude type: numeric(9)
+ * @property string|null $longitude type: numeric(9)
+ * @property string|null $stsaset type: char(1)
+ * @property string|null $haper type: numeric(9)
+ * @property string|null $mtdsusut type: char(2)
+ * @property string|null $akumsusut type: numeric(9)
+ * @property string|null $ckpn type: numeric(9)
+ * @property string|null $nilaibuku type: numeric(9)
+ * @property string|null $mtdukur type: varchar(2)
  */
 class Biform17 extends MciBaseModel
 {

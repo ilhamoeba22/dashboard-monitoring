@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,20 +20,20 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $nosbg  type: varchar(20)
- * @property string|null $urut  type: numeric(5)
- * @property string|null $qty  type: numeric(5)
- * @property string|null $ket  type: varchar(100)
- * @property string|null $karat  type: numeric(5)
- * @property string|null $beratkotor  type: numeric(5)
- * @property string|null $beratbersih  type: numeric(5)
- * @property string|null $nomtaksiran  type: numeric(9)
- * @property string|null $flag_1  type: varchar(1)
- * @property string|null $flag_2  type: varchar(1)
- * @property string|null $nokontrak  type: char(11)
- * @property string|null $NOREG  type: varchar(10)
- * @property string|null $JNS  type: varchar(3)
- * @property string|null $nompasar  type: numeric(9)
+ * @property string|null $nosbg type: varchar(20)
+ * @property string|null $urut type: numeric(5)
+ * @property string|null $qty type: numeric(5)
+ * @property string|null $ket type: varchar(100)
+ * @property string|null $karat type: numeric(5)
+ * @property string|null $beratkotor type: numeric(5)
+ * @property string|null $beratbersih type: numeric(5)
+ * @property string|null $nomtaksiran type: numeric(9)
+ * @property string|null $flag_1 type: varchar(1)
+ * @property string|null $flag_2 type: varchar(1)
+ * @property string|null $nokontrak type: char(11)
+ * @property string|null $NOREG type: varchar(10)
+ * @property string|null $JNS type: varchar(3)
+ * @property string|null $nompasar type: numeric(9)
  */
 class Tofgmd extends MciBaseModel
 {

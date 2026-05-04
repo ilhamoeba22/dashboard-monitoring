@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Financing;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,17 +20,17 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $nokontrak  type: varchar(11)
- * @property string|null $nocif  type: varchar(9)
- * @property string|null $nmcif  type: varchar(30)
- * @property string|null $noreg  type: varchar(5)
- * @property string|null $urut  type: numeric(5)
- * @property string|null $jnsjamin  type: varchar(2)
- * @property string|null $nomjamin  type: numeric(9)
- * @property string|null $stsrec  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgl  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
+ * @property string $nokontrak type: varchar(11)
+ * @property string|null $nocif type: varchar(9)
+ * @property string|null $nmcif type: varchar(30)
+ * @property string|null $noreg type: varchar(5)
+ * @property string|null $urut type: numeric(5)
+ * @property string|null $jnsjamin type: varchar(2)
+ * @property string|null $nomjamin type: numeric(9)
+ * @property string|null $stsrec type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgl type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
  */
 class Tmplmjam extends MciBaseModel
 {

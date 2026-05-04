@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Investasi;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,37 +20,37 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdcab  type: varchar(3)
- * @property string $nourut  type: numeric(9)
- * @property string|null $noac  type: varchar(11)
- * @property string|null $tglbeban  type: numeric(5)
- * @property string|null $tgleff  type: varchar(8)
- * @property string|null $tglhapus  type: varchar(8)
- * @property string|null $libur  type: varchar(1)
- * @property string|null $kdbayar  type: varchar(2)
- * @property string|null $nominal  type: numeric(9)
- * @property string|null $nombayar  type: numeric(9)
- * @property string|null $kdnom  type: varchar(1)
- * @property string|null $saldomax  type: numeric(9)
- * @property string|null $nolawan  type: varchar(20)
- * @property string|null $kdlawan  type: varchar(1)
- * @property string|null $nmbank  type: varchar(20)
- * @property string|null $almbank  type: varchar(30)
- * @property string|null $kettrn  type: varchar(30)
- * @property string|null $bytrn  type: numeric(9)
- * @property string|null $bytrf  type: numeric(9)
- * @property string|null $stsrec  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgl  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $chgtgl  type: varchar(14)
- * @property string|null $chgterm  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $auttgl  type: varchar(14)
- * @property string|null $autterm  type: varchar(10)
- * @property string|null $kdlembaga  type: varchar(10)
- * @property string|null $kdbiaya  type: varchar(20)
+ * @property string $kdcab type: varchar(3)
+ * @property string $nourut type: numeric(9)
+ * @property string|null $noac type: varchar(11)
+ * @property string|null $tglbeban type: numeric(5)
+ * @property string|null $tgleff type: varchar(8)
+ * @property string|null $tglhapus type: varchar(8)
+ * @property string|null $libur type: varchar(1)
+ * @property string|null $kdbayar type: varchar(2)
+ * @property string|null $nominal type: numeric(9)
+ * @property string|null $nombayar type: numeric(9)
+ * @property string|null $kdnom type: varchar(1)
+ * @property string|null $saldomax type: numeric(9)
+ * @property string|null $nolawan type: varchar(20)
+ * @property string|null $kdlawan type: varchar(1)
+ * @property string|null $nmbank type: varchar(20)
+ * @property string|null $almbank type: varchar(30)
+ * @property string|null $kettrn type: varchar(30)
+ * @property string|null $bytrn type: numeric(9)
+ * @property string|null $bytrf type: numeric(9)
+ * @property string|null $stsrec type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgl type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $chgtgl type: varchar(14)
+ * @property string|null $chgterm type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $auttgl type: varchar(14)
+ * @property string|null $autterm type: varchar(10)
+ * @property string|null $kdlembaga type: varchar(10)
+ * @property string|null $kdbiaya type: varchar(20)
  */
 class Tofsi extends MciBaseModel
 {

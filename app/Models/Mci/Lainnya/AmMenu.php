@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,19 +20,19 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $grpmenu  type: varchar(4)
- * @property string $formid  type: varchar(20)
- * @property string $grpprd  type: varchar(7)
- * @property string $title  type: varchar(50)
- * @property string $subtitle  type: varchar(50)
- * @property string $labelidpel  type: varchar(50)
- * @property string $label1  type: varchar(50)
- * @property string $label2  type: varchar(50)
- * @property string $label3  type: varchar(50)
- * @property string $label4  type: varchar(50)
- * @property string $slug  type: varchar(20)
- * @property string $status  type: varchar(1)
- * @property string $grplist  type: varchar(100)
+ * @property string $grpmenu type: varchar(4)
+ * @property string $formid type: varchar(20)
+ * @property string $grpprd type: varchar(7)
+ * @property string $title type: varchar(50)
+ * @property string $subtitle type: varchar(50)
+ * @property string $labelidpel type: varchar(50)
+ * @property string $label1 type: varchar(50)
+ * @property string $label2 type: varchar(50)
+ * @property string $label3 type: varchar(50)
+ * @property string $label4 type: varchar(50)
+ * @property string $slug type: varchar(20)
+ * @property string $status type: varchar(1)
+ * @property string $grplist type: varchar(100)
  */
 class AmMenu extends MciBaseModel
 {

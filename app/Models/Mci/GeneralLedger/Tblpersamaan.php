@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\GeneralLedger;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,9 +20,9 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdsandi  type: varchar(5)
- * @property string|null $sandi  type: nchar(20)
- * @property string|null $persamaan  type: nchar(20)
+ * @property string|null $kdsandi type: varchar(5)
+ * @property string|null $sandi type: nchar(20)
+ * @property string|null $persamaan type: nchar(20)
  */
 class Tblpersamaan extends MciBaseModel
 {

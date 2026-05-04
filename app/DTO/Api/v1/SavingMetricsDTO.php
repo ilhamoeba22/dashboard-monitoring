@@ -28,9 +28,9 @@ final readonly class SavingMetricsDTO implements JsonSerializable
             saldoFormatted: $data['saldo_formatted'] ?? 'Rp 0',
             totalNoa: (int) ($data['total_noa'] ?? 0),
             totalAo: (int) ($data['total_ao'] ?? 0),
-            growth: GrowthDTO::fromArray($data['growth'] ?? []),
-            noaGrowth: GrowthDTO::fromArray($data['noa_growth'] ?? []),
-            aoGrowth: GrowthDTO::fromArray($data['ao_growth'] ?? []),
+            growth: GrowthDTO::fromArray(is_array($data['growth'] ?? []) ? ($data['growth'] ?? []) : []),
+            noaGrowth: GrowthDTO::fromArray(is_array($data['noa_growth'] ?? []) ? ($data['noa_growth'] ?? []) : []),
+            aoGrowth: GrowthDTO::fromArray(is_array($data['ao_growth'] ?? []) ? ($data['ao_growth'] ?? []) : []),
         );
     }
 
@@ -41,9 +41,9 @@ final readonly class SavingMetricsDTO implements JsonSerializable
             'saldo_formatted' => $this->saldoFormatted,
             'total_noa' => $this->totalNoa,
             'total_ao' => $this->totalAo,
-            'growth' => $this->growth,
-            'noa_growth' => $this->noaGrowth,
-            'ao_growth' => $this->aoGrowth,
+            'growth' => $this->growth->jsonSerialize(),
+            'noa_growth' => $this->noaGrowth->jsonSerialize(),
+            'ao_growth' => $this->aoGrowth->jsonSerialize(),
         ];
     }
 }

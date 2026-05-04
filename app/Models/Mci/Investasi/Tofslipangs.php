@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Investasi;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,34 +20,34 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdmitra  type: varchar(10)
- * @property string|null $batch  type: numeric(5)
- * @property string|null $bbtt  type: varchar(6)
- * @property string|null $nokontrak  type: varchar(11)
- * @property string|null $nama  type: varchar(30)
- * @property string|null $alamat  type: varchar(50)
- * @property string|null $kota  type: varchar(30)
- * @property string|null $notelp  type: varchar(50)
- * @property string|null $noacc  type: varchar(11)
- * @property string|null $periode  type: varchar(8)
- * @property string|null $ke  type: varchar(10)
- * @property string|null $pokok  type: numeric(9)
- * @property string|null $margin  type: numeric(9)
- * @property string|null $tglcetak  type: varchar(14)
- * @property string|null $tglbayar  type: varchar(8)
- * @property string|null $stsbayar  type: varchar(1)
- * @property string|null $kdao  type: varchar(10)
- * @property string|null $kdkolektor  type: varchar(10)
- * @property string|null $noreg  type: varchar(10)
- * @property string|null $cetakulang  type: numeric(5)
- * @property string|null $usercetak  type: varchar(10)
- * @property string|null $usercetakulang  type: varchar(10)
- * @property string|null $kdwil  type: varchar(3)
- * @property string|null $nip  type: varchar(20)
- * @property string|null $os_pokok  type: numeric(9)
- * @property string|null $os_margin  type: numeric(9)
- * @property string|null $denda  type: numeric(9)
- * @property string|null $kdprd  type: char(4)
+ * @property string|null $kdmitra type: varchar(10)
+ * @property string|null $batch type: numeric(5)
+ * @property string|null $bbtt type: varchar(6)
+ * @property string|null $nokontrak type: varchar(11)
+ * @property string|null $nama type: varchar(30)
+ * @property string|null $alamat type: varchar(50)
+ * @property string|null $kota type: varchar(30)
+ * @property string|null $notelp type: varchar(50)
+ * @property string|null $noacc type: varchar(11)
+ * @property string|null $periode type: varchar(8)
+ * @property string|null $ke type: varchar(10)
+ * @property string|null $pokok type: numeric(9)
+ * @property string|null $margin type: numeric(9)
+ * @property string|null $tglcetak type: varchar(14)
+ * @property string|null $tglbayar type: varchar(8)
+ * @property string|null $stsbayar type: varchar(1)
+ * @property string|null $kdao type: varchar(10)
+ * @property string|null $kdkolektor type: varchar(10)
+ * @property string|null $noreg type: varchar(10)
+ * @property string|null $cetakulang type: numeric(5)
+ * @property string|null $usercetak type: varchar(10)
+ * @property string|null $usercetakulang type: varchar(10)
+ * @property string|null $kdwil type: varchar(3)
+ * @property string|null $nip type: varchar(20)
+ * @property string|null $os_pokok type: numeric(9)
+ * @property string|null $os_margin type: numeric(9)
+ * @property string|null $denda type: numeric(9)
+ * @property string|null $kdprd type: char(4)
  */
 class Tofslipangs extends MciBaseModel
 {

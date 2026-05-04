@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Financing;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,30 +20,30 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $tgltrn  type: char(8)
- * @property string|null $batch  type: numeric(5)
- * @property string|null $notrn  type: numeric(5)
- * @property string|null $noacc  type: char(16)
- * @property string|null $kdprd  type: char(2)
- * @property string|null $tgltagih  type: char(8)
- * @property string|null $kodebank  type: char(3)
- * @property string|null $kodecab  type: char(2)
- * @property string|null $kodeloc  type: char(2)
- * @property string|null $nosbb02  type: char(7)
- * @property string|null $nosbb16  type: char(7)
- * @property string|null $hari  type: numeric(5)
- * @property string|null $tagmgn  type: numeric(9)
- * @property string|null $tagmgn1  type: numeric(9)
- * @property string|null $tagmgn2  type: numeric(9)
- * @property string|null $byrmgn  type: numeric(9)
- * @property string|null $byrmgnc  type: numeric(9)
- * @property string|null $ststrn  type: char(1)
- * @property string|null $inpuser  type: char(10)
- * @property string|null $inptgljam  type: char(14)
- * @property string|null $inpterm  type: char(10)
- * @property string|null $autuser  type: char(10)
- * @property string|null $auttgljam  type: char(14)
- * @property string|null $autterm  type: char(10)
+ * @property string|null $tgltrn type: char(8)
+ * @property string|null $batch type: numeric(5)
+ * @property string|null $notrn type: numeric(5)
+ * @property string|null $noacc type: char(16)
+ * @property string|null $kdprd type: char(2)
+ * @property string|null $tgltagih type: char(8)
+ * @property string|null $kodebank type: char(3)
+ * @property string|null $kodecab type: char(2)
+ * @property string|null $kodeloc type: char(2)
+ * @property string|null $nosbb02 type: char(7)
+ * @property string|null $nosbb16 type: char(7)
+ * @property string|null $hari type: numeric(5)
+ * @property string|null $tagmgn type: numeric(9)
+ * @property string|null $tagmgn1 type: numeric(9)
+ * @property string|null $tagmgn2 type: numeric(9)
+ * @property string|null $byrmgn type: numeric(9)
+ * @property string|null $byrmgnc type: numeric(9)
+ * @property string|null $ststrn type: char(1)
+ * @property string|null $inpuser type: char(10)
+ * @property string|null $inptgljam type: char(14)
+ * @property string|null $inpterm type: char(10)
+ * @property string|null $autuser type: char(10)
+ * @property string|null $auttgljam type: char(14)
+ * @property string|null $autterm type: char(10)
  */
 class Toflmacru extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,17 +20,17 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $noacc  type: varchar(11)
- * @property string $tglbayar  type: varchar(8)
- * @property string|null $sbbttpbng  type: varchar(11)
- * @property string|null $rate  type: numeric(5)
- * @property string|null $bunga  type: numeric(9)
- * @property string|null $tax  type: numeric(9)
- * @property string|null $subsiditax  type: numeric(9)
- * @property string|null $tglcair  type: varchar(8)
- * @property string|null $usercair  type: varchar(10)
- * @property string|null $zakat  type: numeric(9)
- * @property string|null $infaq  type: numeric(9)
+ * @property string $noacc type: varchar(11)
+ * @property string $tglbayar type: varchar(8)
+ * @property string|null $sbbttpbng type: varchar(11)
+ * @property string|null $rate type: numeric(5)
+ * @property string|null $bunga type: numeric(9)
+ * @property string|null $tax type: numeric(9)
+ * @property string|null $subsiditax type: numeric(9)
+ * @property string|null $tglcair type: varchar(8)
+ * @property string|null $usercair type: varchar(10)
+ * @property string|null $zakat type: numeric(9)
+ * @property string|null $infaq type: numeric(9)
  */
 class MDepositoTtpbng extends MciBaseModel
 {

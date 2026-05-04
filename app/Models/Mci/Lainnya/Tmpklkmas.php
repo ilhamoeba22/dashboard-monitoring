@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,19 +20,19 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdkolektor  type: nvarchar(20)
- * @property string|null $deviceid  type: nvarchar(100)
- * @property string|null $devicereg  type: nvarchar(510)
- * @property string|null $nama  type: nvarchar(100)
- * @property string|null $pass  type: nvarchar(20)
- * @property string|null $head1  type: nvarchar(60)
- * @property string|null $head2  type: nvarchar(60)
- * @property string|null $foot1  type: nvarchar(60)
- * @property string|null $foot2  type: nvarchar(60)
- * @property string $param1  type: varchar(10)
- * @property string $param2  type: varchar(10)
- * @property string $param3  type: varchar(10)
- * @property string $param4  type: varchar(10)
+ * @property string|null $kdkolektor type: nvarchar(20)
+ * @property string|null $deviceid type: nvarchar(100)
+ * @property string|null $devicereg type: nvarchar(510)
+ * @property string|null $nama type: nvarchar(100)
+ * @property string|null $pass type: nvarchar(20)
+ * @property string|null $head1 type: nvarchar(60)
+ * @property string|null $head2 type: nvarchar(60)
+ * @property string|null $foot1 type: nvarchar(60)
+ * @property string|null $foot2 type: nvarchar(60)
+ * @property string $param1 type: varchar(10)
+ * @property string $param2 type: varchar(10)
+ * @property string $param3 type: varchar(10)
+ * @property string $param4 type: varchar(10)
  */
 class Tmpklkmas extends MciBaseModel
 {

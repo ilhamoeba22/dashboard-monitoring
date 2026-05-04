@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,18 +20,18 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kantorasal  type: varchar(7)
- * @property string|null $kantortujuan  type: varchar(7)
- * @property string|null $nosbb  type: varchar(7)
- * @property string|null $borrow_pusat  type: numeric(9)
- * @property string|null $placement_pusat  type: numeric(9)
- * @property string|null $borrow_cab  type: numeric(9)
- * @property string|null $placement_cab  type: numeric(9)
- * @property string|null $rate  type: numeric(5)
- * @property string|null $biaya_pusat  type: numeric(9)
- * @property string|null $pend_pusat  type: numeric(9)
- * @property string|null $biaya_cab  type: numeric(9)
- * @property string|null $pend_cab  type: numeric(9)
+ * @property string|null $kantorasal type: varchar(7)
+ * @property string|null $kantortujuan type: varchar(7)
+ * @property string|null $nosbb type: varchar(7)
+ * @property string|null $borrow_pusat type: numeric(9)
+ * @property string|null $placement_pusat type: numeric(9)
+ * @property string|null $borrow_cab type: numeric(9)
+ * @property string|null $placement_cab type: numeric(9)
+ * @property string|null $rate type: numeric(5)
+ * @property string|null $biaya_pusat type: numeric(9)
+ * @property string|null $pend_pusat type: numeric(9)
+ * @property string|null $biaya_cab type: numeric(9)
+ * @property string|null $pend_cab type: numeric(9)
  */
 class Toftmprak extends MciBaseModel
 {

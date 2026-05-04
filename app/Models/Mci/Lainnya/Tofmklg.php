@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,35 +20,35 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $tgltrn  type: varchar(8)
- * @property string|null $batch  type: numeric(5)
- * @property string|null $notrn  type: numeric(5)
- * @property string|null $kodetrn  type: varchar(4)
- * @property string|null $kdcab  type: varchar(3)
- * @property string|null $kdloc  type: varchar(2)
- * @property string|null $nowarkat  type: varchar(15)
- * @property string|null $jnswarkat  type: varchar(1)
- * @property string|null $nominal  type: numeric(9)
- * @property string|null $noackliring  type: varchar(10)
- * @property string|null $tglwarkat  type: varchar(8)
- * @property string|null $tglkliring  type: varchar(8)
- * @property string|null $kdbank  type: varchar(3)
- * @property string|null $nmpemilik  type: varchar(40)
- * @property string|null $nmpenyetor  type: varchar(40)
- * @property string|null $bykliring  type: numeric(9)
- * @property string|null $carabayar  type: varchar(1)
- * @property string|null $ket  type: varchar(100)
- * @property string|null $ststrn  type: varchar(1)
- * @property string|null $stskliring  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgljam  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $usercair  type: varchar(10)
- * @property string|null $tglcair  type: varchar(8)
- * @property string|null $batchcair  type: numeric(5)
- * @property string|null $notrncair  type: numeric(5)
- * @property string|null $stsclosing  type: varchar(1)
- * @property string|null $stsclosing_cair  type: varchar(1)
+ * @property string|null $tgltrn type: varchar(8)
+ * @property string|null $batch type: numeric(5)
+ * @property string|null $notrn type: numeric(5)
+ * @property string|null $kodetrn type: varchar(4)
+ * @property string|null $kdcab type: varchar(3)
+ * @property string|null $kdloc type: varchar(2)
+ * @property string|null $nowarkat type: varchar(15)
+ * @property string|null $jnswarkat type: varchar(1)
+ * @property string|null $nominal type: numeric(9)
+ * @property string|null $noackliring type: varchar(10)
+ * @property string|null $tglwarkat type: varchar(8)
+ * @property string|null $tglkliring type: varchar(8)
+ * @property string|null $kdbank type: varchar(3)
+ * @property string|null $nmpemilik type: varchar(40)
+ * @property string|null $nmpenyetor type: varchar(40)
+ * @property string|null $bykliring type: numeric(9)
+ * @property string|null $carabayar type: varchar(1)
+ * @property string|null $ket type: varchar(100)
+ * @property string|null $ststrn type: varchar(1)
+ * @property string|null $stskliring type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgljam type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $usercair type: varchar(10)
+ * @property string|null $tglcair type: varchar(8)
+ * @property string|null $batchcair type: numeric(5)
+ * @property string|null $notrncair type: numeric(5)
+ * @property string|null $stsclosing type: varchar(1)
+ * @property string|null $stsclosing_cair type: varchar(1)
  */
 class Tofmklg extends MciBaseModel
 {

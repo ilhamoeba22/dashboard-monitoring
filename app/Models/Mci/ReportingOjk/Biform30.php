@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\ReportingOjk;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,29 +20,29 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdloc  type: char(2)
- * @property string $dpk_nocif  type: varchar(10)
- * @property string|null $noid  type: varchar(16)
- * @property string|null $dpk_golcust  type: char(6)
- * @property string|null $dpk_hubbank  type: char(1)
- * @property string|null $dpk_rate  type: numeric(5)
- * @property string|null $dpk_nom  type: numeric(9)
- * @property string|null $pyd_nocif  type: varchar(10)
- * @property string|null $gol_penyalur  type: char(2)
- * @property string|null $pyd_golcust  type: char(6)
- * @property string|null $pyd_hubbank  type: char(1)
- * @property string|null $jnspenyaluran  type: varchar(2)
- * @property string|null $qty_rek  type: numeric(5)
- * @property string|null $tgleff  type: varchar(8)
- * @property string|null $tglexp  type: varchar(8)
- * @property string|null $sandidati  type: varchar(4)
- * @property string|null $jnsguna  type: char(1)
- * @property string|null $sekon  type: varchar(6)
- * @property string|null $nisbah  type: numeric(5)
- * @property string|null $pyd_rate  type: numeric(5)
- * @property string|null $pyd_nom  type: numeric(9)
- * @property string|null $akum_tgk  type: numeric(9)
- * @property string|null $nom_tgk  type: numeric(9)
+ * @property string $kdloc type: char(2)
+ * @property string $dpk_nocif type: varchar(10)
+ * @property string|null $noid type: varchar(16)
+ * @property string|null $dpk_golcust type: char(6)
+ * @property string|null $dpk_hubbank type: char(1)
+ * @property string|null $dpk_rate type: numeric(5)
+ * @property string|null $dpk_nom type: numeric(9)
+ * @property string|null $pyd_nocif type: varchar(10)
+ * @property string|null $gol_penyalur type: char(2)
+ * @property string|null $pyd_golcust type: char(6)
+ * @property string|null $pyd_hubbank type: char(1)
+ * @property string|null $jnspenyaluran type: varchar(2)
+ * @property string|null $qty_rek type: numeric(5)
+ * @property string|null $tgleff type: varchar(8)
+ * @property string|null $tglexp type: varchar(8)
+ * @property string|null $sandidati type: varchar(4)
+ * @property string|null $jnsguna type: char(1)
+ * @property string|null $sekon type: varchar(6)
+ * @property string|null $nisbah type: numeric(5)
+ * @property string|null $pyd_rate type: numeric(5)
+ * @property string|null $pyd_nom type: numeric(9)
+ * @property string|null $akum_tgk type: numeric(9)
+ * @property string|null $nom_tgk type: numeric(9)
  */
 class Biform30 extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,17 +20,17 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdsp  type: char(1)
- * @property string|null $tglsp  type: char(8)
- * @property string|null $nosp  type: varchar(30)
- * @property string|null $nokontrak  type: varchar(11)
- * @property string|null $tot_tagihan  type: numeric(9)
- * @property string|null $tot_bln  type: numeric(5)
- * @property string|null $tot_pokok  type: numeric(9)
- * @property string|null $tot_margin  type: numeric(9)
- * @property string|null $dndperhari  type: numeric(5)
- * @property string|null $tglbatasakhir  type: char(8)
- * @property string|null $tglspnext  type: char(8)
+ * @property string|null $kdsp type: char(1)
+ * @property string|null $tglsp type: char(8)
+ * @property string|null $nosp type: varchar(30)
+ * @property string|null $nokontrak type: varchar(11)
+ * @property string|null $tot_tagihan type: numeric(9)
+ * @property string|null $tot_bln type: numeric(5)
+ * @property string|null $tot_pokok type: numeric(9)
+ * @property string|null $tot_margin type: numeric(9)
+ * @property string|null $dndperhari type: numeric(5)
+ * @property string|null $tglbatasakhir type: char(8)
+ * @property string|null $tglspnext type: char(8)
  */
 class Tofmsp extends MciBaseModel
 {

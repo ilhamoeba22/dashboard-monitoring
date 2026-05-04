@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Saving;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,8 +20,8 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdbuku  type: varchar(2)
- * @property string|null $kdformat  type: varchar(1)
+ * @property string|null $kdbuku type: varchar(2)
+ * @property string|null $kdformat type: varchar(1)
  */
 class Setupbukuh extends MciBaseModel
 {

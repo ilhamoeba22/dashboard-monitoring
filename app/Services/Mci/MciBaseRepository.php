@@ -35,10 +35,13 @@ abstract class MciBaseRepository
     protected string $tableName = '';
 
     // Cache TTL constants (RULE #6)
-    protected const CACHE_SHORT  = 60;    // 1 min  — live metrics
+    protected const CACHE_SHORT = 60;    // 1 min  — live metrics
+
     protected const CACHE_MEDIUM = 300;   // 5 min  — chart data
-    protected const CACHE_LONG   = 3600;  // 1 hour — static (branches, system_date)
-    protected const CACHE_DAILY  = 86400; // 24 hr  — snapshots
+
+    protected const CACHE_LONG = 3600;  // 1 hour — static (branches, system_date)
+
+    protected const CACHE_DAILY = 86400; // 24 hr  — snapshots
 
     // Chunk size for large datasets (RULE #3)
     protected int $chunkSize = 1000;
@@ -47,8 +50,8 @@ abstract class MciBaseRepository
 
     public function __construct()
     {
-        $this->tableName          = $this->getTableName();
-        $this->defaultConnection  = $this->connection;
+        $this->tableName = $this->getTableName();
+        $this->defaultConnection = $this->connection;
     }
 
     /**
@@ -90,9 +93,9 @@ abstract class MciBaseRepository
         string $query,
         array $bindings = [],
         ?string $cacheKey = null,
-        int $ttl = self::CACHE_SHORT
+        int $ttl = self::CACHE_SHORT,
     ): array {
-        $start  = microtime(true);
+        $start = microtime(true);
         $memory = memory_get_usage(true);
 
         try {
@@ -115,8 +118,8 @@ abstract class MciBaseRepository
         } catch (\Throwable $e) {
             Log::error('MciBaseRepository::select failed', [
                 'repository' => static::class,
-                'error'      => $e->getMessage(),
-                'bindings'   => $bindings,
+                'error' => $e->getMessage(),
+                'bindings' => $bindings,
             ]);
 
             throw $e;
@@ -131,11 +134,11 @@ abstract class MciBaseRepository
      */
     protected function chunk(string $query, array $bindings, callable $callback, ?int $chunkSize = null): void
     {
-        $size   = $chunkSize ?? $this->chunkSize;
+        $size = $chunkSize ?? $this->chunkSize;
         $offset = 0;
 
         do {
-            $pagedQuery = $query . " OFFSET {$offset} ROWS FETCH NEXT {$size} ROWS ONLY";
+            $pagedQuery = $query." OFFSET {$offset} ROWS FETCH NEXT {$size} ROWS ONLY";
             /** @var array<int, object> $data */
             $data = DB::connection($this->connection)->select($pagedQuery, $bindings);
 
@@ -159,6 +162,7 @@ abstract class MciBaseRepository
      * Wrap callback in Cache::remember with consistent TTL.
      *
      * @template T
+     *
      * @param  \Closure(): T  $callback
      * @return T
      */
@@ -205,7 +209,7 @@ abstract class MciBaseRepository
      */
     protected function userCacheKey(string $suffix, ?int $userId = null): string
     {
-        return 'mci:user:' . ($userId ?? 'global') . ":{$suffix}";
+        return 'mci:user:'.($userId ?? 'global').":{$suffix}";
     }
 
     // =========================================================================
@@ -238,15 +242,15 @@ abstract class MciBaseRepository
      */
     protected function getCurrentPeriodInternal(): array
     {
-        $tgl   = $this->getSystemDateInternal();
-        $year  = (int) substr($tgl, -4);
+        $tgl = $this->getSystemDateInternal();
+        $year = (int) substr($tgl, -4);
         $month = (int) substr($tgl, 2, 2);
 
         return [
-            'tgl'           => $tgl,
-            'year'          => $year,
-            'month'         => $month,
-            'period'        => $year . str_pad((string) $month, 2, '0', STR_PAD_LEFT),
+            'tgl' => $tgl,
+            'year' => $year,
+            'month' => $month,
+            'period' => $year.str_pad((string) $month, 2, '0', STR_PAD_LEFT),
             'previous_year' => $year - 1,
         ];
     }
@@ -260,7 +264,7 @@ abstract class MciBaseRepository
      */
     protected function formatRupiah(float $value): string
     {
-        return 'Rp ' . number_format($value, 0, ',', '.');
+        return 'Rp '.number_format($value, 0, ',', '.');
     }
 
     /**
@@ -276,7 +280,7 @@ abstract class MciBaseRepository
      */
     protected function formatPercent(float $value, int $decimals = 2): string
     {
-        return number_format($value, $decimals, ',', '.') . '%';
+        return number_format($value, $decimals, ',', '.').'%';
     }
 
     // =========================================================================
@@ -303,9 +307,9 @@ abstract class MciBaseRepository
         $isPositive = $growth > 0;
 
         return [
-            'value'     => number_format($growth, 2, ',', '.') . '%',
-            'class'     => $isPositive ? 'text-success' : 'text-danger',
-            'raw'       => round($growth, 4),
+            'value' => number_format($growth, 2, ',', '.').'%',
+            'class' => $isPositive ? 'text-success' : 'text-danger',
+            'raw' => round($growth, 4),
             'direction' => $isPositive ? 'up' : 'down',
         ];
     }
@@ -319,16 +323,16 @@ abstract class MciBaseRepository
      */
     protected function logPerformance(string $method, float $startTime, int $memoryBefore): void
     {
-        $durationMs  = (microtime(true) - $startTime) * 1000;
+        $durationMs = (microtime(true) - $startTime) * 1000;
         $memoryAfter = memory_get_usage(true) / 1024 / 1024;
 
         if ($durationMs > 100) {
             Log::channel('metrics')->warning('Slow repository query', [
-                'class'       => static::class,
-                'method'      => $method,
+                'class' => static::class,
+                'method' => $method,
                 'duration_ms' => round($durationMs, 2),
-                'memory_mb'   => round($memoryAfter, 2),
-                'delta_mb'    => round($memoryAfter - ($memoryBefore / 1024 / 1024), 2),
+                'memory_mb' => round($memoryAfter, 2),
+                'delta_mb' => round($memoryAfter - ($memoryBefore / 1024 / 1024), 2),
             ]);
         }
     }
@@ -341,7 +345,7 @@ abstract class MciBaseRepository
      * Validasi field wajib ada dan tidak kosong.
      *
      * @param  array<string, mixed>  $data
-     * @param  array<int, string>    $requiredFields
+     * @param  array<int, string>  $requiredFields
      */
     protected function validateRequired(array $data, array $requiredFields): void
     {

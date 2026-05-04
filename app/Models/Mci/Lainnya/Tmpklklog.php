@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,14 +20,14 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $id  type: bigint(8)
- * @property string $idlog  type: varchar(100)
- * @property string $tgljamsync  type: varchar(14)
- * @property string $kdao  type: varchar(50)
- * @property string $deviceid  type: varchar(100)
- * @property string $tgl  type: varchar(14)
- * @property string $tgljam  type: varchar(14)
- * @property string $ket  type: varchar(255)
+ * @property int $id type: bigint(8)
+ * @property string $idlog type: varchar(100)
+ * @property string $tgljamsync type: varchar(14)
+ * @property string $kdao type: varchar(50)
+ * @property string $deviceid type: varchar(100)
+ * @property string $tgl type: varchar(14)
+ * @property string $tgljam type: varchar(14)
+ * @property string $ket type: varchar(255)
  */
 class Tmpklklog extends MciBaseModel
 {

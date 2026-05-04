@@ -2,8 +2,16 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\v1\CifController;
 use App\Http\Controllers\Api\v1\DashboardMetricsController;
+use App\Http\Controllers\Api\v1\DepositController;
+use App\Http\Controllers\Api\v1\FinancingController;
+use App\Http\Controllers\Api\v1\FinancingOverviewController;
+use App\Http\Controllers\Api\v1\ReportingController;
+use App\Http\Controllers\Api\v1\SavingController;
+use App\Services\Mci\MciConnectionService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,61 +30,69 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
     // CIF MODULE API
     // ==========================================
     Route::prefix('cif')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Api\v1\CifController::class, 'index']);
-        Route::get('/rekapitulasi', [\App\Http\Controllers\Api\v1\CifController::class, 'rekapitulasi']);
-        Route::get('/{nocif}', [\App\Http\Controllers\Api\v1\CifController::class, 'detail']);
+        Route::get('/', [CifController::class, 'index']);
+        Route::get('/rekapitulasi', [CifController::class, 'rekapitulasi']);
+        Route::get('/{nocif}', [CifController::class, 'detail']);
     });
 
     // ==========================================
     // FUNDING MODULE API (SAVING & DEPOSIT)
     // ==========================================
     Route::prefix('saving')->group(function () {
-        Route::get('/nominative', [\App\Http\Controllers\Api\v1\SavingController::class, 'nominative']);
-        Route::get('/rekapitulasi', [\App\Http\Controllers\Api\v1\SavingController::class, 'rekapitulasi']);
-        Route::get('/doormant', [\App\Http\Controllers\Api\v1\SavingController::class, 'doormant']);
+        Route::get('/nominative', [SavingController::class, 'nominative']);
+        Route::get('/rekapitulasi', [SavingController::class, 'rekapitulasi']);
+        Route::get('/doormant', [SavingController::class, 'doormant']);
     });
 
     Route::prefix('deposit')->group(function () {
-        Route::get('/nominative', [\App\Http\Controllers\Api\v1\DepositController::class, 'nominative']);
-        Route::get('/rekapitulasi', [\App\Http\Controllers\Api\v1\DepositController::class, 'rekapitulasi']);
-        Route::get('/jatuh-tempo', [\App\Http\Controllers\Api\v1\DepositController::class, 'jatuhTempo']);
+        Route::get('/nominative', [DepositController::class, 'nominative']);
+        Route::get('/rekapitulasi', [DepositController::class, 'rekapitulasi']);
+        Route::get('/jatuh-tempo', [DepositController::class, 'jatuhTempo']);
     });
 
     // ==========================================
     // REPORTING MODULE API
     // ==========================================
     Route::prefix('reporting')->group(function () {
-        Route::get('/{jenis}', [\App\Http\Controllers\Api\v1\ReportingController::class, 'generate']);
+        Route::get('/{jenis}', [ReportingController::class, 'generate']);
     });
 
     // ==========================================
     // FINANCING MODULE API
     // ==========================================
     Route::prefix('financing')->group(function () {
-        Route::get('/nominative', [\App\Http\Controllers\Api\v1\FinancingController::class, 'nominative']);
-        Route::get('/rekapitulasi', [\App\Http\Controllers\Api\v1\FinancingController::class, 'rekapitulasi']);
-        Route::get('/jatuh-tempo', [\App\Http\Controllers\Api\v1\FinancingController::class, 'jatuhTempo']);
-        Route::get('/aos', [\App\Http\Controllers\Api\v1\FinancingController::class, 'aos']);
-        Route::get('/{nokontrak}/angsuran', [\App\Http\Controllers\Api\v1\FinancingController::class, 'angsuran']);
+        // Overview endpoints (G1: Dashboard Ringan)
+        Route::get('/overview', [FinancingOverviewController::class, 'index']);
+        Route::get('/overview/realtime', [FinancingOverviewController::class, 'realtime']);
+        Route::get('/overview/trend', [FinancingOverviewController::class, 'trend']);
+        Route::get('/overview/compare', [FinancingOverviewController::class, 'compare']);
+        Route::get('/overview/periods', [FinancingOverviewController::class, 'periods']);
+
+        // Existing endpoints
+        Route::get('/nominative', [FinancingController::class, 'nominative']);
+        Route::get('/rekapitulasi', [FinancingController::class, 'rekapitulasi']);
+        Route::get('/jatuh-tempo', [FinancingController::class, 'jatuhTempo']);
+        Route::get('/aos', [FinancingController::class, 'aos']);
+        Route::get('/{nokontrak}/angsuran', [FinancingController::class, 'angsuran']);
     });
 
     // === DASHBOARD ENDPOINTS ===
     Route::prefix('dashboard')->group(function () {
 
         // Metrics — REALTIME (database aktif / bulan berjalan)
-        Route::get('metrics',            [DashboardMetricsController::class, 'index']);
-        Route::get('metrics/financing',  [DashboardMetricsController::class, 'financing']);
-        Route::get('metrics/saving',     [DashboardMetricsController::class, 'saving']);
-        Route::get('metrics/deposito',   [DashboardMetricsController::class, 'deposito']);
+        Route::get('metrics', [DashboardMetricsController::class, 'index']);
+        Route::get('metrics/financing', [DashboardMetricsController::class, 'financing']);
+        Route::get('metrics/saving', [DashboardMetricsController::class, 'saving']);
+        Route::get('metrics/deposito', [DashboardMetricsController::class, 'deposito']);
 
         // Chart data
-        Route::get('chart/{type}',       [DashboardMetricsController::class, 'chart']);
+        Route::get('chart/{type}', [DashboardMetricsController::class, 'chart']);
 
         // Branch list
-        Route::get('branches',           [DashboardMetricsController::class, 'branches']);
+        Route::get('branches', [DashboardMetricsController::class, 'branches']);
 
         // Cache management
-        Route::post('clear-cache',       [DashboardMetricsController::class, 'clearCache']);
+        Route::post('clear-cache', [DashboardMetricsController::class, 'clearCache']);
 
         // Metrics HISTORY per database — query ke database bulan tertentu
         // GET /api/v1/dashboard/history/{db}/metrics
@@ -99,18 +115,18 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
 
         // Info semua database yang dikonfigurasi
         Route::get('/', function () {
-            $mci = app(\App\Services\Mci\MciConnectionService::class);
+            $mci = app(MciConnectionService::class);
 
             return response()->json([
                 'success' => true,
-                'data'    => [
-                    'active'    => $mci->getActiveDatabase(),
+                'data' => [
+                    'active' => $mci->getActiveDatabase(),
                     'databases' => [
                         'realtime' => [
                             'connection' => 'dashboard_data',
-                            'database'   => env('SQL_SERVER_DATABASE'),
-                            'label'      => 'Maret 2026 (REALTIME)',
-                            'env_key'    => 'SQL_SERVER_DATABASE',
+                            'database' => env('SQL_SERVER_DATABASE'),
+                            'label' => 'Maret 2026 (REALTIME)',
+                            'env_key' => 'SQL_SERVER_DATABASE',
                         ],
                         'history' => [
                             ['connection' => 'dashboard_mar', 'database' => env('MCI_DB_MAR'), 'label' => 'Maret 2026', 'env_key' => 'MCI_DB_MAR'],
@@ -127,24 +143,24 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
         Route::get('test-all', function () {
             $connections = [
                 'dashboard_data (realtime/mar)' => 'dashboard_data',
-                'dashboard_feb (februari)'      => 'dashboard_feb',
-                'dashboard_jan (januari)'       => 'dashboard_jan',
+                'dashboard_feb (februari)' => 'dashboard_feb',
+                'dashboard_jan (januari)' => 'dashboard_jan',
             ];
 
             $results = [];
             foreach ($connections as $label => $conn) {
                 try {
-                    $db   = config("database.connections.{$conn}.database");
-                    $pdo  = \Illuminate\Support\Facades\DB::connection($conn)->getPdo();
+                    $db = config("database.connections.{$conn}.database");
+                    $pdo = DB::connection($conn)->getPdo();
                     $results[$label] = [
-                        'status'   => 'connected',
+                        'status' => 'connected',
                         'database' => $db,
-                        'driver'   => $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME),
+                        'driver' => $pdo->getAttribute(PDO::ATTR_DRIVER_NAME),
                     ];
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     $results[$label] = [
-                        'status'  => 'failed',
-                        'error'   => $e->getMessage(),
+                        'status' => 'failed',
+                        'error' => $e->getMessage(),
                     ];
                 }
             }
@@ -154,7 +170,7 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
             return response()->json([
                 'success' => $allOk,
                 'results' => $results,
-                'meta'    => ['tested_at' => now()->toIso8601String()],
+                'meta' => ['tested_at' => now()->toIso8601String()],
             ], $allOk ? 200 : 207);
         });
     });
@@ -162,9 +178,9 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
     // === HEALTH CHECK ===
     Route::get('health', function () {
         return response()->json([
-            'status'    => 'healthy',
-            'service'   => 'MCI Dashboard API',
-            'version'   => 'v1',
+            'status' => 'healthy',
+            'service' => 'MCI Dashboard API',
+            'version' => 'v1',
             'timestamp' => now()->toIso8601String(),
         ]);
     });
@@ -172,10 +188,10 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
     // === API INFO ===
     Route::get('info', function () {
         return response()->json([
-            'name'        => 'MCI Dashboard REST API',
-            'version'     => 'v1',
+            'name' => 'MCI Dashboard REST API',
+            'version' => 'v1',
             'description' => 'REST API for MCI Banking Dashboard',
-            'endpoints'   => [
+            'endpoints' => [
                 'GET  /api/v1/health',
                 'GET  /api/v1/databases',
                 'GET  /api/v1/databases/test-all',
@@ -192,11 +208,10 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
                 'POST /api/v1/dashboard/clear-cache',
             ],
             'rate_limit' => '100 requests/minute',
-            'cache_ttl'  => '60 seconds',
+            'cache_ttl' => '60 seconds',
         ]);
     });
 });
-
 
 // === API v2 (FUTURE) ===
 Route::prefix('v2')->middleware(['throttle:100,1'])->group(function () {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Agunan;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,9 +20,9 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $noreg  type: varchar(5)
- * @property string|null $urut  type: numeric(5)
- * @property string|null $id_agunan  type: varchar(40)
+ * @property string|null $noreg type: varchar(5)
+ * @property string|null $urut type: numeric(5)
+ * @property string|null $id_agunan type: varchar(40)
  */
 class Tofjaminsid extends MciBaseModel
 {

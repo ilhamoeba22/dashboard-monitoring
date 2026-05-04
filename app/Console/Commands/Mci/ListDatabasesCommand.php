@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands\Mci;
 
 use App\Services\Mci\MciConnectionService;
@@ -26,24 +28,25 @@ class ListDatabasesCommand extends Command
      */
     public function handle(MciConnectionService $mciService): int
     {
-        $this->info("Melihat database MCI...");
+        $this->info('Melihat database MCI...');
         $this->newLine();
 
         $databases = $mciService->listDatabases();
 
         if (empty($databases)) {
-            $this->warn("Tidak ada database MCI yang ditemukan.");
+            $this->warn('Tidak ada database MCI yang ditemukan.');
+
             return self::SUCCESS;
         }
 
-        $this->info("Database MCI yang tersedia (" . count($databases) . "):");
+        $this->info('Database MCI yang tersedia ('.count($databases).'):');
         $this->newLine();
 
         $current = $mciService->getActiveDatabase();
 
         foreach ($databases as $index => $db) {
             $isActive = ($db === $current) ? ' ✅' : '';
-            $this->line(sprintf("  %d. %s%s", $index + 1, $db, $isActive));
+            $this->line(sprintf('  %d. %s%s', $index + 1, $db, $isActive));
         }
 
         $this->newLine();

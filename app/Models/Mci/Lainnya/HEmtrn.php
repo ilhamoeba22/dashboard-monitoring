@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,28 +20,28 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $ID  type: bigint(8)
- * @property string $tgltrn  type: varchar(8)
- * @property string $kodetrn  type: varchar(4)
- * @property string $batch  type: numeric(5)
- * @property string $notrn  type: numeric(9)
- * @property string $dracc  type: varchar(17)
- * @property string $cracc  type: varchar(17)
- * @property string $amount  type: numeric(9)
- * @property string $dokumen  type: varchar(30)
- * @property string $ket  type: varchar(100)
- * @property string $kdmchn  type: varchar(11)
- * @property string|null $kdbank  type: varchar(6)
- * @property string|null $nmdr  type: varchar(30)
- * @property string|null $nmcr  type: varchar(30)
- * @property string|null $ststrn  type: varchar(10)
- * @property string|null $stsemail  type: char(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgljam  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $auttgljam  type: varchar(14)
- * @property string|null $autterm  type: varchar(10)
+ * @property int $ID type: bigint(8)
+ * @property string $tgltrn type: varchar(8)
+ * @property string $kodetrn type: varchar(4)
+ * @property string $batch type: numeric(5)
+ * @property string $notrn type: numeric(9)
+ * @property string $dracc type: varchar(17)
+ * @property string $cracc type: varchar(17)
+ * @property string $amount type: numeric(9)
+ * @property string $dokumen type: varchar(30)
+ * @property string $ket type: varchar(100)
+ * @property string $kdmchn type: varchar(11)
+ * @property string|null $kdbank type: varchar(6)
+ * @property string|null $nmdr type: varchar(30)
+ * @property string|null $nmcr type: varchar(30)
+ * @property string|null $ststrn type: varchar(10)
+ * @property string|null $stsemail type: char(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgljam type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $auttgljam type: varchar(14)
+ * @property string|null $autterm type: varchar(10)
  */
 class HEmtrn extends MciBaseModel
 {

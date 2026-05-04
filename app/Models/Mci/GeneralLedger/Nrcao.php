@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\GeneralLedger;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,15 +20,15 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $nosbb  type: varchar(11)
- * @property string|null $nobb  type: varchar(11)
- * @property string|null $golongan  type: varchar(1)
- * @property string|null $thn  type: varchar(4)
- * @property string|null $bln  type: varchar(2)
- * @property string|null $kdao  type: varchar(8)
- * @property string|null $saldo1  type: varchar(150)
- * @property string|null $saldo2  type: varchar(150)
- * @property string|null $saldo3  type: varchar(165)
+ * @property string|null $nosbb type: varchar(11)
+ * @property string|null $nobb type: varchar(11)
+ * @property string|null $golongan type: varchar(1)
+ * @property string|null $thn type: varchar(4)
+ * @property string|null $bln type: varchar(2)
+ * @property string|null $kdao type: varchar(8)
+ * @property string|null $saldo1 type: varchar(150)
+ * @property string|null $saldo2 type: varchar(150)
+ * @property string|null $saldo3 type: varchar(165)
  */
 class Nrcao extends MciBaseModel
 {

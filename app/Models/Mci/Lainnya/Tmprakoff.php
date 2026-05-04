@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,19 +20,19 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $batch  type: numeric(5)
- * @property string|null $kdloc  type: char(2)
- * @property string|null $nosbb  type: varchar(7)
- * @property string|null $saldo_1  type: numeric(9)
- * @property string|null $kdloc_lawan  type: char(2)
- * @property string|null $nosbb_lawan  type: varchar(7)
- * @property string|null $saldo_2  type: numeric(9)
- * @property string|null $saldonett  type: numeric(9)
- * @property string|null $nobb  type: varchar(7)
- * @property string|null $nobb_lawan  type: varchar(7)
- * @property string|null $saldo_3  type: numeric(9)
- * @property string|null $saldo_4  type: numeric(9)
- * @property string|null $saldonett2  type: numeric(9)
+ * @property string $batch type: numeric(5)
+ * @property string|null $kdloc type: char(2)
+ * @property string|null $nosbb type: varchar(7)
+ * @property string|null $saldo_1 type: numeric(9)
+ * @property string|null $kdloc_lawan type: char(2)
+ * @property string|null $nosbb_lawan type: varchar(7)
+ * @property string|null $saldo_2 type: numeric(9)
+ * @property string|null $saldonett type: numeric(9)
+ * @property string|null $nobb type: varchar(7)
+ * @property string|null $nobb_lawan type: varchar(7)
+ * @property string|null $saldo_3 type: numeric(9)
+ * @property string|null $saldo_4 type: numeric(9)
+ * @property string|null $saldonett2 type: numeric(9)
  */
 class Tmprakoff extends MciBaseModel
 {

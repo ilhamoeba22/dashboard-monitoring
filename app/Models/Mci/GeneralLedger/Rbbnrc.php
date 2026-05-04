@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\GeneralLedger;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,26 +20,26 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $thn  type: varchar(4)
- * @property string $nosbb  type: varchar(7)
- * @property string|null $sandibi  type: varchar(5)
- * @property string|null $kdrbb  type: varchar(14)
- * @property string|null $kdds  type: varchar(14)
- * @property string|null $kdds2  type: varchar(14)
- * @property string|null $declalu  type: numeric(9)
- * @property string|null $rbb_jan  type: numeric(9)
- * @property string|null $rbb_feb  type: numeric(9)
- * @property string|null $rbb_mar  type: numeric(9)
- * @property string|null $rbb_apr  type: numeric(9)
- * @property string|null $rbb_mei  type: numeric(9)
- * @property string|null $rbb_jun  type: numeric(9)
- * @property string|null $rbb_jul  type: numeric(9)
- * @property string|null $rbb_ags  type: numeric(9)
- * @property string|null $rbb_sep  type: numeric(9)
- * @property string|null $rbb_okt  type: numeric(9)
- * @property string|null $rbb_nov  type: numeric(9)
- * @property string|null $rbb_dec  type: numeric(9)
- * @property string|null $stshide  type: char(1)
+ * @property string $thn type: varchar(4)
+ * @property string $nosbb type: varchar(7)
+ * @property string|null $sandibi type: varchar(5)
+ * @property string|null $kdrbb type: varchar(14)
+ * @property string|null $kdds type: varchar(14)
+ * @property string|null $kdds2 type: varchar(14)
+ * @property string|null $declalu type: numeric(9)
+ * @property string|null $rbb_jan type: numeric(9)
+ * @property string|null $rbb_feb type: numeric(9)
+ * @property string|null $rbb_mar type: numeric(9)
+ * @property string|null $rbb_apr type: numeric(9)
+ * @property string|null $rbb_mei type: numeric(9)
+ * @property string|null $rbb_jun type: numeric(9)
+ * @property string|null $rbb_jul type: numeric(9)
+ * @property string|null $rbb_ags type: numeric(9)
+ * @property string|null $rbb_sep type: numeric(9)
+ * @property string|null $rbb_okt type: numeric(9)
+ * @property string|null $rbb_nov type: numeric(9)
+ * @property string|null $rbb_dec type: numeric(9)
+ * @property string|null $stshide type: char(1)
  */
 class Rbbnrc extends MciBaseModel
 {

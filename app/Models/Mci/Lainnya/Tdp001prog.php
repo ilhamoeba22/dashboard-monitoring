@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,12 +20,12 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdprd  type: char(2)
- * @property string $jw  type: numeric(5)
- * @property string $kdjw  type: char(1)
- * @property string|null $nominal  type: numeric(9)
- * @property string|null $nisbahold  type: numeric(5)
- * @property string|null $nisbahnew  type: numeric(5)
+ * @property string $kdprd type: char(2)
+ * @property string $jw type: numeric(5)
+ * @property string $kdjw type: char(1)
+ * @property string|null $nominal type: numeric(9)
+ * @property string|null $nisbahold type: numeric(5)
+ * @property string|null $nisbahnew type: numeric(5)
  */
 class Tdp001prog extends MciBaseModel
 {

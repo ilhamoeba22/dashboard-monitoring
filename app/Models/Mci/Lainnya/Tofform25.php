@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,17 +20,17 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kode_laporan  type: varchar(4)
- * @property string|null $sandi_form  type: varchar(2)
- * @property string|null $sandi_bank  type: varchar(6)
- * @property string|null $sandi_kantor  type: varchar(3)
- * @property string|null $bulan  type: varchar(2)
- * @property string|null $tahun  type: varchar(4)
- * @property string|null $sandi_rekening  type: varchar(3)
- * @property string|null $minggu_1  type: numeric(9)
- * @property string|null $minggu_2  type: numeric(9)
- * @property string|null $minggu_3  type: numeric(9)
- * @property string|null $minggu_4  type: numeric(9)
+ * @property string|null $kode_laporan type: varchar(4)
+ * @property string|null $sandi_form type: varchar(2)
+ * @property string|null $sandi_bank type: varchar(6)
+ * @property string|null $sandi_kantor type: varchar(3)
+ * @property string|null $bulan type: varchar(2)
+ * @property string|null $tahun type: varchar(4)
+ * @property string|null $sandi_rekening type: varchar(3)
+ * @property string|null $minggu_1 type: numeric(9)
+ * @property string|null $minggu_2 type: numeric(9)
+ * @property string|null $minggu_3 type: numeric(9)
+ * @property string|null $minggu_4 type: numeric(9)
  */
 class Tofform25 extends MciBaseModel
 {

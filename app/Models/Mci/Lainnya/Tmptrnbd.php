@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,18 +20,18 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $ID  type: numeric(9)
- * @property string|null $batch  type: numeric(5)
- * @property string|null $tgl  type: char(8)
- * @property string|null $nosbb_dr  type: char(11)
- * @property string|null $nosbb_cr  type: char(11)
- * @property string|null $golac_dr  type: char(1)
- * @property string|null $golac_cr  type: char(1)
- * @property string|null $nama_dr  type: varchar(20)
- * @property string|null $nama_cr  type: varchar(20)
- * @property string|null $dc  type: char(1)
- * @property string|null $nominal  type: numeric(9)
- * @property string|null $ket  type: char(50)
+ * @property string $ID type: numeric(9)
+ * @property string|null $batch type: numeric(5)
+ * @property string|null $tgl type: char(8)
+ * @property string|null $nosbb_dr type: char(11)
+ * @property string|null $nosbb_cr type: char(11)
+ * @property string|null $golac_dr type: char(1)
+ * @property string|null $golac_cr type: char(1)
+ * @property string|null $nama_dr type: varchar(20)
+ * @property string|null $nama_cr type: varchar(20)
+ * @property string|null $dc type: char(1)
+ * @property string|null $nominal type: numeric(9)
+ * @property string|null $ket type: char(50)
  */
 class Tmptrnbd extends MciBaseModel
 {

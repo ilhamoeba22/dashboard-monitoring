@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Sms;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,17 +20,17 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $id  type: bigint(8)
- * @property string $kdntf  type: varchar(20)
- * @property string $nocif  type: varchar(50)
- * @property string $sentconfig  type: varchar(20)
- * @property string $title  type: varchar(30)
- * @property string $msg  type: varchar(-1)
- * @property string $appid  type: varchar(10)
- * @property string $sentdate  type: varchar(8)
- * @property string $reqtime  type: varchar(14)
- * @property string $stssent  type: char(1)
- * @property string $stsmsg  type: varchar(-1)
+ * @property int $id type: bigint(8)
+ * @property string $kdntf type: varchar(20)
+ * @property string $nocif type: varchar(50)
+ * @property string $sentconfig type: varchar(20)
+ * @property string $title type: varchar(30)
+ * @property string $msg type: varchar(-1)
+ * @property string $appid type: varchar(10)
+ * @property string $sentdate type: varchar(8)
+ * @property string $reqtime type: varchar(14)
+ * @property string $stssent type: char(1)
+ * @property string $stsmsg type: varchar(-1)
  */
 class Mgntfctr extends MciBaseModel
 {

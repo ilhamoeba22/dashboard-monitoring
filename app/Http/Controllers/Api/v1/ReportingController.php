@@ -26,24 +26,24 @@ class ReportingController extends Controller
         try {
             $filters = [
                 'periode' => $request->query('periode'),
-                'cabang'  => $request->query('cabang'),
+                'cabang' => $request->query('cabang'),
             ];
 
             $data = $this->repository->getReport($jenis, $filters);
 
             return response()->json([
                 'success' => true,
-                'data'    => $data,
+                'data' => $data,
             ]);
         } catch (\InvalidArgumentException $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 404);
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat laporan: ' . $jenis,
+                'message' => 'Gagal membuat laporan: '.$jenis,
             ], 500);
         }
     }

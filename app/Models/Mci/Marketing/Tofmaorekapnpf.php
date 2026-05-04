@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Marketing;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,19 +20,19 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdao  type: varchar(10)
- * @property string|null $periode  type: varchar(6)
- * @property string|null $npf  type: numeric(5)
- * @property string|null $npf_rata  type: numeric(5)
- * @property string|null $coll_1  type: numeric(9)
- * @property string|null $coll_2  type: numeric(9)
- * @property string|null $coll_3  type: numeric(9)
- * @property string|null $coll_4  type: numeric(9)
- * @property string|null $coll_5  type: numeric(9)
- * @property string|null $tgkpok  type: numeric(9)
- * @property string|null $tgkmgn  type: numeric(9)
- * @property string|null $osbaru  type: numeric(9)
- * @property string|null $bonusnpf  type: numeric(9)
+ * @property string|null $kdao type: varchar(10)
+ * @property string|null $periode type: varchar(6)
+ * @property string|null $npf type: numeric(5)
+ * @property string|null $npf_rata type: numeric(5)
+ * @property string|null $coll_1 type: numeric(9)
+ * @property string|null $coll_2 type: numeric(9)
+ * @property string|null $coll_3 type: numeric(9)
+ * @property string|null $coll_4 type: numeric(9)
+ * @property string|null $coll_5 type: numeric(9)
+ * @property string|null $tgkpok type: numeric(9)
+ * @property string|null $tgkmgn type: numeric(9)
+ * @property string|null $osbaru type: numeric(9)
+ * @property string|null $bonusnpf type: numeric(9)
  */
 class Tofmaorekapnpf extends MciBaseModel
 {

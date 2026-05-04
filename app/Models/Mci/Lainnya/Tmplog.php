@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,10 +20,10 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $notab  type: varchar(11)
- * @property string|null $sahirrp  type: numeric(9)
- * @property string|null $saldomin  type: numeric(9)
- * @property string|null $saldoblok  type: numeric(9)
+ * @property string|null $notab type: varchar(11)
+ * @property string|null $sahirrp type: numeric(9)
+ * @property string|null $saldomin type: numeric(9)
+ * @property string|null $saldoblok type: numeric(9)
  */
 class Tmplog extends MciBaseModel
 {

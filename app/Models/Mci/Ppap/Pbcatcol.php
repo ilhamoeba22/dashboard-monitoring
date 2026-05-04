@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Ppap;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,26 +20,26 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $pbc_tnam  type: char(30)
- * @property int|null $pbc_tid  type: int(4)
- * @property string|null $pbc_ownr  type: char(30)
- * @property string|null $pbc_cnam  type: char(30)
- * @property int|null $pbc_cid  type: smallint(2)
- * @property string|null $pbc_labl  type: varchar(254)
- * @property int|null $pbc_lpos  type: smallint(2)
- * @property string|null $pbc_hdr  type: varchar(254)
- * @property int|null $pbc_hpos  type: smallint(2)
- * @property int|null $pbc_jtfy  type: smallint(2)
- * @property string|null $pbc_mask  type: varchar(31)
- * @property int|null $pbc_case  type: smallint(2)
- * @property int|null $pbc_hght  type: smallint(2)
- * @property int|null $pbc_wdth  type: smallint(2)
- * @property string|null $pbc_ptrn  type: varchar(31)
- * @property string|null $pbc_bmap  type: char(1)
- * @property string|null $pbc_init  type: varchar(254)
- * @property string|null $pbc_cmnt  type: varchar(254)
- * @property string|null $pbc_edit  type: varchar(31)
- * @property string|null $pbc_tag  type: varchar(254)
+ * @property string|null $pbc_tnam type: char(30)
+ * @property int|null $pbc_tid type: int(4)
+ * @property string|null $pbc_ownr type: char(30)
+ * @property string|null $pbc_cnam type: char(30)
+ * @property int|null $pbc_cid type: smallint(2)
+ * @property string|null $pbc_labl type: varchar(254)
+ * @property int|null $pbc_lpos type: smallint(2)
+ * @property string|null $pbc_hdr type: varchar(254)
+ * @property int|null $pbc_hpos type: smallint(2)
+ * @property int|null $pbc_jtfy type: smallint(2)
+ * @property string|null $pbc_mask type: varchar(31)
+ * @property int|null $pbc_case type: smallint(2)
+ * @property int|null $pbc_hght type: smallint(2)
+ * @property int|null $pbc_wdth type: smallint(2)
+ * @property string|null $pbc_ptrn type: varchar(31)
+ * @property string|null $pbc_bmap type: char(1)
+ * @property string|null $pbc_init type: varchar(254)
+ * @property string|null $pbc_cmnt type: varchar(254)
+ * @property string|null $pbc_edit type: varchar(31)
+ * @property string|null $pbc_tag type: varchar(254)
  */
 class Pbcatcol extends MciBaseModel
 {

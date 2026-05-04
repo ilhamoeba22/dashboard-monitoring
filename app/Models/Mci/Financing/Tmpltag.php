@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Financing;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,22 +20,22 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $nokontrak  type: varchar(11)
- * @property string|null $nama  type: varchar(40)
- * @property string|null $pokpby  type: varchar(2)
- * @property string|null $kdprd  type: varchar(2)
- * @property string|null $kdaoh  type: varchar(10)
- * @property string|null $osmdlc  type: numeric(9)
- * @property string|null $osmgnc  type: numeric(9)
- * @property string|null $tag_pok_lalu  type: numeric(9)
- * @property string|null $tag_mgn_lalu  type: numeric(9)
- * @property string|null $bln_tag_pok  type: numeric(5)
- * @property string|null $bln_tag_mgn  type: numeric(9)
- * @property string|null $tag_pok  type: numeric(9)
- * @property string|null $tag_mgn  type: numeric(9)
- * @property string|null $tgl  type: varchar(2)
- * @property string|null $kdloc  type: varchar(2)
- * @property string|null $inpuser  type: varchar(10)
+ * @property string|null $nokontrak type: varchar(11)
+ * @property string|null $nama type: varchar(40)
+ * @property string|null $pokpby type: varchar(2)
+ * @property string|null $kdprd type: varchar(2)
+ * @property string|null $kdaoh type: varchar(10)
+ * @property string|null $osmdlc type: numeric(9)
+ * @property string|null $osmgnc type: numeric(9)
+ * @property string|null $tag_pok_lalu type: numeric(9)
+ * @property string|null $tag_mgn_lalu type: numeric(9)
+ * @property string|null $bln_tag_pok type: numeric(5)
+ * @property string|null $bln_tag_mgn type: numeric(9)
+ * @property string|null $tag_pok type: numeric(9)
+ * @property string|null $tag_mgn type: numeric(9)
+ * @property string|null $tgl type: varchar(2)
+ * @property string|null $kdloc type: varchar(2)
+ * @property string|null $inpuser type: varchar(10)
  */
 class Tmpltag extends MciBaseModel
 {

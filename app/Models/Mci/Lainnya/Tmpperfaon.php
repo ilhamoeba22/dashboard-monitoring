@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,22 +20,22 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdao  type: varchar(10)
- * @property string|null $periode  type: varchar(8)
- * @property string|null $noa_loan  type: numeric(9)
- * @property string|null $noa_sirela  type: numeric(9)
- * @property string|null $noa_simka  type: numeric(9)
- * @property string|null $qty_droping  type: numeric(9)
- * @property string|null $nom_droping  type: numeric(9)
- * @property string|null $nom_angsur  type: numeric(9)
- * @property string|null $nom_mbh  type: numeric(9)
- * @property string|null $nom_koreksi_angsur  type: numeric(9)
- * @property string|null $nom_koreksi_mbh  type: numeric(9)
- * @property string|null $nom_rata_sirela  type: numeric(9)
- * @property string|null $nom_rata_simka  type: numeric(9)
- * @property string|null $userid  type: varchar(10)
- * @property string|null $nom_rata_simka_periode  type: numeric(9)
- * @property string|null $nom_rata_sirela_periode  type: numeric(9)
+ * @property string|null $kdao type: varchar(10)
+ * @property string|null $periode type: varchar(8)
+ * @property string|null $noa_loan type: numeric(9)
+ * @property string|null $noa_sirela type: numeric(9)
+ * @property string|null $noa_simka type: numeric(9)
+ * @property string|null $qty_droping type: numeric(9)
+ * @property string|null $nom_droping type: numeric(9)
+ * @property string|null $nom_angsur type: numeric(9)
+ * @property string|null $nom_mbh type: numeric(9)
+ * @property string|null $nom_koreksi_angsur type: numeric(9)
+ * @property string|null $nom_koreksi_mbh type: numeric(9)
+ * @property string|null $nom_rata_sirela type: numeric(9)
+ * @property string|null $nom_rata_simka type: numeric(9)
+ * @property string|null $userid type: varchar(10)
+ * @property string|null $nom_rata_simka_periode type: numeric(9)
+ * @property string|null $nom_rata_sirela_periode type: numeric(9)
  */
 class Tmpperfaon extends MciBaseModel
 {

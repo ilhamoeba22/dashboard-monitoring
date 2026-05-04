@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,21 +20,21 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kode_laporan  type: varchar(10)
- * @property string|null $sandi_form  type: varchar(5)
- * @property string|null $sandi_bank  type: varchar(6)
- * @property string|null $sandi_kantor  type: varchar(3)
- * @property string|null $bulan  type: varchar(2)
- * @property string|null $tahun  type: varchar(4)
- * @property string|null $kdagunan  type: varchar(2)
- * @property string|null $hubungan  type: varchar(1)
- * @property string|null $tglambilalih  type: varchar(8)
- * @property string|null $coll  type: varchar(1)
- * @property string|null $nom_pokok  type: numeric(9)
- * @property string|null $nom_margin  type: numeric(9)
- * @property string|null $nom_agunan  type: numeric(9)
- * @property string|null $nom_biaya_jual  type: numeric(9)
- * @property string|null $ppap  type: numeric(9)
+ * @property string|null $kode_laporan type: varchar(10)
+ * @property string|null $sandi_form type: varchar(5)
+ * @property string|null $sandi_bank type: varchar(6)
+ * @property string|null $sandi_kantor type: varchar(3)
+ * @property string|null $bulan type: varchar(2)
+ * @property string|null $tahun type: varchar(4)
+ * @property string|null $kdagunan type: varchar(2)
+ * @property string|null $hubungan type: varchar(1)
+ * @property string|null $tglambilalih type: varchar(8)
+ * @property string|null $coll type: varchar(1)
+ * @property string|null $nom_pokok type: numeric(9)
+ * @property string|null $nom_margin type: numeric(9)
+ * @property string|null $nom_agunan type: numeric(9)
+ * @property string|null $nom_biaya_jual type: numeric(9)
+ * @property string|null $ppap type: numeric(9)
  */
 class Tofform22 extends MciBaseModel
 {

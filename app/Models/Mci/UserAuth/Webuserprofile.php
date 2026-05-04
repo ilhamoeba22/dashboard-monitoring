@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\UserAuth;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,21 +20,21 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $userid  type: varchar(100)
- * @property string $nama  type: varchar(100)
- * @property string $pass  type: varchar(255)
- * @property string|null $kdgroupfasilitas  type: varchar(50)
- * @property string|null $batch  type: numeric(5)
- * @property string|null $twofatoken  type: varchar(-1)
- * @property string|null $ststwofa  type: varchar(3)
- * @property string $stspass  type: varchar(3)
- * @property string $inptgljam  type: varchar(15)
- * @property string $inpuser  type: varchar(100)
- * @property string|null $chgtgljam  type: varchar(15)
- * @property string|null $chguser  type: varchar(100)
- * @property string $stsrec  type: varchar(3)
- * @property string|null $levelx  type: varchar(5)
- * @property string|null $devterm  type: varchar(10)
+ * @property string $userid type: varchar(100)
+ * @property string $nama type: varchar(100)
+ * @property string $pass type: varchar(255)
+ * @property string|null $kdgroupfasilitas type: varchar(50)
+ * @property string|null $batch type: numeric(5)
+ * @property string|null $twofatoken type: varchar(-1)
+ * @property string|null $ststwofa type: varchar(3)
+ * @property string $stspass type: varchar(3)
+ * @property string $inptgljam type: varchar(15)
+ * @property string $inpuser type: varchar(100)
+ * @property string|null $chgtgljam type: varchar(15)
+ * @property string|null $chguser type: varchar(100)
+ * @property string $stsrec type: varchar(3)
+ * @property string|null $levelx type: varchar(5)
+ * @property string|null $devterm type: varchar(10)
  */
 class Webuserprofile extends MciBaseModel
 {

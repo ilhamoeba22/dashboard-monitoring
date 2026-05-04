@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Agunan;
 
 use App\Models\Mci\MciBaseModel;
@@ -42,10 +44,11 @@ use App\Models\Mci\MciBaseModel;
  * COLUMN [STATUS PARIPASU] -> string|null (varchar(255))
  * COLUMN [PERSENTASE PARIPASU] -> string|null (numeric(9))
  * COLUMN [STATUS KREDIT JOIN] -> string|null (varchar(255))
- * @property string|null $DIASURANSIKAN  type: varchar(255)
- * @property string|null $KETERANGAN  type: varchar(255)
- * COLUMN [KODE KANTOR CABANG] -> string|null (varchar(255))
- * COLUMN [OPERASI DATA] -> string|null (varchar(255))
+ *
+ * @property string|null $DIASURANSIKAN type: varchar(255)
+ * @property string|null $KETERANGAN type: varchar(255)
+ *                                   COLUMN [KODE KANTOR CABANG] -> string|null (varchar(255))
+ *                                   COLUMN [OPERASI DATA] -> string|null (varchar(255))
  */
 class A01 extends MciBaseModel
 {

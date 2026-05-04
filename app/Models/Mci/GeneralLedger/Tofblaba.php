@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\GeneralLedger;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,9 +20,9 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $tgltrn  type: varchar(8)
- * @property string $noaba  type: varchar(20)
- * @property string|null $sahirrp  type: numeric(9)
+ * @property string $tgltrn type: varchar(8)
+ * @property string $noaba type: varchar(20)
+ * @property string|null $sahirrp type: numeric(9)
  */
 class Tofblaba extends MciBaseModel
 {

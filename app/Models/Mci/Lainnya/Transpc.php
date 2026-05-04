@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,18 +20,18 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $tgltrn  type: varchar(8)
- * @property string|null $batch  type: numeric(5)
- * @property string|null $notrn  type: numeric(5)
- * @property string|null $noacc  type: varchar(11)
- * @property string|null $dc  type: varchar(1)
- * @property string|null $nominal  type: numeric(9)
- * @property string|null $nominalva  type: numeric(9)
- * @property string|null $stscetak  type: varchar(1)
- * @property string|null $kdtrnbuku  type: varchar(2)
- * @property string|null $trnke  type: numeric(5)
- * @property string|null $ket  type: varchar(40)
- * @property int $ID  type: bigint(8)
+ * @property string $tgltrn type: varchar(8)
+ * @property string|null $batch type: numeric(5)
+ * @property string|null $notrn type: numeric(5)
+ * @property string|null $noacc type: varchar(11)
+ * @property string|null $dc type: varchar(1)
+ * @property string|null $nominal type: numeric(9)
+ * @property string|null $nominalva type: numeric(9)
+ * @property string|null $stscetak type: varchar(1)
+ * @property string|null $kdtrnbuku type: varchar(2)
+ * @property string|null $trnke type: numeric(5)
+ * @property string|null $ket type: varchar(40)
+ * @property int $ID type: bigint(8)
  */
 class Transpc extends MciBaseModel
 {

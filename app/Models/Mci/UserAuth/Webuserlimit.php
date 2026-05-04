@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\UserAuth;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,22 +20,22 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $ID  type: bigint(8)
- * @property string|null $userid  type: varchar(100)
- * @property string $limit  type: numeric(9)
- * @property string $stslimit  type: char(1)
- * @property string $tgltrn  type: char(8)
- * @property string $jam  type: char(6)
- * @property string $stsrec  type: char(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgljam  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $chgtgljam  type: varchar(14)
- * @property string|null $chgterm  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $auttgljam  type: varchar(14)
- * @property string|null $autterm  type: varchar(10)
+ * @property int $ID type: bigint(8)
+ * @property string|null $userid type: varchar(100)
+ * @property string $limit type: numeric(9)
+ * @property string $stslimit type: char(1)
+ * @property string $tgltrn type: char(8)
+ * @property string $jam type: char(6)
+ * @property string $stsrec type: char(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgljam type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $chgtgljam type: varchar(14)
+ * @property string|null $chgterm type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $auttgljam type: varchar(14)
+ * @property string|null $autterm type: varchar(10)
  */
 class Webuserlimit extends MciBaseModel
 {

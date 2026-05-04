@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Master;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,37 +20,37 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdcab  type: varchar(3)
- * @property string|null $kdloc  type: varchar(2)
- * @property string|null $kdkas  type: varchar(2)
- * @property string|null $kdktr  type: varchar(1)
- * @property string|null $nama  type: varchar(40)
- * @property string|null $singkat  type: varchar(3)
- * @property string|null $alamat  type: varchar(40)
- * @property string|null $kota  type: varchar(30)
- * @property string|null $kdpos  type: varchar(5)
- * @property string|null $telp  type: varchar(15)
- * @property string|null $fax  type: varchar(15)
- * @property string|null $pimp  type: varchar(30)
- * @property string|null $wapim  type: varchar(30)
- * @property string|null $kaops  type: varchar(30)
- * @property string|null $hp1  type: varchar(15)
- * @property string|null $hp2  type: varchar(15)
- * @property string|null $hp3  type: varchar(15)
- * @property string|null $kdktrbi1  type: varchar(3)
- * @property string|null $kdktrbi2  type: varchar(3)
- * @property string|null $stsrec  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $tglinp  type: varchar(14)
- * @property string|null $devinp  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $tglchg  type: varchar(14)
- * @property string|null $devchg  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $tglaut  type: varchar(14)
- * @property string|null $devaut  type: varchar(10)
- * @property string|null $kel  type: varchar(35)
- * @property string|null $kec  type: varchar(35)
+ * @property string $kdcab type: varchar(3)
+ * @property string|null $kdloc type: varchar(2)
+ * @property string|null $kdkas type: varchar(2)
+ * @property string|null $kdktr type: varchar(1)
+ * @property string|null $nama type: varchar(40)
+ * @property string|null $singkat type: varchar(3)
+ * @property string|null $alamat type: varchar(40)
+ * @property string|null $kota type: varchar(30)
+ * @property string|null $kdpos type: varchar(5)
+ * @property string|null $telp type: varchar(15)
+ * @property string|null $fax type: varchar(15)
+ * @property string|null $pimp type: varchar(30)
+ * @property string|null $wapim type: varchar(30)
+ * @property string|null $kaops type: varchar(30)
+ * @property string|null $hp1 type: varchar(15)
+ * @property string|null $hp2 type: varchar(15)
+ * @property string|null $hp3 type: varchar(15)
+ * @property string|null $kdktrbi1 type: varchar(3)
+ * @property string|null $kdktrbi2 type: varchar(3)
+ * @property string|null $stsrec type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $tglinp type: varchar(14)
+ * @property string|null $devinp type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $tglchg type: varchar(14)
+ * @property string|null $devchg type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $tglaut type: varchar(14)
+ * @property string|null $devaut type: varchar(10)
+ * @property string|null $kel type: varchar(35)
+ * @property string|null $kec type: varchar(35)
  */
 class Cabangtmp extends MciBaseModel
 {

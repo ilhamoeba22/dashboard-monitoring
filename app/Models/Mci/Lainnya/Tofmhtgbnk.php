@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,38 +20,38 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $ID  type: bigint(8)
- * @property string $nohtg  type: varchar(10)
- * @property string $noakad  type: varchar(40)
- * @property string|null $kdhtg  type: char(2)
- * @property string|null $kdphk3  type: varchar(10)
- * @property string|null $kdprd  type: char(2)
- * @property string|null $pokpby  type: char(2)
- * @property string|null $nama  type: varchar(50)
- * @property string|null $tglbuka  type: varchar(8)
- * @property string|null $tgleff  type: varchar(8)
- * @property string|null $tglexp  type: varchar(8)
- * @property string|null $jw  type: numeric(5)
- * @property string|null $rate  type: numeric(5)
- * @property string|null $kdrate  type: char(1)
- * @property string|null $nisbah  type: numeric(5)
- * @property string|null $mdlawal  type: numeric(9)
- * @property string|null $mgnawal  type: numeric(9)
- * @property string|null $mutasidr  type: numeric(9)
- * @property string|null $mutasicr  type: numeric(9)
- * @property string|null $osmdlc  type: numeric(9)
- * @property string|null $osmgnc  type: numeric(9)
- * @property string|null $ststrn  type: char(1)
- * @property string|null $stsrec  type: char(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgl  type: varchar(10)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $chgtgl  type: varchar(10)
- * @property string|null $chgterm  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $auttgl  type: varchar(10)
- * @property string|null $autterm  type: varchar(10)
+ * @property int $ID type: bigint(8)
+ * @property string $nohtg type: varchar(10)
+ * @property string $noakad type: varchar(40)
+ * @property string|null $kdhtg type: char(2)
+ * @property string|null $kdphk3 type: varchar(10)
+ * @property string|null $kdprd type: char(2)
+ * @property string|null $pokpby type: char(2)
+ * @property string|null $nama type: varchar(50)
+ * @property string|null $tglbuka type: varchar(8)
+ * @property string|null $tgleff type: varchar(8)
+ * @property string|null $tglexp type: varchar(8)
+ * @property string|null $jw type: numeric(5)
+ * @property string|null $rate type: numeric(5)
+ * @property string|null $kdrate type: char(1)
+ * @property string|null $nisbah type: numeric(5)
+ * @property string|null $mdlawal type: numeric(9)
+ * @property string|null $mgnawal type: numeric(9)
+ * @property string|null $mutasidr type: numeric(9)
+ * @property string|null $mutasicr type: numeric(9)
+ * @property string|null $osmdlc type: numeric(9)
+ * @property string|null $osmgnc type: numeric(9)
+ * @property string|null $ststrn type: char(1)
+ * @property string|null $stsrec type: char(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgl type: varchar(10)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $chgtgl type: varchar(10)
+ * @property string|null $chgterm type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $auttgl type: varchar(10)
+ * @property string|null $autterm type: varchar(10)
  */
 class Tofmhtgbnk extends MciBaseModel
 {

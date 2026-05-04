@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Cif;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,11 +20,11 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $nocif  type: varchar(10)
- * @property string|null $id_debitur  type: varchar(50)
- * @property string|null $id_fasilitas  type: varchar(60)
- * @property string $norekening  type: varchar(20)
- * @property string $din  type: varchar(20)
+ * @property string|null $nocif type: varchar(10)
+ * @property string|null $id_debitur type: varchar(50)
+ * @property string|null $id_fasilitas type: varchar(60)
+ * @property string $norekening type: varchar(20)
+ * @property string $din type: varchar(20)
  */
 class McifIddebitur extends MciBaseModel
 {

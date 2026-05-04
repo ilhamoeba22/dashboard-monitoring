@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,19 +20,19 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdkol  type: varchar(1)
- * @property string $nokontrak  type: char(11)
- * @property string|null $akum_tagmgn  type: numeric(9)
- * @property string|null $akum_byrmgn  type: numeric(9)
- * @property string|null $periode  type: numeric(5)
- * @property string|null $rata_tagmgn  type: numeric(9)
- * @property string|null $rata_byrmgn  type: numeric(9)
- * @property string|null $prosbyr  type: numeric(9)
- * @property string|null $tgkmodal  type: numeric(9)
- * @property string|null $blntgkmodal  type: numeric(5)
- * @property string|null $byrmodal  type: numeric(9)
- * @property string|null $tglproses  type: char(8)
- * @property string|null $coll  type: char(1)
+ * @property string|null $kdkol type: varchar(1)
+ * @property string $nokontrak type: char(11)
+ * @property string|null $akum_tagmgn type: numeric(9)
+ * @property string|null $akum_byrmgn type: numeric(9)
+ * @property string|null $periode type: numeric(5)
+ * @property string|null $rata_tagmgn type: numeric(9)
+ * @property string|null $rata_byrmgn type: numeric(9)
+ * @property string|null $prosbyr type: numeric(9)
+ * @property string|null $tgkmodal type: numeric(9)
+ * @property string|null $blntgkmodal type: numeric(5)
+ * @property string|null $byrmodal type: numeric(9)
+ * @property string|null $tglproses type: char(8)
+ * @property string|null $coll type: char(1)
  */
 class Tofmratiobh extends MciBaseModel
 {

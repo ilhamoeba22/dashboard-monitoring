@@ -1,7 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
+use App\Repositories\Interfaces\CifRepositoryInterface;
+use App\Repositories\Interfaces\DepositRepositoryInterface;
+use App\Repositories\Interfaces\FinancingRepositoryInterface;
+use App\Repositories\Interfaces\ReportingRepositoryInterface;
+use App\Repositories\Interfaces\SavingRepositoryInterface;
+use App\Repositories\Mci\CifRepository;
+use App\Repositories\Mci\DepositRepository;
+use App\Repositories\Mci\FinancingRepository;
+use App\Repositories\Mci\ReportingRepository;
+use App\Repositories\Mci\SavingRepository;
 use App\Services\Mci\MciConnectionService;
 use Illuminate\Support\ServiceProvider;
 
@@ -14,16 +26,16 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register MCI Connection Service sebagai singleton
         $this->app->singleton('mci.connection', function ($app) {
-            return new MciConnectionService();
+            return new MciConnectionService;
         });
 
         // Bind interface ke implementasi (untuk Dependency Injection)
-        $this->app->singleton(\App\Services\Mci\MciConnectionService::class);
-        $this->app->bind(\App\Repositories\Interfaces\FinancingRepositoryInterface::class, \App\Repositories\Mci\FinancingRepository::class);
-        $this->app->bind(\App\Repositories\Interfaces\CifRepositoryInterface::class, \App\Repositories\Mci\CifRepository::class);
-        $this->app->bind(\App\Repositories\Interfaces\SavingRepositoryInterface::class, \App\Repositories\Mci\SavingRepository::class);
-        $this->app->bind(\App\Repositories\Interfaces\DepositRepositoryInterface::class, \App\Repositories\Mci\DepositRepository::class);
-        $this->app->bind(\App\Repositories\Interfaces\ReportingRepositoryInterface::class, \App\Repositories\Mci\ReportingRepository::class);
+        $this->app->singleton(MciConnectionService::class);
+        $this->app->bind(FinancingRepositoryInterface::class, FinancingRepository::class);
+        $this->app->bind(CifRepositoryInterface::class, CifRepository::class);
+        $this->app->bind(SavingRepositoryInterface::class, SavingRepository::class);
+        $this->app->bind(DepositRepositoryInterface::class, DepositRepository::class);
+        $this->app->bind(ReportingRepositoryInterface::class, ReportingRepository::class);
     }
 
     /**

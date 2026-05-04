@@ -10,6 +10,8 @@ use Illuminate\Support\Collection;
 interface DepositRepositoryInterface
 {
     public function getNominative(array $filters = [], int $perPage = 50): CursorPaginator;
+
     public function getRekapitulasi(string $groupBy): Collection;
+
     public function getJatuhTempo(array $filters = [], int $perPage = 50): CursorPaginator;
 }

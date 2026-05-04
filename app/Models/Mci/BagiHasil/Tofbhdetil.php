@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\BagiHasil;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,19 +20,19 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdac  type: varchar(1)
- * @property string|null $kdprd  type: varchar(2)
- * @property string|null $jw  type: numeric(5)
- * @property string|null $kdloc  type: varchar(2)
- * @property string|null $noacc  type: varchar(11)
- * @property string|null $nama  type: varchar(30)
- * @property string|null $saldorata  type: numeric(9)
- * @property string|null $nisbah  type: numeric(5)
- * @property string|null $spread  type: numeric(5)
- * @property string|null $baghas  type: numeric(9)
- * @property string|null $tax  type: numeric(9)
- * @property string|null $zakat  type: numeric(9)
- * @property string|null $rateequiv  type: numeric(5)
+ * @property string|null $kdac type: varchar(1)
+ * @property string|null $kdprd type: varchar(2)
+ * @property string|null $jw type: numeric(5)
+ * @property string|null $kdloc type: varchar(2)
+ * @property string|null $noacc type: varchar(11)
+ * @property string|null $nama type: varchar(30)
+ * @property string|null $saldorata type: numeric(9)
+ * @property string|null $nisbah type: numeric(5)
+ * @property string|null $spread type: numeric(5)
+ * @property string|null $baghas type: numeric(9)
+ * @property string|null $tax type: numeric(9)
+ * @property string|null $zakat type: numeric(9)
+ * @property string|null $rateequiv type: numeric(5)
  */
 class Tofbhdetil extends MciBaseModel
 {

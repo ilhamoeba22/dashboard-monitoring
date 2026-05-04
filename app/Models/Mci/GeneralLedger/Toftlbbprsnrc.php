@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\GeneralLedger;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,14 +20,14 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdlap  type: char(3)
- * @property string $urut  type: numeric(5)
- * @property string|null $ket  type: varchar(100)
- * @property string|null $sandi  type: char(5)
- * @property string|null $stsrec  type: char(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgljam  type: varchar(24)
- * @property string|null $inpterm  type: varchar(10)
+ * @property string|null $kdlap type: char(3)
+ * @property string $urut type: numeric(5)
+ * @property string|null $ket type: varchar(100)
+ * @property string|null $sandi type: char(5)
+ * @property string|null $stsrec type: char(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgljam type: varchar(24)
+ * @property string|null $inpterm type: varchar(10)
  */
 class Toftlbbprsnrc extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\ReportingOjk;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,11 +20,11 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdloc  type: char(2)
- * @property string|null $jnsakad  type: char(1)
- * @property string|null $jnsguna  type: char(1)
- * @property string|null $plafon  type: numeric(9)
- * @property string|null $bakidebet  type: numeric(9)
+ * @property string|null $kdloc type: char(2)
+ * @property string|null $jnsakad type: char(1)
+ * @property string|null $jnsguna type: char(1)
+ * @property string|null $plafon type: numeric(9)
+ * @property string|null $bakidebet type: numeric(9)
  */
 class Biform31 extends MciBaseModel
 {

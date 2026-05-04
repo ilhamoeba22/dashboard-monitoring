@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Cif;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,29 +20,29 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $nocif  type: varchar(9)
- * @property string|null $kdkerja  type: varchar(5)
- * @property string|null $kdbidang  type: varchar(5)
- * @property string|null $namapt  type: varchar(100)
- * @property string|null $alamat  type: varchar(256)
- * @property string|null $kota  type: varchar(50)
- * @property string|null $kdpos  type: varchar(5)
- * @property string|null $kdhasil  type: varchar(5)
- * @property string|null $nip  type: varchar(20)
- * @property string|null $stsrec  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgljam  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $chgtgljam  type: varchar(14)
- * @property string|null $chgterm  type: varchar(10)
- * @property string|null $kdsumbhasil  type: varchar(1)
- * @property string|null $kdbidangslik  type: varchar(6)
- * @property string|null $stspep  type: varchar(1)
- * @property string $jabatan  type: varchar(256)
- * @property string $jabatan_lain  type: varchar(256)
- * @property string $bagian  type: varchar(256)
- * @property string|null $kdrisk  type: char(1)
+ * @property string|null $nocif type: varchar(9)
+ * @property string|null $kdkerja type: varchar(5)
+ * @property string|null $kdbidang type: varchar(5)
+ * @property string|null $namapt type: varchar(100)
+ * @property string|null $alamat type: varchar(256)
+ * @property string|null $kota type: varchar(50)
+ * @property string|null $kdpos type: varchar(5)
+ * @property string|null $kdhasil type: varchar(5)
+ * @property string|null $nip type: varchar(20)
+ * @property string|null $stsrec type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgljam type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $chgtgljam type: varchar(14)
+ * @property string|null $chgterm type: varchar(10)
+ * @property string|null $kdsumbhasil type: varchar(1)
+ * @property string|null $kdbidangslik type: varchar(6)
+ * @property string|null $stspep type: varchar(1)
+ * @property string $jabatan type: varchar(256)
+ * @property string $jabatan_lain type: varchar(256)
+ * @property string $bagian type: varchar(256)
+ * @property string|null $kdrisk type: char(1)
  */
 class Mcifjob extends MciBaseModel
 {

@@ -9,6 +9,8 @@ use App\DTO\Api\v1\DepositoMetricsDTO;
 use App\DTO\Api\v1\FinancingMetricsDTO;
 use App\DTO\Api\v1\GrowthDTO;
 use App\DTO\Api\v1\SavingMetricsDTO;
+use App\Models\Mci\DailyMetricsHistory;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -57,32 +59,46 @@ class DashboardRepository extends MciBaseRepository
 
     /**
      * Ambil semua key metrics (Financing + Saving + Deposito) sekaligus.
-     * Di-cache sebagai satu unit agar konsisten antar metric.
+     * Di-cache sebagai array (bukan objek) agar tidak ada __PHP_Incomplete_Class issue.
      * Cache key menyertakan nama connection agar history tidak pakai cache realtime.
      */
     public function getKeyMetrics(): DashboardMetricsDTO
     {
-        $period      = $this->getCurrentPeriodInternal();
+        $period = $this->getCurrentPeriodInternal();
         $currentYear = (string) $period['year'];
-        $prevYear    = (string) $period['previous_year'];
+        $prevYear = (string) $period['previous_year'];
         // Sertakan connection dalam cache key agar jan/feb/mar tidak bentrok
-        $cacheKey    = "mci:dashboard:key_metrics:{$this->connection}:{$currentYear}";
+        $cacheKey = "mci:dashboard:key_metrics:{$this->connection}:{$currentYear}";
 
-        /** @var DashboardMetricsDTO $result */
-        $result = Cache::remember($cacheKey, self::CACHE_SHORT, function () use ($period, $currentYear, $prevYear): DashboardMetricsDTO {
-            return new DashboardMetricsDTO(
-                tgl:         $period['tgl'],
-                year:        $period['year'],
-                month:       $period['month'],
-                period:      $period['period'],
-                financing:   $this->getFinancingMetrics($currentYear, $prevYear),
-                saving:      $this->getSavingMetrics($currentYear, $prevYear),
-                deposito:    $this->getDepositoMetrics($currentYear, $prevYear),
-                generatedAt: now()->toIso8601String(),
-            );
+        // Cache sebagai array, bukan objek - lalu buat DTO saat retrieve
+        $cachedData = Cache::remember($cacheKey, self::CACHE_SHORT, function () use ($period, $currentYear, $prevYear): array {
+            $financing = $this->getFinancingMetrics($currentYear, $prevYear);
+            $saving = $this->getSavingMetrics($currentYear, $prevYear);
+            $deposito = $this->getDepositoMetrics($currentYear, $prevYear);
+
+            return [
+                'tgl' => $period['tgl'],
+                'year' => $period['year'],
+                'month' => $period['month'],
+                'period' => $period['period'],
+                'financing' => $financing->jsonSerialize(),
+                'saving' => $saving->jsonSerialize(),
+                'deposito' => $deposito->jsonSerialize(),
+                'generatedAt' => now()->toIso8601String(),
+            ];
         });
 
-        return $result;
+        // Buat DTO dari array (avoid __PHP_Incomplete_Class)
+        return new DashboardMetricsDTO(
+            tgl: $cachedData['tgl'],
+            year: $cachedData['year'],
+            month: $cachedData['month'],
+            period: $cachedData['period'],
+            financing: FinancingMetricsDTO::fromArray($cachedData['financing']),
+            saving: SavingMetricsDTO::fromArray($cachedData['saving']),
+            deposito: DepositoMetricsDTO::fromArray($cachedData['deposito']),
+            generatedAt: $cachedData['generatedAt'],
+        );
     }
 
     /**
@@ -94,8 +110,8 @@ class DashboardRepository extends MciBaseRepository
     public function getChartDataFromWarehouse(string $type, ?string $startDate = null, ?string $endDate = null): array
     {
         // Default: 30 hari ke belakang jika tidak ada input
-        $end   = $endDate ? \Carbon\Carbon::parse($endDate)->endOfDay() : now()->endOfDay();
-        $start = $startDate ? \Carbon\Carbon::parse($startDate)->startOfDay() : now()->subDays(30)->startOfDay();
+        $end = $endDate ? Carbon::parse($endDate)->endOfDay() : now()->endOfDay();
+        $start = $startDate ? Carbon::parse($startDate)->startOfDay() : now()->subDays(30)->startOfDay();
 
         // Validasi agar range tidak kebalik
         if ($start->gt($end)) {
@@ -105,14 +121,14 @@ class DashboardRepository extends MciBaseRepository
         }
 
         // Ambil data dari MySQL
-        $histories = \App\Models\Mci\DailyMetricsHistory::whereBetween('tgl_snapshot', [$start->format('Y-m-d'), $end->format('Y-m-d')])
+        $histories = DailyMetricsHistory::whereBetween('tgl_snapshot', [$start->format('Y-m-d'), $end->format('Y-m-d')])
             ->orderBy('tgl_snapshot', 'asc')
             ->get();
 
-        $labels  = [];
-        $values  = [];
-        $noa     = [];
-        $growth  = [];
+        $labels = [];
+        $values = [];
+        $noa = [];
+        $growth = [];
         $prevVal = null;
 
         foreach ($histories as $row) {
@@ -121,24 +137,24 @@ class DashboardRepository extends MciBaseRepository
             // Tentukan field berdasarkan tipe chart
             $val = match ($type) {
                 'financing' => $row->financing_os,
-                'saving'    => $row->saving_saldo,
-                'deposito'  => $row->deposito_saldo,
-                default     => 0.0,
+                'saving' => $row->saving_saldo,
+                'deposito' => $row->deposito_saldo,
+                default => 0.0,
             };
 
             $currentNoa = match ($type) {
                 'financing' => $row->financing_noa,
-                'saving'    => $row->saving_noa,
-                'deposito'  => $row->deposito_noa,
-                default     => 0,
+                'saving' => $row->saving_noa,
+                'deposito' => $row->deposito_noa,
+                default => 0,
             };
 
             $values[] = (float) $val;
-            $noa[]    = (int) $currentNoa;
+            $noa[] = (int) $currentNoa;
 
             // Hitung growth harian
             $growth[] = $prevVal !== null && $prevVal > 0
-                ? round((( (float)$val - $prevVal) / $prevVal) * 100, 2)
+                ? round((((float) $val - $prevVal) / $prevVal) * 100, 2)
                 : 0.0;
 
             $prevVal = (float) $val;
@@ -147,7 +163,7 @@ class DashboardRepository extends MciBaseRepository
         return [
             'labels' => $labels,
             'values' => $values,
-            'noa'    => $noa,
+            'noa' => $noa,
             'growth' => $growth,
         ];
     }
@@ -184,7 +200,7 @@ class DashboardRepository extends MciBaseRepository
      */
     public function clearCache(): void
     {
-        $period      = $this->getCurrentPeriodInternal();
+        $period = $this->getCurrentPeriodInternal();
         $currentYear = (string) $period['year'];
 
         $this->forgetMany([
@@ -192,7 +208,7 @@ class DashboardRepository extends MciBaseRepository
             "mci:dashboard:chart:financing:{$currentYear}",
             "mci:dashboard:chart:saving:{$currentYear}",
             "mci:dashboard:chart:deposito:{$currentYear}",
-            "mci:dashboard:branches",
+            'mci:dashboard:branches',
             $this->cacheKey('system_date'),
         ]);
     }
@@ -207,19 +223,19 @@ class DashboardRepository extends MciBaseRepository
     public function getFinancingMetrics(string $currentYear, string $previousYear): FinancingMetricsDTO
     {
         $rawRows = $this->queryFinancing($currentYear, $previousYear);
-        $data    = $this->extractConsolidatedMetrics($rawRows, 'TotalOS', 'TotalNPF');
+        $data = $this->extractConsolidatedMetrics($rawRows, 'TotalOS', 'TotalNPF');
 
         return new FinancingMetricsDTO(
-            totalOs:      $data['current'],
-            osFormatted:  $this->formatRupiah($data['current']),
-            totalNpf:     $data['secondary'],
+            totalOs: $data['current'],
+            osFormatted: $this->formatRupiah($data['current']),
+            totalNpf: $data['secondary'],
             npfFormatted: $this->formatRupiah($data['secondary']),
-            totalNoa:     $data['noa'],
-            totalAo:      $data['ao'],
-            growth:       GrowthDTO::fromArray($this->calculateGrowth($data['current'],   $data['prev'])),
-            noaGrowth:    GrowthDTO::fromArray($this->calculateGrowth($data['noa'],        $data['prev_noa'])),
-            aoGrowth:     GrowthDTO::fromArray($this->calculateGrowth($data['ao'],         $data['prev_ao'])),
-            npfGrowth:    GrowthDTO::fromArray($this->calculateGrowth($data['secondary'],  $data['prev_secondary'])),
+            totalNoa: $data['noa'],
+            totalAo: $data['ao'],
+            growth: GrowthDTO::fromArray($this->calculateGrowth($data['current'], $data['prev'])),
+            noaGrowth: GrowthDTO::fromArray($this->calculateGrowth($data['noa'], $data['prev_noa'])),
+            aoGrowth: GrowthDTO::fromArray($this->calculateGrowth($data['ao'], $data['prev_ao'])),
+            npfGrowth: GrowthDTO::fromArray($this->calculateGrowth($data['secondary'], $data['prev_secondary'])),
         );
     }
 
@@ -229,16 +245,16 @@ class DashboardRepository extends MciBaseRepository
     public function getSavingMetrics(string $currentYear, string $previousYear): SavingMetricsDTO
     {
         $rawRows = $this->querySaving($currentYear, $previousYear);
-        $data    = $this->extractConsolidatedMetrics($rawRows, 'TotalSaldo');
+        $data = $this->extractConsolidatedMetrics($rawRows, 'TotalSaldo');
 
         return new SavingMetricsDTO(
-            totalSaldo:     $data['current'],
+            totalSaldo: $data['current'],
             saldoFormatted: $this->formatRupiah($data['current']),
-            totalNoa:       $data['noa'],
-            totalAo:        $data['ao'],
-            growth:         GrowthDTO::fromArray($this->calculateGrowth($data['current'], $data['prev'])),
-            noaGrowth:      GrowthDTO::fromArray($this->calculateGrowth($data['noa'],     $data['prev_noa'])),
-            aoGrowth:       GrowthDTO::fromArray($this->calculateGrowth($data['ao'],      $data['prev_ao'])),
+            totalNoa: $data['noa'],
+            totalAo: $data['ao'],
+            growth: GrowthDTO::fromArray($this->calculateGrowth($data['current'], $data['prev'])),
+            noaGrowth: GrowthDTO::fromArray($this->calculateGrowth($data['noa'], $data['prev_noa'])),
+            aoGrowth: GrowthDTO::fromArray($this->calculateGrowth($data['ao'], $data['prev_ao'])),
         );
     }
 
@@ -248,19 +264,19 @@ class DashboardRepository extends MciBaseRepository
     public function getDepositoMetrics(string $currentYear, string $previousYear): DepositoMetricsDTO
     {
         $rawRows = $this->queryDeposito($currentYear, $previousYear);
-        $data    = $this->extractConsolidatedMetrics($rawRows, 'TotalSaldo', 'TotalBaghas');
+        $data = $this->extractConsolidatedMetrics($rawRows, 'TotalSaldo', 'TotalBaghas');
 
         return new DepositoMetricsDTO(
-            totalSaldo:     $data['current'],
+            totalSaldo: $data['current'],
             saldoFormatted: $this->formatRupiah($data['current']),
-            totalBaghas:    $data['secondary'],
-            baghasFormatted:$this->formatRupiah($data['secondary']),
-            totalNoa:       $data['noa'],
-            totalAo:        $data['ao'],
-            growth:         GrowthDTO::fromArray($this->calculateGrowth($data['current'],  $data['prev'])),
-            noaGrowth:      GrowthDTO::fromArray($this->calculateGrowth($data['noa'],      $data['prev_noa'])),
-            aoGrowth:       GrowthDTO::fromArray($this->calculateGrowth($data['ao'],       $data['prev_ao'])),
-            baghasGrowth:   GrowthDTO::fromArray($this->calculateGrowth($data['secondary'], $data['prev_secondary'])),
+            totalBaghas: $data['secondary'],
+            baghasFormatted: $this->formatRupiah($data['secondary']),
+            totalNoa: $data['noa'],
+            totalAo: $data['ao'],
+            growth: GrowthDTO::fromArray($this->calculateGrowth($data['current'], $data['prev'])),
+            noaGrowth: GrowthDTO::fromArray($this->calculateGrowth($data['noa'], $data['prev_noa'])),
+            aoGrowth: GrowthDTO::fromArray($this->calculateGrowth($data['ao'], $data['prev_ao'])),
+            baghasGrowth: GrowthDTO::fromArray($this->calculateGrowth($data['secondary'], $data['prev_secondary'])),
         );
     }
 
@@ -276,7 +292,7 @@ class DashboardRepository extends MciBaseRepository
      */
     private function queryFinancing(string $currentYear, string $previousYear): array
     {
-        $sql = <<<SQL
+        $sql = <<<'SQL'
             WITH RiwayatNasabah AS (
                 -- DATA BULAN BERJALAN (LIVE dari TOFLMB)
                 SELECT
@@ -337,7 +353,7 @@ class DashboardRepository extends MciBaseRepository
      */
     private function querySaving(string $currentYear, string $previousYear): array
     {
-        $sql = <<<SQL
+        $sql = <<<'SQL'
             WITH RiwayatNasabah AS (
                 SELECT
                     CAST(SUBSTRING(TGL.tgl, 5, 4) AS VARCHAR(4))
@@ -393,7 +409,7 @@ class DashboardRepository extends MciBaseRepository
      */
     private function queryDeposito(string $currentYear, string $previousYear): array
     {
-        $sql = <<<SQL
+        $sql = <<<'SQL'
             WITH RiwayatNasabah AS (
                 SELECT
                     CAST(SUBSTRING(TGL.tgl, 5, 4) AS VARCHAR(4))
@@ -464,25 +480,25 @@ class DashboardRepository extends MciBaseRepository
     private function extractConsolidatedMetrics(
         array $rows,
         string $primaryField,
-        string $secondaryField = ''
+        string $secondaryField = '',
     ): array {
         // Ambil hanya baris konsolidasi (semua cabang), sorted ASC by periode
         $consolidated = array_values(
-            array_filter($rows, fn ($r) => ($r->nama ?? '') === 'Konsolidasi')
+            array_filter($rows, fn ($r) => ($r->nama ?? '') === 'Konsolidasi'),
         );
 
-        $count   = count($consolidated);
+        $count = count($consolidated);
         $current = $count > 0 ? $consolidated[$count - 1] : null;
-        $prev    = $count >= 2 ? $consolidated[$count - 2] : null;
+        $prev = $count >= 2 ? $consolidated[$count - 2] : null;
 
         return [
-            'current'        => (float) ($current?->$primaryField ?? 0),
-            'prev'           => (float) ($prev?->$primaryField ?? 0),
-            'noa'            => (int)   ($current?->TotalNOA ?? 0),
-            'prev_noa'       => (int)   ($prev?->TotalNOA ?? 0),
-            'ao'             => (int)   ($current?->TotalAO ?? 0),
-            'prev_ao'        => (int)   ($prev?->TotalAO ?? 0),
-            'secondary'      => $secondaryField ? (float) ($current?->$secondaryField ?? 0) : 0.0,
+            'current' => (float) ($current?->$primaryField ?? 0),
+            'prev' => (float) ($prev?->$primaryField ?? 0),
+            'noa' => (int) ($current?->TotalNOA ?? 0),
+            'prev_noa' => (int) ($prev?->TotalNOA ?? 0),
+            'ao' => (int) ($current?->TotalAO ?? 0),
+            'prev_ao' => (int) ($prev?->TotalAO ?? 0),
+            'secondary' => $secondaryField ? (float) ($current?->$secondaryField ?? 0) : 0.0,
             'prev_secondary' => $secondaryField ? (float) ($prev?->$secondaryField ?? 0) : 0.0,
         ];
     }
@@ -497,24 +513,24 @@ class DashboardRepository extends MciBaseRepository
     {
         // Ambil hanya baris konsolidasi, sorted by periode ASC
         $consolidated = array_values(
-            array_filter($rows, fn ($r) => ($r->nama ?? '') === 'Konsolidasi')
+            array_filter($rows, fn ($r) => ($r->nama ?? '') === 'Konsolidasi'),
         );
 
-        $labels  = [];
-        $values  = [];
-        $noa     = [];
-        $growth  = [];
+        $labels = [];
+        $values = [];
+        $noa = [];
+        $growth = [];
         $prevVal = null;
 
         foreach ($consolidated as $row) {
             $labels[] = (string) ($row->periode ?? '');
-            $val      = (float)  ($row->$primaryField ?? 0);
+            $val = (float) ($row->$primaryField ?? 0);
             $values[] = $val;
-            $noa[]    = (int)   ($row->TotalNOA ?? 0);
+            $noa[] = (int) ($row->TotalNOA ?? 0);
             $growth[] = $prevVal !== null && $prevVal > 0
                 ? round((($val - $prevVal) / $prevVal) * 100, 2)
                 : 0.0;
-            $prevVal  = $val;
+            $prevVal = $val;
         }
 
         return compact('labels', 'values', 'noa', 'growth');

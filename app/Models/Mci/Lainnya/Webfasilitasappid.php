@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,9 +20,9 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $appid  type: varchar(10)
- * @property string|null $nama  type: varchar(50)
- * @property int|null $urut  type: int(4)
+ * @property string $appid type: varchar(10)
+ * @property string|null $nama type: varchar(50)
+ * @property int|null $urut type: int(4)
  */
 class Webfasilitasappid extends MciBaseModel
 {

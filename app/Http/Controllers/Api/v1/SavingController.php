@@ -24,10 +24,16 @@ class SavingController extends Controller
             $filters = [
                 'search' => $request->query('search'),
                 'cabang' => $request->query('cabang'),
-                'ao'     => $request->query('ao'),
+                'ao' => $request->query('ao'),
             ];
 
             $perPage = (int) $request->query('per_page', '50');
+            // #region agent log
+            $this->debugLog('H5', 'app/Http/Controllers/Api/v1/SavingController.php:33', 'Saving controller received per_page', [
+                'per_page' => $perPage,
+                'cursor' => $request->query('cursor'),
+            ]);
+            // #endregion
             $data = $this->repository->getNominative($filters, $perPage);
 
             return response()->json(['success' => true, 'data' => $data]);
@@ -41,11 +47,12 @@ class SavingController extends Controller
         try {
             $groupBy = $request->query('group_by', 'cabang');
             $validGroups = ['cabang', 'wilayah', 'ao'];
-            if (!in_array($groupBy, $validGroups)) {
+            if (! in_array($groupBy, $validGroups)) {
                 return response()->json(['success' => false, 'message' => 'Invalid group_by'], 422);
             }
 
             $data = $this->repository->getRekapitulasi($groupBy);
+
             return response()->json(['success' => true, 'data' => $data]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => 'Gagal memuat rekapitulasi tabungan'], 500);
@@ -57,6 +64,12 @@ class SavingController extends Controller
         try {
             $filters = ['cabang' => $request->query('cabang')];
             $perPage = (int) $request->query('per_page', '50');
+            // #region agent log
+            $this->debugLog('H5', 'app/Http/Controllers/Api/v1/SavingController.php:66', 'Saving doormant controller received per_page', [
+                'per_page' => $perPage,
+                'cursor' => $request->query('cursor'),
+            ]);
+            // #endregion
             $data = $this->repository->getDoormant($filters, $perPage);
 
             return response()->json(['success' => true, 'data' => $data]);
@@ -64,4 +77,21 @@ class SavingController extends Controller
             return response()->json(['success' => false, 'message' => 'Gagal memuat data doormant'], 500);
         }
     }
+
+    // #region agent log
+    private function debugLog(string $hypothesisId, string $location, string $message, array $data = []): void
+    {
+        $payload = [
+            'sessionId' => 'f35f8f',
+            'runId' => 'pre-fix',
+            'hypothesisId' => $hypothesisId,
+            'location' => $location,
+            'message' => $message,
+            'data' => $data,
+            'timestamp' => (int) round(microtime(true) * 1000),
+        ];
+
+        @file_put_contents(base_path('debug-f35f8f.log'), json_encode($payload, JSON_UNESCAPED_SLASHES).PHP_EOL, FILE_APPEND);
+    }
+    // #endregion
 }

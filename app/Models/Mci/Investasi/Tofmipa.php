@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Investasi;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,23 +20,23 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $periode  type: varchar(6)
- * @property string|null $kdao  type: varchar(10)
- * @property string|null $nmao  type: varchar(30)
- * @property string|null $kdprog  type: varchar(2)
- * @property string|null $qty_deb  type: numeric(5)
- * @property string|null $os  type: numeric(9)
- * @property string|null $npf  type: numeric(5)
- * @property string|null $bonus_loan  type: numeric(9)
- * @property string|null $qty_tab  type: numeric(5)
- * @property string|null $saratab_baru  type: numeric(9)
- * @property string|null $saratab_lama  type: numeric(9)
- * @property string|null $qty_dep  type: numeric(5)
- * @property string|null $saradep_baru  type: numeric(9)
- * @property string|null $saradep_lama  type: numeric(9)
- * @property string|null $bonus_tab  type: numeric(9)
- * @property string|null $bonus_dep  type: numeric(9)
- * @property string|null $batch  type: numeric(5)
+ * @property string $periode type: varchar(6)
+ * @property string|null $kdao type: varchar(10)
+ * @property string|null $nmao type: varchar(30)
+ * @property string|null $kdprog type: varchar(2)
+ * @property string|null $qty_deb type: numeric(5)
+ * @property string|null $os type: numeric(9)
+ * @property string|null $npf type: numeric(5)
+ * @property string|null $bonus_loan type: numeric(9)
+ * @property string|null $qty_tab type: numeric(5)
+ * @property string|null $saratab_baru type: numeric(9)
+ * @property string|null $saratab_lama type: numeric(9)
+ * @property string|null $qty_dep type: numeric(5)
+ * @property string|null $saradep_baru type: numeric(9)
+ * @property string|null $saradep_lama type: numeric(9)
+ * @property string|null $bonus_tab type: numeric(9)
+ * @property string|null $bonus_dep type: numeric(9)
+ * @property string|null $batch type: numeric(5)
  */
 class Tofmipa extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,16 +20,16 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $nokontrak  type: varchar(11)
- * @property string|null $kdbiaya  type: numeric(5)
- * @property string|null $tgl  type: varchar(8)
- * @property string|null $nom_awal  type: numeric(9)
- * @property string|null $jw  type: numeric(5)
- * @property string|null $nom_amort  type: numeric(9)
- * @property string|null $total_amort  type: numeric(9)
- * @property string|null $tgl_amort  type: varchar(8)
- * @property string|null $amort_ke  type: numeric(5)
- * @property string|null $stsrec  type: varchar(1)
+ * @property string|null $nokontrak type: varchar(11)
+ * @property string|null $kdbiaya type: numeric(5)
+ * @property string|null $tgl type: varchar(8)
+ * @property string|null $nom_awal type: numeric(9)
+ * @property string|null $jw type: numeric(5)
+ * @property string|null $nom_amort type: numeric(9)
+ * @property string|null $total_amort type: numeric(9)
+ * @property string|null $tgl_amort type: varchar(8)
+ * @property string|null $amort_ke type: numeric(5)
+ * @property string|null $stsrec type: varchar(1)
  */
 class Tofmsbbetap extends MciBaseModel
 {

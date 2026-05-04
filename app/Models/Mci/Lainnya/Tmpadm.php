@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,13 +20,13 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $nokontrak  type: char(11)
- * @property string $notab  type: char(11)
- * @property string $kdprd  type: char(2)
- * @property string $byadm  type: numeric(9)
- * @property string|null $jw  type: numeric(5)
- * @property string|null $tglakad  type: varchar(8)
- * @property string $tot_amort  type: numeric(9)
+ * @property string $nokontrak type: char(11)
+ * @property string $notab type: char(11)
+ * @property string $kdprd type: char(2)
+ * @property string $byadm type: numeric(9)
+ * @property string|null $jw type: numeric(5)
+ * @property string|null $tglakad type: varchar(8)
+ * @property string $tot_amort type: numeric(9)
  */
 class Tmpadm extends MciBaseModel
 {

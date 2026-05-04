@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\BagiHasil;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,13 +20,13 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdrek  type: varchar(1)
- * @property string|null $kdprd  type: varchar(2)
- * @property string|null $jw  type: numeric(5)
- * @property string|null $kdcab  type: varchar(3)
- * @property string|null $kdloc  type: varchar(2)
- * @property string|null $noacc  type: varchar(11)
- * @property string|null $nama  type: varchar(30)
+ * @property string|null $kdrek type: varchar(1)
+ * @property string|null $kdprd type: varchar(2)
+ * @property string|null $jw type: numeric(5)
+ * @property string|null $kdcab type: varchar(3)
+ * @property string|null $kdloc type: varchar(2)
+ * @property string|null $noacc type: varchar(11)
+ * @property string|null $nama type: varchar(30)
  */
 class Toftpremiloc extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\ReportingOjk;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,24 +20,24 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdloc  type: char(2)
- * @property string $nocif  type: varchar(10)
- * @property string|null $golcust  type: varchar(6)
- * @property string|null $hubbank  type: char(1)
- * @property string|null $jnsinstrumen  type: char(1)
- * @property string|null $norek  type: varchar(20)
- * @property string|null $tgleff  type: varchar(8)
- * @property string|null $tglexp  type: varchar(8)
- * @property string|null $jnsakad  type: char(1)
- * @property string|null $sifatinvestasi  type: char(1)
- * @property string|null $mtdbaghas  type: char(1)
- * @property string|null $nisbah  type: numeric(5)
- * @property string|null $rate_awal  type: numeric(5)
- * @property string|null $rate  type: numeric(5)
- * @property string|null $saldo  type: numeric(9)
- * @property string|null $byadm  type: numeric(9)
- * @property string|null $jumlah  type: numeric(9)
- * @property string|null $kelonggarantarik  type: numeric(9)
+ * @property string $kdloc type: char(2)
+ * @property string $nocif type: varchar(10)
+ * @property string|null $golcust type: varchar(6)
+ * @property string|null $hubbank type: char(1)
+ * @property string|null $jnsinstrumen type: char(1)
+ * @property string|null $norek type: varchar(20)
+ * @property string|null $tgleff type: varchar(8)
+ * @property string|null $tglexp type: varchar(8)
+ * @property string|null $jnsakad type: char(1)
+ * @property string|null $sifatinvestasi type: char(1)
+ * @property string|null $mtdbaghas type: char(1)
+ * @property string|null $nisbah type: numeric(5)
+ * @property string|null $rate_awal type: numeric(5)
+ * @property string|null $rate type: numeric(5)
+ * @property string|null $saldo type: numeric(9)
+ * @property string|null $byadm type: numeric(9)
+ * @property string|null $jumlah type: numeric(9)
+ * @property string|null $kelonggarantarik type: numeric(9)
  */
 class Biform25 extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,33 +20,33 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdbuku  type: varchar(2)
- * @property string|null $ket  type: varchar(30)
- * @property string|null $brspag1  type: numeric(5)
- * @property string|null $brspag2  type: numeric(5)
- * @property string|null $brsanpag  type: numeric(5)
- * @property string|null $satumuka  type: varchar(1)
- * @property string|null $kolom1  type: numeric(5)
- * @property string|null $kolom2  type: numeric(5)
- * @property string|null $kolom3  type: numeric(5)
- * @property string|null $kolom4  type: numeric(5)
- * @property string|null $kolom5  type: numeric(5)
- * @property string|null $kolom6  type: numeric(5)
- * @property string|null $kolom7  type: numeric(5)
- * @property string|null $totalpag  type: numeric(5)
- * @property string|null $totalbrs  type: numeric(5)
- * @property string|null $stsrec  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgl  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $chgtgl  type: varchar(14)
- * @property string|null $chgterm  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $auttgl  type: varchar(14)
- * @property string|null $autterm  type: varchar(10)
- * @property string|null $brstrans1  type: numeric(5)
- * @property string|null $brstrans2  type: numeric(5)
+ * @property string $kdbuku type: varchar(2)
+ * @property string|null $ket type: varchar(30)
+ * @property string|null $brspag1 type: numeric(5)
+ * @property string|null $brspag2 type: numeric(5)
+ * @property string|null $brsanpag type: numeric(5)
+ * @property string|null $satumuka type: varchar(1)
+ * @property string|null $kolom1 type: numeric(5)
+ * @property string|null $kolom2 type: numeric(5)
+ * @property string|null $kolom3 type: numeric(5)
+ * @property string|null $kolom4 type: numeric(5)
+ * @property string|null $kolom5 type: numeric(5)
+ * @property string|null $kolom6 type: numeric(5)
+ * @property string|null $kolom7 type: numeric(5)
+ * @property string|null $totalpag type: numeric(5)
+ * @property string|null $totalbrs type: numeric(5)
+ * @property string|null $stsrec type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgl type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $chgtgl type: varchar(14)
+ * @property string|null $chgterm type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $auttgl type: varchar(14)
+ * @property string|null $autterm type: varchar(10)
+ * @property string|null $brstrans1 type: numeric(5)
+ * @property string|null $brstrans2 type: numeric(5)
  */
 class Formatbuku extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,9 +20,9 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $noacva  type: varchar(25)
- * @property string|null $periode  type: varchar(6)
- * @property string|null $saldo  type: numeric(9)
+ * @property string|null $noacva type: varchar(25)
+ * @property string|null $periode type: varchar(6)
+ * @property string|null $saldo type: numeric(9)
  */
 class Tofmvacsb extends MciBaseModel
 {

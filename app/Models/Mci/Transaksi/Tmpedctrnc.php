@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Transaksi;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,22 +20,22 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $noreff  type: numeric(9)
- * @property string $noacc  type: varchar(10)
- * @property string|null $kdedc  type: varchar(30)
- * @property string|null $kdkolektor  type: varchar(10)
- * @property string $tgltrn  type: varchar(8)
- * @property string $amount  type: numeric(9)
- * @property string $ststrn  type: varchar(1)
- * @property string|null $dc  type: nvarchar(2)
- * @property string|null $inpuser  type: nvarchar(20)
- * @property string|null $noreffva  type: varchar(100)
- * @property string|null $pokok  type: numeric(9)
- * @property string|null $margin  type: numeric(9)
- * @property string $parm1  type: varchar(100)
- * @property string $parm2  type: varchar(100)
- * @property string $parm3  type: varchar(100)
- * @property string $parm4  type: varchar(100)
+ * @property string $noreff type: numeric(9)
+ * @property string $noacc type: varchar(10)
+ * @property string|null $kdedc type: varchar(30)
+ * @property string|null $kdkolektor type: varchar(10)
+ * @property string $tgltrn type: varchar(8)
+ * @property string $amount type: numeric(9)
+ * @property string $ststrn type: varchar(1)
+ * @property string|null $dc type: nvarchar(2)
+ * @property string|null $inpuser type: nvarchar(20)
+ * @property string|null $noreffva type: varchar(100)
+ * @property string|null $pokok type: numeric(9)
+ * @property string|null $margin type: numeric(9)
+ * @property string $parm1 type: varchar(100)
+ * @property string $parm2 type: varchar(100)
+ * @property string $parm3 type: varchar(100)
+ * @property string $parm4 type: varchar(100)
  */
 class Tmpedctrnc extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,13 +20,13 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $profile_id  type: varchar(30)
- * @property string $ket_profile  type: varchar(200)
- * @property string $kd_sandi  type: varchar(30)
- * @property string|null $sandi  type: varchar(50)
- * @property string|null $inpuser  type: varchar(25)
- * @property string|null $inpterm  type: varchar(25)
- * @property string|null $inptgl  type: varchar(14)
+ * @property string $profile_id type: varchar(30)
+ * @property string $ket_profile type: varchar(200)
+ * @property string $kd_sandi type: varchar(30)
+ * @property string|null $sandi type: varchar(50)
+ * @property string|null $inpuser type: varchar(25)
+ * @property string|null $inpterm type: varchar(25)
+ * @property string|null $inptgl type: varchar(14)
  */
 class Tofprofilensb extends MciBaseModel
 {

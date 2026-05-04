@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\ReportingOjk;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,13 +20,13 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $urut  type: numeric(5)
- * @property string $sandipos  type: char(7)
- * @property string $saldorata  type: numeric(9)
- * @property string|null $pendbagi  type: numeric(9)
- * @property string|null $porsi  type: numeric(5)
- * @property string|null $porsinom  type: numeric(9)
- * @property string|null $equivrate  type: decimal(9)
+ * @property string $urut type: numeric(5)
+ * @property string $sandipos type: char(7)
+ * @property string $saldorata type: numeric(9)
+ * @property string|null $pendbagi type: numeric(9)
+ * @property string|null $porsi type: numeric(5)
+ * @property string|null $porsinom type: numeric(9)
+ * @property string|null $equivrate type: decimal(9)
  */
 class Gb0900 extends MciBaseModel
 {

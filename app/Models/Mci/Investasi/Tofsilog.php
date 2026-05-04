@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Investasi;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,15 +20,15 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $ID  type: bigint(8)
- * @property string|null $tgltrn  type: varchar(8)
- * @property string|null $noreff  type: varchar(20)
- * @property string|null $noacc  type: varchar(11)
- * @property string|null $noacclawan  type: varchar(11)
- * @property string|null $amount  type: numeric(9)
- * @property string|null $ststrn  type: char(1)
- * @property string|null $ket  type: varchar(40)
- * @property string|null $prog  type: varchar(40)
+ * @property int $ID type: bigint(8)
+ * @property string|null $tgltrn type: varchar(8)
+ * @property string|null $noreff type: varchar(20)
+ * @property string|null $noacc type: varchar(11)
+ * @property string|null $noacclawan type: varchar(11)
+ * @property string|null $amount type: numeric(9)
+ * @property string|null $ststrn type: char(1)
+ * @property string|null $ket type: varchar(40)
+ * @property string|null $prog type: varchar(40)
  */
 class Tofsilog extends MciBaseModel
 {

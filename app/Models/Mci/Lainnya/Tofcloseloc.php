@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,14 +20,14 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdloc  type: char(2)
- * @property string|null $stsclose  type: varchar(1)
- * @property string|null $openuser  type: varchar(10)
- * @property string|null $opentgljam  type: varchar(20)
- * @property string|null $openterm  type: varchar(10)
- * @property string|null $closeuser  type: varchar(10)
- * @property string|null $closetgljam  type: varchar(20)
- * @property string|null $closeterm  type: varchar(10)
+ * @property string $kdloc type: char(2)
+ * @property string|null $stsclose type: varchar(1)
+ * @property string|null $openuser type: varchar(10)
+ * @property string|null $opentgljam type: varchar(20)
+ * @property string|null $openterm type: varchar(10)
+ * @property string|null $closeuser type: varchar(10)
+ * @property string|null $closetgljam type: varchar(20)
+ * @property string|null $closeterm type: varchar(10)
  */
 class Tofcloseloc extends MciBaseModel
 {

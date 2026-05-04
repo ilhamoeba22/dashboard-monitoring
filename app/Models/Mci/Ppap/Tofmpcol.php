@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Ppap;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,22 +20,22 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $nokontrak  type: varchar(11)
- * @property string|null $thbl  type: varchar(6)
- * @property string|null $collama  type: varchar(1)
- * @property string|null $colbaru  type: varchar(1)
- * @property string|null $ket  type: varchar(150)
- * @property string|null $tglexp  type: varchar(8)
- * @property string|null $stsrec  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgl  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $chgtgl  type: varchar(14)
- * @property string|null $chgterm  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $auttgl  type: varchar(14)
- * @property string|null $autterm  type: varchar(10)
+ * @property string $nokontrak type: varchar(11)
+ * @property string|null $thbl type: varchar(6)
+ * @property string|null $collama type: varchar(1)
+ * @property string|null $colbaru type: varchar(1)
+ * @property string|null $ket type: varchar(150)
+ * @property string|null $tglexp type: varchar(8)
+ * @property string|null $stsrec type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgl type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $chgtgl type: varchar(14)
+ * @property string|null $chgterm type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $auttgl type: varchar(14)
+ * @property string|null $autterm type: varchar(10)
  */
 class Tofmpcol extends MciBaseModel
 {

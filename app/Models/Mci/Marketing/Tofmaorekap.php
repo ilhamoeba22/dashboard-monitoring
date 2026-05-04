@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Marketing;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,22 +20,22 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdao  type: varchar(10)
- * @property string|null $periode  type: varchar(6)
- * @property string|null $npf_rata  type: numeric(5)
- * @property string|null $bonusnpf  type: numeric(9)
- * @property string|null $qty_1  type: numeric(5)
- * @property string|null $qty_2  type: numeric(5)
- * @property string|null $qty_3  type: numeric(5)
- * @property string|null $qty_4  type: numeric(5)
- * @property string|null $qty_5  type: numeric(9)
- * @property string|null $qty_1_baru  type: numeric(5)
- * @property string|null $qty_2_baru  type: numeric(5)
- * @property string|null $qty_3_baru  type: numeric(5)
- * @property string|null $qty_4_baru  type: numeric(5)
- * @property string|null $qty_5_baru  type: numeric(5)
- * @property string|null $bonustopup  type: numeric(9)
- * @property string|null $bonusbaru  type: numeric(9)
+ * @property string|null $kdao type: varchar(10)
+ * @property string|null $periode type: varchar(6)
+ * @property string|null $npf_rata type: numeric(5)
+ * @property string|null $bonusnpf type: numeric(9)
+ * @property string|null $qty_1 type: numeric(5)
+ * @property string|null $qty_2 type: numeric(5)
+ * @property string|null $qty_3 type: numeric(5)
+ * @property string|null $qty_4 type: numeric(5)
+ * @property string|null $qty_5 type: numeric(9)
+ * @property string|null $qty_1_baru type: numeric(5)
+ * @property string|null $qty_2_baru type: numeric(5)
+ * @property string|null $qty_3_baru type: numeric(5)
+ * @property string|null $qty_4_baru type: numeric(5)
+ * @property string|null $qty_5_baru type: numeric(5)
+ * @property string|null $bonustopup type: numeric(9)
+ * @property string|null $bonusbaru type: numeric(9)
  */
 class Tofmaorekap extends MciBaseModel
 {

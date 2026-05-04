@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,11 +20,11 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $ID  type: bigint(8)
- * @property string $tgltrn  type: varchar(8)
- * @property string|null $noreff  type: varchar(30)
- * @property int|null $err_number  type: int(4)
- * @property string|null $err_message  type: varchar(255)
+ * @property int $ID type: bigint(8)
+ * @property string $tgltrn type: varchar(8)
+ * @property string|null $noreff type: varchar(30)
+ * @property int|null $err_number type: int(4)
+ * @property string|null $err_message type: varchar(255)
  */
 class Logtrncem extends MciBaseModel
 {

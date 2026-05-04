@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,31 +20,31 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $pbt_tnam  type: char(30)
- * @property int|null $pbt_tid  type: int(4)
- * @property string|null $pbt_ownr  type: char(30)
- * @property int|null $pbd_fhgt  type: smallint(2)
- * @property int|null $pbd_fwgt  type: smallint(2)
- * @property string|null $pbd_fitl  type: char(1)
- * @property string|null $pbd_funl  type: char(1)
- * @property int|null $pbd_fchr  type: smallint(2)
- * @property int|null $pbd_fptc  type: smallint(2)
- * @property string|null $pbd_ffce  type: char(32)
- * @property int|null $pbh_fhgt  type: smallint(2)
- * @property int|null $pbh_fwgt  type: smallint(2)
- * @property string|null $pbh_fitl  type: char(1)
- * @property string|null $pbh_funl  type: char(1)
- * @property int|null $pbh_fchr  type: smallint(2)
- * @property int|null $pbh_fptc  type: smallint(2)
- * @property string|null $pbh_ffce  type: char(32)
- * @property int|null $pbl_fhgt  type: smallint(2)
- * @property int|null $pbl_fwgt  type: smallint(2)
- * @property string|null $pbl_fitl  type: char(1)
- * @property string|null $pbl_funl  type: char(1)
- * @property int|null $pbl_fchr  type: smallint(2)
- * @property int|null $pbl_fptc  type: smallint(2)
- * @property string|null $pbl_ffce  type: char(32)
- * @property string|null $pbt_cmnt  type: varchar(254)
+ * @property string|null $pbt_tnam type: char(30)
+ * @property int|null $pbt_tid type: int(4)
+ * @property string|null $pbt_ownr type: char(30)
+ * @property int|null $pbd_fhgt type: smallint(2)
+ * @property int|null $pbd_fwgt type: smallint(2)
+ * @property string|null $pbd_fitl type: char(1)
+ * @property string|null $pbd_funl type: char(1)
+ * @property int|null $pbd_fchr type: smallint(2)
+ * @property int|null $pbd_fptc type: smallint(2)
+ * @property string|null $pbd_ffce type: char(32)
+ * @property int|null $pbh_fhgt type: smallint(2)
+ * @property int|null $pbh_fwgt type: smallint(2)
+ * @property string|null $pbh_fitl type: char(1)
+ * @property string|null $pbh_funl type: char(1)
+ * @property int|null $pbh_fchr type: smallint(2)
+ * @property int|null $pbh_fptc type: smallint(2)
+ * @property string|null $pbh_ffce type: char(32)
+ * @property int|null $pbl_fhgt type: smallint(2)
+ * @property int|null $pbl_fwgt type: smallint(2)
+ * @property string|null $pbl_fitl type: char(1)
+ * @property string|null $pbl_funl type: char(1)
+ * @property int|null $pbl_fchr type: smallint(2)
+ * @property int|null $pbl_fptc type: smallint(2)
+ * @property string|null $pbl_ffce type: char(32)
+ * @property string|null $pbt_cmnt type: varchar(254)
  */
 class Pbcattbl extends MciBaseModel
 {

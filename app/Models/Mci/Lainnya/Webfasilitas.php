@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,17 +20,17 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdfasilitas  type: varchar(100)
- * @property string|null $nmfasilitas  type: varchar(255)
- * @property string|null $kdparent  type: varchar(100)
- * @property string|null $icon  type: varchar(50)
- * @property int|null $urut  type: int(4)
- * @property string|null $hide_sidemenu  type: varchar(1)
- * @property string|null $tipe  type: varchar(20)
- * @property string|null $path_services  type: varchar(-1)
- * @property string|null $is_public  type: varchar(1)
- * @property string|null $custom_url  type: varchar(100)
- * @property string|null $appid  type: varchar(6)
+ * @property string $kdfasilitas type: varchar(100)
+ * @property string|null $nmfasilitas type: varchar(255)
+ * @property string|null $kdparent type: varchar(100)
+ * @property string|null $icon type: varchar(50)
+ * @property int|null $urut type: int(4)
+ * @property string|null $hide_sidemenu type: varchar(1)
+ * @property string|null $tipe type: varchar(20)
+ * @property string|null $path_services type: varchar(-1)
+ * @property string|null $is_public type: varchar(1)
+ * @property string|null $custom_url type: varchar(100)
+ * @property string|null $appid type: varchar(6)
  */
 class Webfasilitas extends MciBaseModel
 {

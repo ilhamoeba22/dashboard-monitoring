@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,29 +20,29 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $tgltrn  type: varchar(10)
- * @property string|null $trnuser  type: varchar(10)
- * @property string|null $notrn  type: varchar(10)
- * @property string|null $noreg  type: varchar(25)
- * @property string|null $kdloc  type: varchar(3)
- * @property string|null $sbbdr  type: varchar(10)
- * @property string|null $sbbcr  type: varchar(10)
- * @property string|null $dokumen  type: varchar(250)
- * @property int|null $qty  type: int(4)
- * @property string|null $nominal  type: numeric(9)
- * @property string|null $ket  type: varchar(250)
- * @property string|null $ststrn  type: char(1)
- * @property string|null $jnstrx  type: char(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgl  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $chgtgl  type: varchar(14)
- * @property string|null $chgterm  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $auttgl  type: varchar(14)
- * @property string|null $autterm  type: varchar(10)
- * @property string|null $w_prog  type: varchar(25)
+ * @property string|null $tgltrn type: varchar(10)
+ * @property string|null $trnuser type: varchar(10)
+ * @property string|null $notrn type: varchar(10)
+ * @property string|null $noreg type: varchar(25)
+ * @property string|null $kdloc type: varchar(3)
+ * @property string|null $sbbdr type: varchar(10)
+ * @property string|null $sbbcr type: varchar(10)
+ * @property string|null $dokumen type: varchar(250)
+ * @property int|null $qty type: int(4)
+ * @property string|null $nominal type: numeric(9)
+ * @property string|null $ket type: varchar(250)
+ * @property string|null $ststrn type: char(1)
+ * @property string|null $jnstrx type: char(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgl type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $chgtgl type: varchar(14)
+ * @property string|null $chgterm type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $auttgl type: varchar(14)
+ * @property string|null $autterm type: varchar(10)
+ * @property string|null $w_prog type: varchar(25)
  */
 class HTofasethp extends MciBaseModel
 {

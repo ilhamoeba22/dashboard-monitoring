@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Pajak;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,14 +20,14 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $periode  type: varchar(10)
- * @property string|null $kdtax  type: varchar(10)
- * @property string|null $nosbb  type: varchar(11)
- * @property string|null $nmsbb  type: varchar(50)
- * @property string|null $saldo  type: numeric(9)
- * @property string|null $koreksi  type: numeric(9)
- * @property string|null $fiskal  type: numeric(9)
- * @property string|null $inpuser  type: varchar(10)
+ * @property string $periode type: varchar(10)
+ * @property string|null $kdtax type: varchar(10)
+ * @property string|null $nosbb type: varchar(11)
+ * @property string|null $nmsbb type: varchar(50)
+ * @property string|null $saldo type: numeric(9)
+ * @property string|null $koreksi type: numeric(9)
+ * @property string|null $fiskal type: numeric(9)
+ * @property string|null $inpuser type: varchar(10)
  */
 class Tofmpajak extends MciBaseModel
 {

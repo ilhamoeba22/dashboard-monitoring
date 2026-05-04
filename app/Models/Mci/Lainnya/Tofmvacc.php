@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,18 +20,18 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdlembaga  type: varchar(10)
- * @property string|null $noacva  type: varchar(20)
- * @property string|null $mutasidr  type: numeric(9)
- * @property string|null $mutasicr  type: numeric(9)
- * @property string|null $sahirrp  type: numeric(9)
- * @property string|null $saldoblok  type: numeric(9)
- * @property string|null $saldobuku  type: numeric(9)
- * @property string|null $kdbuku  type: varchar(2)
- * @property string|null $hal  type: numeric(5)
- * @property string|null $brs  type: numeric(5)
- * @property string|null $notrn  type: numeric(5)
- * @property string|null $stsrec  type: varchar(1)
+ * @property string|null $kdlembaga type: varchar(10)
+ * @property string|null $noacva type: varchar(20)
+ * @property string|null $mutasidr type: numeric(9)
+ * @property string|null $mutasicr type: numeric(9)
+ * @property string|null $sahirrp type: numeric(9)
+ * @property string|null $saldoblok type: numeric(9)
+ * @property string|null $saldobuku type: numeric(9)
+ * @property string|null $kdbuku type: varchar(2)
+ * @property string|null $hal type: numeric(5)
+ * @property string|null $brs type: numeric(5)
+ * @property string|null $notrn type: numeric(5)
+ * @property string|null $stsrec type: varchar(1)
  */
 class Tofmvacc extends MciBaseModel
 {

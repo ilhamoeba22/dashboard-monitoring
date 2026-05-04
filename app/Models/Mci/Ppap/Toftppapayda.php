@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Ppap;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,25 +20,25 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $ppap_01  type: numeric(5)
- * @property string|null $ppap_02  type: numeric(5)
- * @property string|null $ppap_03  type: numeric(5)
- * @property string|null $sbbbyppap  type: varchar(7)
- * @property string|null $sbbppap  type: varchar(7)
- * @property string|null $autopost  type: varchar(1)
- * @property string|null $stsrec  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgljam  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $chgtgljam  type: varchar(14)
- * @property string|null $chgterm  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $auttgljam  type: varchar(14)
- * @property string|null $autterm  type: varchar(10)
- * @property string|null $sbblaba  type: varchar(7)
- * @property string|null $sbbrugi  type: varchar(7)
- * @property string|null $sbbttp  type: varchar(7)
+ * @property string|null $ppap_01 type: numeric(5)
+ * @property string|null $ppap_02 type: numeric(5)
+ * @property string|null $ppap_03 type: numeric(5)
+ * @property string|null $sbbbyppap type: varchar(7)
+ * @property string|null $sbbppap type: varchar(7)
+ * @property string|null $autopost type: varchar(1)
+ * @property string|null $stsrec type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgljam type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $chgtgljam type: varchar(14)
+ * @property string|null $chgterm type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $auttgljam type: varchar(14)
+ * @property string|null $autterm type: varchar(10)
+ * @property string|null $sbblaba type: varchar(7)
+ * @property string|null $sbbrugi type: varchar(7)
+ * @property string|null $sbbttp type: varchar(7)
  */
 class Toftppapayda extends MciBaseModel
 {

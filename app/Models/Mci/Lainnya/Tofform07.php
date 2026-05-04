@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,37 +20,37 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kode_laporan  type: varchar(4)
- * @property string|null $sandi_form  type: varchar(2)
- * @property string|null $sandi_bank  type: varchar(6)
- * @property string|null $sandi_kantor  type: varchar(3)
- * @property string|null $bulan  type: varchar(2)
- * @property string|null $tahun  type: varchar(4)
- * @property string|null $nomor_rekening  type: varchar(15)
- * @property string|null $jumlah_rekening  type: numeric(5)
- * @property string|null $jenis_pembiayaan  type: varchar(2)
- * @property string|null $jns_penggunaan  type: varchar(2)
- * @property string|null $hubungan  type: varchar(1)
- * @property string|null $tglawal  type: varchar(8)
- * @property string|null $tglakhir  type: varchar(8)
- * @property string|null $kolektibilitas  type: varchar(1)
- * @property string|null $tingkat_imbalan  type: varchar(5)
- * @property string|null $sektor_ekonomi  type: varchar(4)
- * @property string|null $plafond  type: numeric(9)
- * @property string|null $kelonggaran_tarik  type: numeric(9)
- * @property string|null $saldo_pembiayaan  type: numeric(9)
- * @property string|null $jns_agunan  type: varchar(1)
- * @property string|null $nilai_agunan  type: numeric(9)
- * @property string|null $ppap  type: numeric(9)
- * @property string|null $sifat  type: varchar(1)
- * @property string|null $mtd_bg_hsl_pemb  type: varchar(1)
- * @property string|null $mtd_bg_hsl_sd  type: varchar(1)
- * @property string|null $gol_penjamin  type: varchar(3)
- * @property string|null $bag_dijamin  type: varchar(4)
- * @property string|null $gol_nasabah  type: varchar(3)
- * @property string|null $lok_usaha_nasabah  type: varchar(4)
- * @property string|null $gol_pembiayaan  type: varchar(1)
- * @property string|null $kdloc  type: varchar(2)
+ * @property string|null $kode_laporan type: varchar(4)
+ * @property string|null $sandi_form type: varchar(2)
+ * @property string|null $sandi_bank type: varchar(6)
+ * @property string|null $sandi_kantor type: varchar(3)
+ * @property string|null $bulan type: varchar(2)
+ * @property string|null $tahun type: varchar(4)
+ * @property string|null $nomor_rekening type: varchar(15)
+ * @property string|null $jumlah_rekening type: numeric(5)
+ * @property string|null $jenis_pembiayaan type: varchar(2)
+ * @property string|null $jns_penggunaan type: varchar(2)
+ * @property string|null $hubungan type: varchar(1)
+ * @property string|null $tglawal type: varchar(8)
+ * @property string|null $tglakhir type: varchar(8)
+ * @property string|null $kolektibilitas type: varchar(1)
+ * @property string|null $tingkat_imbalan type: varchar(5)
+ * @property string|null $sektor_ekonomi type: varchar(4)
+ * @property string|null $plafond type: numeric(9)
+ * @property string|null $kelonggaran_tarik type: numeric(9)
+ * @property string|null $saldo_pembiayaan type: numeric(9)
+ * @property string|null $jns_agunan type: varchar(1)
+ * @property string|null $nilai_agunan type: numeric(9)
+ * @property string|null $ppap type: numeric(9)
+ * @property string|null $sifat type: varchar(1)
+ * @property string|null $mtd_bg_hsl_pemb type: varchar(1)
+ * @property string|null $mtd_bg_hsl_sd type: varchar(1)
+ * @property string|null $gol_penjamin type: varchar(3)
+ * @property string|null $bag_dijamin type: varchar(4)
+ * @property string|null $gol_nasabah type: varchar(3)
+ * @property string|null $lok_usaha_nasabah type: varchar(4)
+ * @property string|null $gol_pembiayaan type: varchar(1)
+ * @property string|null $kdloc type: varchar(2)
  */
 class Tofform07 extends MciBaseModel
 {

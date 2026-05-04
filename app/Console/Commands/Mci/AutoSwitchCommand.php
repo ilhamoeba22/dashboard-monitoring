@@ -20,7 +20,8 @@ use Illuminate\Console\Command;
  */
 class AutoSwitchCommand extends Command
 {
-    protected $signature   = 'mci:auto-switch {--dry-run : Hanya tampilkan tanpa switch} {--force : Paksa switch walau sudah sama}';
+    protected $signature = 'mci:auto-switch {--dry-run : Hanya tampilkan tanpa switch} {--force : Paksa switch walau sudah sama}';
+
     protected $description = 'Auto-detect dan switch ke database MCI terbaru (dijalankan scheduler setiap hari)';
 
     public function __construct(private readonly MciConnectionService $mci)
@@ -37,14 +38,15 @@ class AutoSwitchCommand extends Command
         if (empty($databases)) {
             $this->error('❌ Tidak ada database MCI_* ditemukan di SQL Server.');
             $this->warn('   Pastikan koneksi SQL Server sudah benar di .env');
+
             return self::FAILURE;
         }
 
-        $this->info("📋 Database ditemukan: " . count($databases));
+        $this->info('📋 Database ditemukan: '.count($databases));
 
         $meta = $this->mci->getDatabasesWithMeta();
         $headers = ['Database', 'Tanggal', 'Status'];
-        $rows    = array_map(fn ($db) => [
+        $rows = array_map(fn ($db) => [
             $db['name'],
             $db['period'] ?? '-',
             $db['status'],
@@ -52,7 +54,7 @@ class AutoSwitchCommand extends Command
 
         $this->table($headers, $rows);
 
-        $latest  = $this->mci->detectLatestDatabase();
+        $latest = $this->mci->detectLatestDatabase();
         $current = $this->mci->getActiveDatabase();
 
         $this->line('');
@@ -61,16 +63,19 @@ class AutoSwitchCommand extends Command
 
         if ($this->option('dry-run')) {
             $this->warn('🏃 DRY-RUN mode: Tidak ada perubahan yang dilakukan.');
+
             return self::SUCCESS;
         }
 
         if ($latest === null) {
             $this->error('❌ Tidak bisa menentukan database terbaru.');
+
             return self::FAILURE;
         }
 
         if ($latest === $current && ! $this->option('force')) {
             $this->info('✅ Database sudah up-to-date. Tidak perlu switch.');
+
             return self::SUCCESS;
         }
 
@@ -85,10 +90,12 @@ class AutoSwitchCommand extends Command
         if ($switched) {
             $this->info("✅ Berhasil switch ke: <comment>{$latest}</comment>");
             $this->info('   Cache akan di-clear otomatis oleh scheduler.');
+
             return self::SUCCESS;
         }
 
         $this->error("❌ Gagal switch ke database: {$latest}");
+
         return self::FAILURE;
     }
 }

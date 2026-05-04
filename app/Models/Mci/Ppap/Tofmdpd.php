@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Ppap;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,19 +20,19 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $noacc  type: varchar(16)
- * @property string|null $nama  type: varchar(30)
- * @property string|null $kdaoh  type: varchar(10)
- * @property string|null $kdaop  type: varchar(10)
- * @property string|null $kdkolektor  type: varchar(10)
- * @property string|null $kdwil  type: varchar(5)
- * @property string|null $kdbank  type: varchar(3)
- * @property string|null $kdcab  type: varchar(2)
- * @property string|null $kdloc  type: varchar(2)
- * @property string|null $dpd  type: numeric(5)
- * @property string|null $tot_pokok  type: numeric(9)
- * @property string|null $tot_bunga  type: numeric(9)
- * @property string|null $tot_os  type: numeric(9)
+ * @property string|null $noacc type: varchar(16)
+ * @property string|null $nama type: varchar(30)
+ * @property string|null $kdaoh type: varchar(10)
+ * @property string|null $kdaop type: varchar(10)
+ * @property string|null $kdkolektor type: varchar(10)
+ * @property string|null $kdwil type: varchar(5)
+ * @property string|null $kdbank type: varchar(3)
+ * @property string|null $kdcab type: varchar(2)
+ * @property string|null $kdloc type: varchar(2)
+ * @property string|null $dpd type: numeric(5)
+ * @property string|null $tot_pokok type: numeric(9)
+ * @property string|null $tot_bunga type: numeric(9)
+ * @property string|null $tot_os type: numeric(9)
  */
 class Tofmdpd extends MciBaseModel
 {

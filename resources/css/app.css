@@ -1,11 +1,56 @@
-@import 'tailwindcss';
+/* Global App CSS — Vuetify handles most styling */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'DM Sans', sans-serif;
+}
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+/* Heading font */
+h1, h2, h3, h4, h5, h6,
+.v-card-title,
+.text-h4, .text-h5, .text-h6 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(5, 150, 105, 0.3);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(5, 150, 105, 0.6);
+}
+
+/* Smooth transitions globally */
+.v-card, .v-btn, .v-chip {
+  transition: all 0.2s ease !important;
+}
+
+/* Hover lift on cards */
+.v-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.12) !important;
+}
+
+/* Letter spacing utility */
+.tracking-widest {
+  letter-spacing: 0.12em;
+}
+
+/* Number font — monospace for financial data */
+.font-mono,
+.financial-number {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }

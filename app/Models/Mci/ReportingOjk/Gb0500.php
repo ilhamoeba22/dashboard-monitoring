@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\ReportingOjk;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,26 +20,26 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $nama  type: varchar(50)
- * @property string $nocif  type: varchar(10)
- * @property string|null $norek  type: varchar(20)
- * @property string|null $nik  type: varchar(16)
- * @property string|null $kdgroup  type: varchar(10)
- * @property string|null $mtdrest  type: char(2)
- * @property string|null $frek  type: numeric(5)
- * @property string|null $old_jnsakad  type: char(1)
- * @property string|null $old_osmdlc  type: numeric(9)
- * @property string|null $old_osmgnc  type: numeric(9)
- * @property string|null $old_tgleff  type: varchar(8)
- * @property string|null $old_tglexp  type: varchar(8)
- * @property string|null $old_coll  type: varchar(8)
- * @property string|null $new_jnsakad  type: char(1)
- * @property string|null $new_osmdlc  type: numeric(9)
- * @property string|null $new_osmgnc  type: numeric(9)
- * @property string|null $new_tgleff  type: varchar(8)
- * @property string|null $new_tglexp  type: varchar(8)
- * @property string|null $new_coll  type: varchar(8)
- * @property string|null $pokpby  type: char(2)
+ * @property string $nama type: varchar(50)
+ * @property string $nocif type: varchar(10)
+ * @property string|null $norek type: varchar(20)
+ * @property string|null $nik type: varchar(16)
+ * @property string|null $kdgroup type: varchar(10)
+ * @property string|null $mtdrest type: char(2)
+ * @property string|null $frek type: numeric(5)
+ * @property string|null $old_jnsakad type: char(1)
+ * @property string|null $old_osmdlc type: numeric(9)
+ * @property string|null $old_osmgnc type: numeric(9)
+ * @property string|null $old_tgleff type: varchar(8)
+ * @property string|null $old_tglexp type: varchar(8)
+ * @property string|null $old_coll type: varchar(8)
+ * @property string|null $new_jnsakad type: char(1)
+ * @property string|null $new_osmdlc type: numeric(9)
+ * @property string|null $new_osmgnc type: numeric(9)
+ * @property string|null $new_tgleff type: varchar(8)
+ * @property string|null $new_tglexp type: varchar(8)
+ * @property string|null $new_coll type: varchar(8)
+ * @property string|null $pokpby type: char(2)
  */
 class Gb0500 extends MciBaseModel
 {

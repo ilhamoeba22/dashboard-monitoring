@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,33 +20,33 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $nokontrak  type: varchar(11)
- * @property string|null $nocif  type: varchar(9)
- * @property string|null $coll_1  type: char(1)
- * @property string|null $dpd_1  type: numeric(9)
- * @property string|null $coll_2  type: char(1)
- * @property string|null $dpd_2  type: numeric(9)
- * @property string|null $coll_3  type: char(1)
- * @property string|null $dpd_3  type: numeric(9)
- * @property string|null $coll_4  type: char(1)
- * @property string|null $dpd_4  type: numeric(9)
- * @property string|null $coll_5  type: char(1)
- * @property string|null $dpd_5  type: numeric(9)
- * @property string|null $coll_6  type: char(1)
- * @property string|null $dpd_6  type: numeric(9)
- * @property string|null $coll_7  type: char(1)
- * @property string|null $dpd_7  type: numeric(9)
- * @property string|null $coll_8  type: char(1)
- * @property string|null $dpd_8  type: numeric(9)
- * @property string|null $coll_9  type: char(1)
- * @property string|null $dpd_9  type: numeric(9)
- * @property string|null $coll_10  type: char(1)
- * @property string|null $dpd_10  type: numeric(9)
- * @property string|null $coll_11  type: char(1)
- * @property string|null $dpd_11  type: numeric(9)
- * @property string|null $coll_12  type: char(1)
- * @property string|null $dpd_12  type: numeric(9)
- * @property string|null $stsrec  type: char(1)
+ * @property string|null $nokontrak type: varchar(11)
+ * @property string|null $nocif type: varchar(9)
+ * @property string|null $coll_1 type: char(1)
+ * @property string|null $dpd_1 type: numeric(9)
+ * @property string|null $coll_2 type: char(1)
+ * @property string|null $dpd_2 type: numeric(9)
+ * @property string|null $coll_3 type: char(1)
+ * @property string|null $dpd_3 type: numeric(9)
+ * @property string|null $coll_4 type: char(1)
+ * @property string|null $dpd_4 type: numeric(9)
+ * @property string|null $coll_5 type: char(1)
+ * @property string|null $dpd_5 type: numeric(9)
+ * @property string|null $coll_6 type: char(1)
+ * @property string|null $dpd_6 type: numeric(9)
+ * @property string|null $coll_7 type: char(1)
+ * @property string|null $dpd_7 type: numeric(9)
+ * @property string|null $coll_8 type: char(1)
+ * @property string|null $dpd_8 type: numeric(9)
+ * @property string|null $coll_9 type: char(1)
+ * @property string|null $dpd_9 type: numeric(9)
+ * @property string|null $coll_10 type: char(1)
+ * @property string|null $dpd_10 type: numeric(9)
+ * @property string|null $coll_11 type: char(1)
+ * @property string|null $dpd_11 type: numeric(9)
+ * @property string|null $coll_12 type: char(1)
+ * @property string|null $dpd_12 type: numeric(9)
+ * @property string|null $stsrec type: char(1)
  */
 class Tmpsliksum extends MciBaseModel
 {

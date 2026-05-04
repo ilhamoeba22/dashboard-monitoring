@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Saving;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,24 +20,24 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $ID  type: bigint(8)
- * @property string $notab  type: varchar(11)
- * @property string|null $qty  type: numeric(5)
- * @property string|null $nama_1  type: varchar(50)
- * @property string|null $nama_2  type: varchar(50)
- * @property string|null $nama_3  type: varchar(50)
- * @property string|null $id_1  type: varchar(20)
- * @property string|null $id_2  type: varchar(20)
- * @property string|null $id_3  type: varchar(20)
- * @property string|null $nocif_1  type: varchar(9)
- * @property string|null $nocif_2  type: varchar(9)
- * @property string|null $nocif_3  type: varchar(9)
- * @property string|null $limit_1  type: numeric(9)
- * @property string|null $limit_2  type: numeric(9)
- * @property string|null $limit_3  type: numeric(9)
- * @property string $andor_1  type: char(1)
- * @property string $andor_2  type: char(1)
- * @property string $andor_3  type: char(1)
+ * @property int $ID type: bigint(8)
+ * @property string $notab type: varchar(11)
+ * @property string|null $qty type: numeric(5)
+ * @property string|null $nama_1 type: varchar(50)
+ * @property string|null $nama_2 type: varchar(50)
+ * @property string|null $nama_3 type: varchar(50)
+ * @property string|null $id_1 type: varchar(20)
+ * @property string|null $id_2 type: varchar(20)
+ * @property string|null $id_3 type: varchar(20)
+ * @property string|null $nocif_1 type: varchar(9)
+ * @property string|null $nocif_2 type: varchar(9)
+ * @property string|null $nocif_3 type: varchar(9)
+ * @property string|null $limit_1 type: numeric(9)
+ * @property string|null $limit_2 type: numeric(9)
+ * @property string|null $limit_3 type: numeric(9)
+ * @property string $andor_1 type: char(1)
+ * @property string $andor_2 type: char(1)
+ * @property string $andor_3 type: char(1)
  */
 class Toftabsign extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Sms;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,9 +20,9 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdprd  type: varchar(2)
- * @property string $notab  type: varchar(10)
- * @property string $nocif  type: varchar(10)
+ * @property string $kdprd type: varchar(2)
+ * @property string $notab type: varchar(10)
+ * @property string $nocif type: varchar(10)
  */
 class Tofesms extends MciBaseModel
 {

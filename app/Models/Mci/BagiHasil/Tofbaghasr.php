@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\BagiHasil;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,23 +20,23 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $tgltrn  type: varchar(8)
- * @property string|null $kdcab  type: varchar(3)
- * @property string|null $nosbb  type: varchar(11)
- * @property string|null $kdac  type: varchar(1)
- * @property string|null $kdprd  type: varchar(2)
- * @property string|null $cc  type: varchar(2)
- * @property string|null $jw  type: numeric(5)
- * @property string|null $jnsjw  type: varchar(1)
- * @property string|null $totdana  type: numeric(9)
- * @property string|null $danarata  type: numeric(9)
- * @property string|null $bobot  type: numeric(5)
- * @property string|null $danatbg  type: numeric(9)
- * @property string|null $dapat  type: numeric(9)
- * @property string|null $biaya  type: numeric(9)
- * @property string|null $nisbah  type: numeric(5)
- * @property string|null $baghas  type: numeric(9)
- * @property string|null $equiv  type: numeric(5)
+ * @property string $tgltrn type: varchar(8)
+ * @property string|null $kdcab type: varchar(3)
+ * @property string|null $nosbb type: varchar(11)
+ * @property string|null $kdac type: varchar(1)
+ * @property string|null $kdprd type: varchar(2)
+ * @property string|null $cc type: varchar(2)
+ * @property string|null $jw type: numeric(5)
+ * @property string|null $jnsjw type: varchar(1)
+ * @property string|null $totdana type: numeric(9)
+ * @property string|null $danarata type: numeric(9)
+ * @property string|null $bobot type: numeric(5)
+ * @property string|null $danatbg type: numeric(9)
+ * @property string|null $dapat type: numeric(9)
+ * @property string|null $biaya type: numeric(9)
+ * @property string|null $nisbah type: numeric(5)
+ * @property string|null $baghas type: numeric(9)
+ * @property string|null $equiv type: numeric(5)
  */
 class Tofbaghasr extends MciBaseModel
 {

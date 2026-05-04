@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\UserAuth;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,21 +20,21 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $uuid  type: varchar(200)
- * @property string $mitraid  type: varchar(200)
- * @property string $appid  type: varchar(200)
- * @property string $partnerid  type: varchar(200)
- * @property string $clientid  type: varchar(200)
- * @property string $clientsecret  type: varchar(200)
- * @property string $clienthash  type: varchar(200)
- * @property string $apikey  type: varchar(200)
- * @property string $exptime  type: varchar(14)
- * @property string $granttype  type: varchar(200)
- * @property string $stsrec  type: char(1)
- * @property string $publickeyfile  type: varchar(50)
- * @property string $privatekeyfile  type: varchar(50)
- * @property string $servicefilter  type: varchar(-1)
- * @property string $regid  type: varchar(-1)
+ * @property string $uuid type: varchar(200)
+ * @property string $mitraid type: varchar(200)
+ * @property string $appid type: varchar(200)
+ * @property string $partnerid type: varchar(200)
+ * @property string $clientid type: varchar(200)
+ * @property string $clientsecret type: varchar(200)
+ * @property string $clienthash type: varchar(200)
+ * @property string $apikey type: varchar(200)
+ * @property string $exptime type: varchar(14)
+ * @property string $granttype type: varchar(200)
+ * @property string $stsrec type: char(1)
+ * @property string $publickeyfile type: varchar(50)
+ * @property string $privatekeyfile type: varchar(50)
+ * @property string $servicefilter type: varchar(-1)
+ * @property string $regid type: varchar(-1)
  */
 class Mgsecauthcfg extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,16 +20,16 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kodeprd  type: varchar(2)
- * @property string $tahap  type: varchar(2)
- * @property string $noacc  type: varchar(11)
- * @property string|null $totalsaldo  type: numeric(9)
- * @property string|null $saldorata  type: numeric(9)
- * @property string|null $kelipatansaldo  type: numeric(9)
- * @property string|null $point  type: numeric(5)
- * @property string|null $noundianawal  type: numeric(9)
- * @property string|null $noundianakhir  type: numeric(9)
- * @property string|null $tglproses  type: varchar(8)
+ * @property string $kodeprd type: varchar(2)
+ * @property string $tahap type: varchar(2)
+ * @property string $noacc type: varchar(11)
+ * @property string|null $totalsaldo type: numeric(9)
+ * @property string|null $saldorata type: numeric(9)
+ * @property string|null $kelipatansaldo type: numeric(9)
+ * @property string|null $point type: numeric(5)
+ * @property string|null $noundianawal type: numeric(9)
+ * @property string|null $noundianakhir type: numeric(9)
+ * @property string|null $tglproses type: varchar(8)
  */
 class MTabunganUndian extends MciBaseModel
 {

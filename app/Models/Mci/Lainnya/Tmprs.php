@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,24 +20,24 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $nokontrak  type: varchar(11)
- * @property string|null $thn  type: varchar(4)
- * @property string|null $bln  type: varchar(2)
- * @property string|null $tgl  type: varchar(2)
- * @property string|null $tgltagih  type: varchar(8)
- * @property string|null $tgljt  type: varchar(8)
- * @property string|null $os  type: numeric(9)
- * @property string|null $tagmdl  type: numeric(9)
- * @property string|null $tagmgn  type: numeric(9)
- * @property string|null $tagdnd  type: numeric(9)
- * @property string|null $stsrec  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgljam  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $porsi_bank  type: numeric(9)
- * @property string|null $porsi_cust  type: numeric(9)
- * @property string|null $porsi_bank_p  type: numeric(5)
- * @property string|null $porsi_cust_p  type: numeric(5)
+ * @property string|null $nokontrak type: varchar(11)
+ * @property string|null $thn type: varchar(4)
+ * @property string|null $bln type: varchar(2)
+ * @property string|null $tgl type: varchar(2)
+ * @property string|null $tgltagih type: varchar(8)
+ * @property string|null $tgljt type: varchar(8)
+ * @property string|null $os type: numeric(9)
+ * @property string|null $tagmdl type: numeric(9)
+ * @property string|null $tagmgn type: numeric(9)
+ * @property string|null $tagdnd type: numeric(9)
+ * @property string|null $stsrec type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgljam type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $porsi_bank type: numeric(9)
+ * @property string|null $porsi_cust type: numeric(9)
+ * @property string|null $porsi_bank_p type: numeric(5)
+ * @property string|null $porsi_cust_p type: numeric(5)
  */
 class Tmprs extends MciBaseModel
 {

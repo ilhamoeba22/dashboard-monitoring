@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,23 +20,23 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $periode  type: varchar(6)
- * @property string $nosbb  type: varchar(7)
- * @property string $kdloc  type: varchar(2)
- * @property string|null $des_thnlalu  type: numeric(9)
- * @property string|null $jan  type: numeric(9)
- * @property string|null $feb  type: numeric(9)
- * @property string|null $mar  type: numeric(9)
- * @property string|null $apr  type: numeric(9)
- * @property string|null $mei  type: numeric(9)
- * @property string|null $jun  type: numeric(9)
- * @property string|null $jul  type: numeric(9)
- * @property string|null $ags  type: numeric(9)
- * @property string|null $sep  type: numeric(9)
- * @property string|null $okt  type: numeric(9)
- * @property string|null $nov  type: numeric(9)
- * @property string|null $des  type: numeric(9)
- * @property string|null $batch  type: numeric(5)
+ * @property string $periode type: varchar(6)
+ * @property string $nosbb type: varchar(7)
+ * @property string $kdloc type: varchar(2)
+ * @property string|null $des_thnlalu type: numeric(9)
+ * @property string|null $jan type: numeric(9)
+ * @property string|null $feb type: numeric(9)
+ * @property string|null $mar type: numeric(9)
+ * @property string|null $apr type: numeric(9)
+ * @property string|null $mei type: numeric(9)
+ * @property string|null $jun type: numeric(9)
+ * @property string|null $jul type: numeric(9)
+ * @property string|null $ags type: numeric(9)
+ * @property string|null $sep type: numeric(9)
+ * @property string|null $okt type: numeric(9)
+ * @property string|null $nov type: numeric(9)
+ * @property string|null $des type: numeric(9)
+ * @property string|null $batch type: numeric(5)
  */
 class Tmppendbybln extends MciBaseModel
 {

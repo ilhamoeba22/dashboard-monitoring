@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Channel;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,13 +20,13 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $tgltrn  type: varchar(8)
- * @property string $batch  type: numeric(5)
- * @property string $notrn  type: numeric(5)
- * @property string $noacc  type: varchar(10)
- * @property string|null $nodoc  type: varchar(20)
- * @property string $dc  type: varchar(1)
- * @property string $amount  type: numeric(9)
+ * @property string $tgltrn type: varchar(8)
+ * @property string $batch type: numeric(5)
+ * @property string $notrn type: numeric(5)
+ * @property string $noacc type: varchar(10)
+ * @property string|null $nodoc type: varchar(20)
+ * @property string $dc type: varchar(1)
+ * @property string $amount type: numeric(9)
  */
 class Tmpedc3trn extends MciBaseModel
 {

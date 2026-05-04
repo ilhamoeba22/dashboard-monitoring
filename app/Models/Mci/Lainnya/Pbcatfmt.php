@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,10 +20,10 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $pbf_name  type: varchar(30)
- * @property string $pbf_frmt  type: varchar(254)
- * @property int $pbf_type  type: smallint(2)
- * @property int|null $pbf_cntr  type: int(4)
+ * @property string $pbf_name type: varchar(30)
+ * @property string $pbf_frmt type: varchar(254)
+ * @property int $pbf_type type: smallint(2)
+ * @property int|null $pbf_cntr type: int(4)
  */
 class Pbcatfmt extends MciBaseModel
 {

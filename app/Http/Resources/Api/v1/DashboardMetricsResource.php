@@ -12,10 +12,10 @@ class DashboardMetricsResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'periode' => $this->whenLoaded('periode', fn() => $this->periode),
-            
+            'periode' => $this->whenLoaded('periode', fn () => $this->periode),
+
             // Financing
-            'financing' => $this->whenLoaded('financing', fn() => [
+            'financing' => $this->whenLoaded('financing', fn () => [
                 'total_os' => $this->financing['total'] ?? 0,
                 'os_formatted' => $this->formatRupiah($this->financing['total'] ?? 0),
                 'noa' => $this->financing['noa'] ?? 0,
@@ -24,9 +24,9 @@ class DashboardMetricsResource extends JsonResource
                 'noa_growth' => $this->financing['noa_growth'] ?? ['value' => '0%', 'class' => 'text-muted'],
                 'ao_growth' => $this->financing['ao_growth'] ?? ['value' => '0%', 'class' => 'text-muted'],
             ], null, true),
-            
-            // Saving  
-            'saving' => $this->whenLoaded('saving', fn() => [
+
+            // Saving
+            'saving' => $this->whenLoaded('saving', fn () => [
                 'total_saldo' => $this->saving['total'] ?? 0,
                 'saldo_formatted' => $this->formatRupiah($this->saving['total'] ?? 0),
                 'noa' => $this->saving['noa'] ?? 0,
@@ -35,9 +35,9 @@ class DashboardMetricsResource extends JsonResource
                 'noa_growth' => $this->saving['noa_growth'] ?? ['value' => '0%', 'class' => 'text-muted'],
                 'ao_growth' => $this->saving['ao_growth'] ?? ['value' => '0%', 'class' => 'text-muted'],
             ], null, true),
-            
+
             // Deposito
-            'deposito' => $this->whenLoaded('deposito', fn() => [
+            'deposito' => $this->whenLoaded('deposito', fn () => [
                 'total_saldo' => $this->deposito['total'] ?? 0,
                 'saldo_formatted' => $this->formatRupiah($this->deposito['total'] ?? 0),
                 'total_baghas' => $this->deposito['secondary'] ?? 0,
@@ -49,10 +49,10 @@ class DashboardMetricsResource extends JsonResource
                 'ao_growth' => $this->deposito['ao_growth'] ?? ['value' => '0%', 'class' => 'text-muted'],
                 'baghas_growth' => $this->deposito['secondary_growth'] ?? ['value' => '0%', 'class' => 'text-muted'],
             ], null, true),
-            
+
             // Chart data
-            'chart' => $this->whenLoaded('chart', fn() => $this->chart, null, true),
-            
+            'chart' => $this->whenLoaded('chart', fn () => $this->chart, null, true),
+
             // Metadata
             'generated_at' => now()->toIso8601String(),
             'cache_ttl' => 60,
@@ -64,7 +64,7 @@ class DashboardMetricsResource extends JsonResource
      */
     protected function formatRupiah(float $value): string
     {
-        return 'Rp ' . number_format($value, 0, ',', '.');
+        return 'Rp '.number_format($value, 0, ',', '.');
     }
 
     /**

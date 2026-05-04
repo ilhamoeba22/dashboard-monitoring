@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Giro;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,17 +20,17 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $nori  type: varchar(11)
- * @property string|null $kurs  type: numeric(9)
- * @property string|null $plafond  type: numeric(9)
- * @property string|null $sawalrp  type: numeric(9)
- * @property string|null $sawalva  type: numeric(9)
- * @property string|null $mtsdr  type: numeric(9)
- * @property string|null $mtscr  type: numeric(9)
- * @property string|null $sahirrp  type: numeric(9)
- * @property string|null $sahirva  type: numeric(9)
- * @property string|null $trnke  type: numeric(5)
- * @property string|null $stsrec  type: varchar(1)
+ * @property string $nori type: varchar(11)
+ * @property string|null $kurs type: numeric(9)
+ * @property string|null $plafond type: numeric(9)
+ * @property string|null $sawalrp type: numeric(9)
+ * @property string|null $sawalva type: numeric(9)
+ * @property string|null $mtsdr type: numeric(9)
+ * @property string|null $mtscr type: numeric(9)
+ * @property string|null $sahirrp type: numeric(9)
+ * @property string|null $sahirva type: numeric(9)
+ * @property string|null $trnke type: numeric(5)
+ * @property string|null $stsrec type: varchar(1)
  */
 class Tofric extends MciBaseModel
 {

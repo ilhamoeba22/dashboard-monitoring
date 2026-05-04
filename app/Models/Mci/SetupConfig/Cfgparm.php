@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\SetupConfig;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,24 +20,24 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $PARMGRP  type: varchar(5)
- * @property string $PARMID  type: varchar(10)
- * @property string|null $PARMNMGRP  type: varchar(50)
- * @property string $PARMNM  type: varchar(150)
- * @property string|null $PARM  type: varchar(50)
- * @property string|null $CEKVALIDASI  type: char(1)
- * @property string|null $VALIDASI  type: varchar(-1)
- * @property string|null $STSREC  type: char(1)
- * @property string|null $KETERANGAN  type: varchar(160)
- * @property string|null $INPUSER  type: varchar(10)
- * @property string|null $INPTERM  type: varchar(10)
- * @property string|null $INPTGL  type: varchar(14)
- * @property string|null $CHGUSER  type: varchar(10)
- * @property string|null $CHGTERM  type: varchar(10)
- * @property string|null $CHGTGL  type: varchar(14)
- * @property string|null $AUTHUSER  type: varchar(10)
- * @property string|null $AUTHTERM  type: varchar(10)
- * @property string|null $AUTHTGL  type: varchar(14)
+ * @property string $PARMGRP type: varchar(5)
+ * @property string $PARMID type: varchar(10)
+ * @property string|null $PARMNMGRP type: varchar(50)
+ * @property string $PARMNM type: varchar(150)
+ * @property string|null $PARM type: varchar(50)
+ * @property string|null $CEKVALIDASI type: char(1)
+ * @property string|null $VALIDASI type: varchar(-1)
+ * @property string|null $STSREC type: char(1)
+ * @property string|null $KETERANGAN type: varchar(160)
+ * @property string|null $INPUSER type: varchar(10)
+ * @property string|null $INPTERM type: varchar(10)
+ * @property string|null $INPTGL type: varchar(14)
+ * @property string|null $CHGUSER type: varchar(10)
+ * @property string|null $CHGTERM type: varchar(10)
+ * @property string|null $CHGTGL type: varchar(14)
+ * @property string|null $AUTHUSER type: varchar(10)
+ * @property string|null $AUTHTERM type: varchar(10)
+ * @property string|null $AUTHTGL type: varchar(14)
  */
 class Cfgparm extends MciBaseModel
 {

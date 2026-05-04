@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,28 +20,28 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $ID  type: bigint(8)
- * @property string|null $nopersd  type: varchar(10)
- * @property string|null $nmpersd  type: varchar(50)
- * @property string|null $grouppersd  type: varchar(6)
- * @property string|null $kdloc  type: char(2)
- * @property string|null $sawalrp  type: numeric(9)
- * @property string|null $mutasidr  type: numeric(9)
- * @property string|null $mutasicr  type: numeric(9)
- * @property string|null $sahirrpb  type: numeric(9)
- * @property string|null $sahirrpc  type: numeric(9)
- * @property string|null $tglproc  type: varchar(8)
- * @property string|null $qty_a  type: numeric(5)
- * @property string|null $qty_in  type: numeric(5)
- * @property string|null $qty_out  type: numeric(5)
- * @property string|null $qty_b  type: numeric(5)
- * @property string|null $qty_c  type: numeric(5)
- * @property string|null $sbbpersd  type: varchar(7)
- * @property string|null $ststrn  type: char(1)
- * @property string|null $stsrec  type: char(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgljam  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
+ * @property int $ID type: bigint(8)
+ * @property string|null $nopersd type: varchar(10)
+ * @property string|null $nmpersd type: varchar(50)
+ * @property string|null $grouppersd type: varchar(6)
+ * @property string|null $kdloc type: char(2)
+ * @property string|null $sawalrp type: numeric(9)
+ * @property string|null $mutasidr type: numeric(9)
+ * @property string|null $mutasicr type: numeric(9)
+ * @property string|null $sahirrpb type: numeric(9)
+ * @property string|null $sahirrpc type: numeric(9)
+ * @property string|null $tglproc type: varchar(8)
+ * @property string|null $qty_a type: numeric(5)
+ * @property string|null $qty_in type: numeric(5)
+ * @property string|null $qty_out type: numeric(5)
+ * @property string|null $qty_b type: numeric(5)
+ * @property string|null $qty_c type: numeric(5)
+ * @property string|null $sbbpersd type: varchar(7)
+ * @property string|null $ststrn type: char(1)
+ * @property string|null $stsrec type: char(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgljam type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
  */
 class Tofmpersd extends MciBaseModel
 {

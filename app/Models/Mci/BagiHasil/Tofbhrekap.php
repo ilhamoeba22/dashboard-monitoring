@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\BagiHasil;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,19 +20,19 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $thnbln  type: varchar(6)
- * @property string|null $prd  type: varchar(3)
- * @property string|null $kdprd  type: varchar(2)
- * @property string|null $jw  type: numeric(5)
- * @property string|null $nisbah  type: numeric(5)
- * @property string|null $spread  type: numeric(5)
- * @property string|null $saldorata  type: numeric(9)
- * @property string|null $bhcust  type: numeric(9)
- * @property string|null $equivrate  type: numeric(9)
- * @property string|null $nisbahbank  type: numeric(5)
- * @property string|null $bhbank  type: numeric(9)
- * @property string|null $bhrekap  type: numeric(9)
- * @property string|null $ubahrate  type: numeric(9)
+ * @property string|null $thnbln type: varchar(6)
+ * @property string|null $prd type: varchar(3)
+ * @property string|null $kdprd type: varchar(2)
+ * @property string|null $jw type: numeric(5)
+ * @property string|null $nisbah type: numeric(5)
+ * @property string|null $spread type: numeric(5)
+ * @property string|null $saldorata type: numeric(9)
+ * @property string|null $bhcust type: numeric(9)
+ * @property string|null $equivrate type: numeric(9)
+ * @property string|null $nisbahbank type: numeric(5)
+ * @property string|null $bhbank type: numeric(9)
+ * @property string|null $bhrekap type: numeric(9)
+ * @property string|null $ubahrate type: numeric(9)
  */
 class Tofbhrekap extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Traits;
 
 use RuntimeException;
@@ -35,7 +37,7 @@ trait ReadOnlyModel
         throw new RuntimeException(sprintf(
             '[MCI Read-Only] Operasi "%s" ditolak pada model %s. Database MCI bersifat read-only.',
             $event,
-            static::class
+            static::class,
         ));
     }
 

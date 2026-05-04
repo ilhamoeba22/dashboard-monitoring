@@ -7,7 +7,6 @@ namespace App\Repositories\Mci;
 use App\Repositories\Interfaces\ReportingRepositoryInterface;
 use App\Services\Mci\MciBaseRepository;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
 class ReportingRepository extends MciBaseRepository implements ReportingRepositoryInterface
 {
@@ -19,18 +18,18 @@ class ReportingRepository extends MciBaseRepository implements ReportingReposito
     public function getReport(string $jenisLaporan, array $filters = []): array
     {
         // Cache laporan berat selama 5 menit (300 detik)
-        $cacheKey = "reporting_{$jenisLaporan}_" . md5(json_encode($filters));
+        $cacheKey = "reporting_{$jenisLaporan}_".md5(json_encode($filters));
 
         return Cache::remember($cacheKey, 300, function () use ($jenisLaporan, $filters) {
-            
+
             // Dispatch ke metode spesifik berdasarkan jenis laporan
             // (DRY Principle: Menghindari pembuatan puluhan controller)
             return match ($jenisLaporan) {
-                'neraca'    => $this->generateNeraca($filters),
-                'labarugi'  => $this->generateLabaRugi($filters),
-                'aruskas'   => $this->generateArusKas($filters),
-                'jamkrida'  => $this->generateJamkrida($filters),
-                default     => throw new \InvalidArgumentException("Jenis laporan {$jenisLaporan} belum didukung.")
+                'neraca' => $this->generateNeraca($filters),
+                'labarugi' => $this->generateLabaRugi($filters),
+                'aruskas' => $this->generateArusKas($filters),
+                'jamkrida' => $this->generateJamkrida($filters),
+                default => throw new \InvalidArgumentException("Jenis laporan {$jenisLaporan} belum didukung.")
             };
         });
     }

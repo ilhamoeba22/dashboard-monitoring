@@ -14,22 +14,17 @@ interface FinancingRepositoryInterface
      * Menggunakan cursor pagination untuk performa optimal.
      *
      * @param  array<string, mixed>  $filters
-     * @param  int  $perPage
-     * @return CursorPaginator
      */
-    public function getNominative(array $filters = [], int $perPage = 50): CursorPaginator;
+    public function getNominative(array $filters = [], int $perPage = 50): LengthAwarePaginator|CursorPaginator;
 
     /**
      * Dapatkan daftar nama AO yang unik.
-     *
-     * @return Collection
      */
     public function getUniqueAos(): Collection;
 
     /**
      * Dapatkan detail jadwal angsuran berdasarkan nomor kontrak.
      *
-     * @param  string  $nokontrak
      * @return array<string, mixed>
      */
     public function getDetailAngsuran(string $nokontrak): array;
@@ -37,17 +32,14 @@ interface FinancingRepositoryInterface
     /**
      * Dapatkan data rekapitulasi pembiayaan secara dinamis.
      *
-     * @param string $groupBy (cabang|wilayah|ao|produk|segmen|sekon|kolektibilitas)
-     * @return Collection
+     * @param  string  $groupBy  (cabang|wilayah|ao|produk|segmen|sekon|kolektibilitas)
      */
     public function getRekapitulasi(string $groupBy): Collection;
 
     /**
      * Dapatkan daftar pembiayaan yang sudah atau akan jatuh tempo.
      *
-     * @param array<string, mixed> $filters
-     * @param int $perPage
-     * @return CursorPaginator
+     * @param  array<string, mixed>  $filters
      */
     public function getJatuhTempo(array $filters = [], int $perPage = 50): CursorPaginator;
 }

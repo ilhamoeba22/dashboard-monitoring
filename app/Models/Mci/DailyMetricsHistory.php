@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci;
 
 use Illuminate\Database\Eloquent\Model;
@@ -25,14 +27,14 @@ class DailyMetricsHistory extends Model
     ];
 
     protected $casts = [
-        'tgl_snapshot'    => 'date',
-        'financing_os'    => 'float',
-        'financing_npf'   => 'float',
-        'financing_noa'   => 'integer',
-        'saving_saldo'    => 'float',
-        'saving_noa'      => 'integer',
-        'deposito_saldo'  => 'float',
+        'tgl_snapshot' => 'date',
+        'financing_os' => 'float',
+        'financing_npf' => 'float',
+        'financing_noa' => 'integer',
+        'saving_saldo' => 'float',
+        'saving_noa' => 'integer',
+        'deposito_saldo' => 'float',
         'deposito_baghas' => 'float',
-        'deposito_noa'    => 'integer',
+        'deposito_noa' => 'integer',
     ];
 }

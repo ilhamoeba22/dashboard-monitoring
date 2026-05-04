@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\ReportingOjk;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,20 +20,20 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $periode  type: varchar(12)
- * @property string|null $kdsandi  type: varchar(10)
- * @property string|null $sandi  type: varchar(15)
- * @property string|null $nilai01  type: numeric(9)
- * @property string|null $nilai02  type: numeric(9)
- * @property string|null $nilai03  type: numeric(9)
- * @property string|null $nilai04  type: numeric(9)
- * @property string|null $nilai05  type: numeric(9)
- * @property string|null $nilai06  type: numeric(9)
- * @property string|null $nilai07  type: numeric(9)
- * @property string|null $nilai08  type: numeric(9)
- * @property string|null $nilai09  type: numeric(9)
- * @property string|null $nilai10  type: numeric(9)
- * @property string|null $ket  type: varchar(225)
+ * @property string|null $periode type: varchar(12)
+ * @property string|null $kdsandi type: varchar(10)
+ * @property string|null $sandi type: varchar(15)
+ * @property string|null $nilai01 type: numeric(9)
+ * @property string|null $nilai02 type: numeric(9)
+ * @property string|null $nilai03 type: numeric(9)
+ * @property string|null $nilai04 type: numeric(9)
+ * @property string|null $nilai05 type: numeric(9)
+ * @property string|null $nilai06 type: numeric(9)
+ * @property string|null $nilai07 type: numeric(9)
+ * @property string|null $nilai08 type: numeric(9)
+ * @property string|null $nilai09 type: numeric(9)
+ * @property string|null $nilai10 type: numeric(9)
+ * @property string|null $ket type: varchar(225)
  */
 class Ojktksform extends MciBaseModel
 {

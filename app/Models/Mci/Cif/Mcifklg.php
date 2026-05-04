@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Cif;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,25 +20,25 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $nocif  type: varchar(9)
- * @property string|null $urut  type: varchar(2)
- * @property string|null $tgllahir  type: varchar(8)
- * @property string|null $nama  type: varchar(30)
- * @property string|null $kdhub  type: varchar(1)
- * @property string|null $stsubah  type: varchar(1)
- * @property string|null $stsrec  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgl  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $chgtgl  type: varchar(14)
- * @property string|null $chgterm  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $auttgl  type: varchar(14)
- * @property string|null $autterm  type: varchar(10)
- * @property string|null $noid  type: varchar(20)
- * @property string|null $hp  type: varchar(20)
- * @property string|null $telprmh  type: varchar(16)
+ * @property string $nocif type: varchar(9)
+ * @property string|null $urut type: varchar(2)
+ * @property string|null $tgllahir type: varchar(8)
+ * @property string|null $nama type: varchar(30)
+ * @property string|null $kdhub type: varchar(1)
+ * @property string|null $stsubah type: varchar(1)
+ * @property string|null $stsrec type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgl type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $chgtgl type: varchar(14)
+ * @property string|null $chgterm type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $auttgl type: varchar(14)
+ * @property string|null $autterm type: varchar(10)
+ * @property string|null $noid type: varchar(20)
+ * @property string|null $hp type: varchar(20)
+ * @property string|null $telprmh type: varchar(16)
  */
 class Mcifklg extends MciBaseModel
 {

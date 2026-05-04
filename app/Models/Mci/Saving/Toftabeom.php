@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Saving;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,18 +20,18 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $periode  type: varchar(6)
- * @property string $nocif  type: varchar(9)
- * @property string $notab  type: varchar(11)
- * @property string $kdloc  type: char(2)
- * @property string $kdprd  type: char(2)
- * @property string|null $nisbah  type: numeric(5)
- * @property string|null $equivrate  type: numeric(5)
- * @property string|null $sahirrp  type: numeric(9)
- * @property string|null $stsrec  type: char(1)
- * @property string|null $kdgroupdana  type: varchar(10)
- * @property string|null $baghas  type: numeric(9)
- * @property string|null $tax  type: numeric(9)
+ * @property string $periode type: varchar(6)
+ * @property string $nocif type: varchar(9)
+ * @property string $notab type: varchar(11)
+ * @property string $kdloc type: char(2)
+ * @property string $kdprd type: char(2)
+ * @property string|null $nisbah type: numeric(5)
+ * @property string|null $equivrate type: numeric(5)
+ * @property string|null $sahirrp type: numeric(9)
+ * @property string|null $stsrec type: char(1)
+ * @property string|null $kdgroupdana type: varchar(10)
+ * @property string|null $baghas type: numeric(9)
+ * @property string|null $tax type: numeric(9)
  */
 class Toftabeom extends MciBaseModel
 {

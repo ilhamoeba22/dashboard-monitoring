@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Sms;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,19 +20,19 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $ID  type: numeric(9)
- * @property string|null $ID_terima  type: numeric(9)
- * @property string $notrn  type: numeric(9)
- * @property string $tgltrn  type: varchar(8)
- * @property string $jamtrn  type: varchar(8)
- * @property string $nohp  type: varchar(20)
- * @property string $dracc  type: varchar(11)
- * @property string $cracc  type: varchar(20)
- * @property string $nominal  type: numeric(9)
- * @property string|null $stsproc  type: varchar(1)
- * @property string $timelimit  type: varchar(10)
- * @property string|null $tglcair  type: varchar(8)
- * @property string|null $jamcair  type: varchar(8)
+ * @property string $ID type: numeric(9)
+ * @property string|null $ID_terima type: numeric(9)
+ * @property string $notrn type: numeric(9)
+ * @property string $tgltrn type: varchar(8)
+ * @property string $jamtrn type: varchar(8)
+ * @property string $nohp type: varchar(20)
+ * @property string $dracc type: varchar(11)
+ * @property string $cracc type: varchar(20)
+ * @property string $nominal type: numeric(9)
+ * @property string|null $stsproc type: varchar(1)
+ * @property string $timelimit type: varchar(10)
+ * @property string|null $tglcair type: varchar(8)
+ * @property string|null $jamcair type: varchar(8)
  */
 class Tofmsmsob extends MciBaseModel
 {

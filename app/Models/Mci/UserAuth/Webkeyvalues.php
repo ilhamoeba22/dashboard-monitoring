@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\UserAuth;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,12 +20,12 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $id  type: int(4)
- * @property string $groupid  type: varchar(50)
- * @property string $keyid  type: varchar(50)
- * @property string $value  type: varchar(200)
- * @property string|null $keterangan  type: varchar(200)
- * @property string|null $stsrec  type: varchar(1)
+ * @property int $id type: int(4)
+ * @property string $groupid type: varchar(50)
+ * @property string $keyid type: varchar(50)
+ * @property string $value type: varchar(200)
+ * @property string|null $keterangan type: varchar(200)
+ * @property string|null $stsrec type: varchar(1)
  */
 class Webkeyvalues extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,16 +20,16 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $grpprd  type: varchar(20)
- * @property string|null $prdid  type: varchar(100)
- * @property string|null $denom  type: varchar(25)
- * @property string|null $namaprd  type: varchar(50)
- * @property string|null $hargajual  type: varchar(25)
- * @property string|null $adminfee  type: varchar(25)
- * @property string|null $biller  type: varchar(25)
- * @property string|null $billerprd  type: varchar(15)
- * @property string|null $aktif  type: varchar(1)
- * @property string|null $tglup  type: varchar(14)
+ * @property string|null $grpprd type: varchar(20)
+ * @property string|null $prdid type: varchar(100)
+ * @property string|null $denom type: varchar(25)
+ * @property string|null $namaprd type: varchar(50)
+ * @property string|null $hargajual type: varchar(25)
+ * @property string|null $adminfee type: varchar(25)
+ * @property string|null $biller type: varchar(25)
+ * @property string|null $billerprd type: varchar(15)
+ * @property string|null $aktif type: varchar(1)
+ * @property string|null $tglup type: varchar(14)
  */
 class AmProdukplf extends MciBaseModel
 {

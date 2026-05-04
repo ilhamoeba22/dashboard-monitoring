@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\ReportingOjk;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,20 +20,20 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $id  type: int(4)
- * @property string|null $nama  type: varchar(100)
- * @property string|null $noid  type: varchar(20)
- * @property string|null $kdjabatan  type: varchar(1)
- * @property string|null $tgl_mulai  type: varchar(10)
- * @property string|null $kom_audit  type: varchar(1)
- * @property string|null $kom_risk  type: varchar(1)
- * @property string|null $kom_remunerasi  type: varchar(1)
- * @property string|null $kepatuhan  type: varchar(1)
- * @property string|null $komisaris_independen  type: varchar(1)
- * @property string|null $tgl_berhenti  type: varchar(10)
- * @property string|null $status_berhenti  type: varchar(1)
- * @property string|null $alasan  type: text(16)
- * @property string|null $kom_manajemen_risk  type: varchar(1)
+ * @property int $id type: int(4)
+ * @property string|null $nama type: varchar(100)
+ * @property string|null $noid type: varchar(20)
+ * @property string|null $kdjabatan type: varchar(1)
+ * @property string|null $tgl_mulai type: varchar(10)
+ * @property string|null $kom_audit type: varchar(1)
+ * @property string|null $kom_risk type: varchar(1)
+ * @property string|null $kom_remunerasi type: varchar(1)
+ * @property string|null $kepatuhan type: varchar(1)
+ * @property string|null $komisaris_independen type: varchar(1)
+ * @property string|null $tgl_berhenti type: varchar(10)
+ * @property string|null $status_berhenti type: varchar(1)
+ * @property string|null $alasan type: text(16)
+ * @property string|null $kom_manajemen_risk type: varchar(1)
  */
 class Gb0106 extends MciBaseModel
 {

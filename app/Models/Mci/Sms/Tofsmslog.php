@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Sms;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,12 +20,12 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $ID  type: varchar(10)
- * @property string|null $nohp  type: varchar(20)
- * @property string|null $pesan  type: varchar(250)
- * @property string|null $tglops  type: varchar(8)
- * @property string|null $tglrx  type: timestamp(8)
- * @property string|null $stspesan  type: varchar(2)
+ * @property string $ID type: varchar(10)
+ * @property string|null $nohp type: varchar(20)
+ * @property string|null $pesan type: varchar(250)
+ * @property string|null $tglops type: varchar(8)
+ * @property string|null $tglrx type: timestamp(8)
+ * @property string|null $stspesan type: varchar(2)
  */
 class Tofsmslog extends MciBaseModel
 {

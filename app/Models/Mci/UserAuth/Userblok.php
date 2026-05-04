@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\UserAuth;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,10 +20,10 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $userid  type: varchar(10)
- * @property string $expdate  type: varchar(14)
- * @property string $ket  type: varchar(250)
- * @property string $stsblok  type: varchar(1)
+ * @property string $userid type: varchar(10)
+ * @property string $expdate type: varchar(14)
+ * @property string $ket type: varchar(250)
+ * @property string $stsblok type: varchar(1)
  */
 class Userblok extends MciBaseModel
 {

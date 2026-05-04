@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Agunan;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,13 +20,13 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $nokontrak  type: varchar(11)
- * @property string|null $nolama  type: varchar(20)
- * @property string|null $kdagunold  type: varchar(1)
- * @property string|null $kdagun  type: varchar(2)
- * @property string|null $kdikat  type: varchar(2)
- * @property string|null $nilaiagun  type: numeric(9)
- * @property string|null $bagjamin  type: varchar(4)
+ * @property string|null $nokontrak type: varchar(11)
+ * @property string|null $nolama type: varchar(20)
+ * @property string|null $kdagunold type: varchar(1)
+ * @property string|null $kdagun type: varchar(2)
+ * @property string|null $kdikat type: varchar(2)
+ * @property string|null $nilaiagun type: numeric(9)
+ * @property string|null $bagjamin type: varchar(4)
  */
 class Tmpagunbi extends MciBaseModel
 {

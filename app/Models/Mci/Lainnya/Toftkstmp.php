@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,9 +20,9 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $thn  type: varchar(4)
- * @property string|null $bln  type: varchar(2)
- * @property string|null $totalaset  type: numeric(9)
+ * @property string|null $thn type: varchar(4)
+ * @property string|null $bln type: varchar(2)
+ * @property string|null $totalaset type: numeric(9)
  */
 class Toftkstmp extends MciBaseModel
 {

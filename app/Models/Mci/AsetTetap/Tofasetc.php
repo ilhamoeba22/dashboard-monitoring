@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\AsetTetap;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,19 +20,19 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdaset  type: varchar(5)
- * @property string|null $haper  type: numeric(9)
- * @property string|null $hajual  type: numeric(9)
- * @property string|null $margin  type: numeric(9)
- * @property string|null $sewabln  type: numeric(9)
- * @property string|null $susut  type: numeric(9)
- * @property string|null $perbaiki  type: numeric(9)
- * @property string|null $nilaibuku  type: numeric(9)
- * @property string|null $hajar  type: numeric(9)
- * @property string|null $hibah  type: numeric(9)
- * @property string|null $jual  type: numeric(9)
- * @property string|null $susutke  type: numeric(5)
- * @property string|null $stsrec  type: varchar(1)
+ * @property string $kdaset type: varchar(5)
+ * @property string|null $haper type: numeric(9)
+ * @property string|null $hajual type: numeric(9)
+ * @property string|null $margin type: numeric(9)
+ * @property string|null $sewabln type: numeric(9)
+ * @property string|null $susut type: numeric(9)
+ * @property string|null $perbaiki type: numeric(9)
+ * @property string|null $nilaibuku type: numeric(9)
+ * @property string|null $hajar type: numeric(9)
+ * @property string|null $hibah type: numeric(9)
+ * @property string|null $jual type: numeric(9)
+ * @property string|null $susutke type: numeric(5)
+ * @property string|null $stsrec type: varchar(1)
  */
 class Tofasetc extends MciBaseModel
 {

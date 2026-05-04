@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Cif;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,24 +20,24 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $nocif  type: varchar(9)
- * @property string|null $namadepan  type: varchar(50)
- * @property string|null $nama1  type: varchar(30)
- * @property string|null $nama2  type: varchar(30)
- * @property string|null $namaakhir  type: varchar(30)
- * @property string|null $tempatakte  type: varchar(40)
- * @property string|null $noakteawal  type: varchar(40)
- * @property string|null $tglawal  type: varchar(8)
- * @property string|null $noakteakhir  type: varchar(40)
- * @property string|null $tglakhir  type: varchar(8)
- * @property string|null $langgarbmpk  type: varchar(1)
- * @property string|null $lampauibmpk  type: varchar(1)
- * @property string|null $rating  type: varchar(5)
- * @property string|null $pemeringkat  type: varchar(40)
- * @property string|null $gopublic  type: varchar(1)
- * @property string|null $tglperingkat  type: varchar(8)
- * @property string|null $kdusaha  type: varchar(6)
- * @property string|null $jku  type: varchar(3)
+ * @property string|null $nocif type: varchar(9)
+ * @property string|null $namadepan type: varchar(50)
+ * @property string|null $nama1 type: varchar(30)
+ * @property string|null $nama2 type: varchar(30)
+ * @property string|null $namaakhir type: varchar(30)
+ * @property string|null $tempatakte type: varchar(40)
+ * @property string|null $noakteawal type: varchar(40)
+ * @property string|null $tglawal type: varchar(8)
+ * @property string|null $noakteakhir type: varchar(40)
+ * @property string|null $tglakhir type: varchar(8)
+ * @property string|null $langgarbmpk type: varchar(1)
+ * @property string|null $lampauibmpk type: varchar(1)
+ * @property string|null $rating type: varchar(5)
+ * @property string|null $pemeringkat type: varchar(40)
+ * @property string|null $gopublic type: varchar(1)
+ * @property string|null $tglperingkat type: varchar(8)
+ * @property string|null $kdusaha type: varchar(6)
+ * @property string|null $jku type: varchar(3)
  */
 class Mcifdoc extends MciBaseModel
 {

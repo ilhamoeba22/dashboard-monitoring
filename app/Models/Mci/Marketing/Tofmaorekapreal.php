@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Marketing;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,17 +20,17 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdao  type: varchar(10)
- * @property string|null $periode  type: varchar(6)
- * @property string|null $pokrealisasi  type: numeric(5)
- * @property string|null $qtytopup  type: numeric(5)
- * @property string|null $topup  type: numeric(9)
- * @property string|null $qtybaru  type: numeric(5)
- * @property string|null $baru  type: numeric(9)
- * @property string|null $bonustopup  type: numeric(9)
- * @property string|null $bonusbaru  type: numeric(9)
- * @property string|null $tglproses  type: varchar(8)
- * @property string|null $inproses  type: varchar(10)
+ * @property string|null $kdao type: varchar(10)
+ * @property string|null $periode type: varchar(6)
+ * @property string|null $pokrealisasi type: numeric(5)
+ * @property string|null $qtytopup type: numeric(5)
+ * @property string|null $topup type: numeric(9)
+ * @property string|null $qtybaru type: numeric(5)
+ * @property string|null $baru type: numeric(9)
+ * @property string|null $bonustopup type: numeric(9)
+ * @property string|null $bonusbaru type: numeric(9)
+ * @property string|null $tglproses type: varchar(8)
+ * @property string|null $inproses type: varchar(10)
  */
 class Tofmaorekapreal extends MciBaseModel
 {

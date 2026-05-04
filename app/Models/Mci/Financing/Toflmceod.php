@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Financing;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,22 +20,22 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $nokontrak  type: varchar(11)
- * @property string|null $ttpum  type: numeric(9)
- * @property string|null $ttpsewa  type: numeric(9)
- * @property string|null $ttpset  type: numeric(9)
- * @property string|null $dropmdl  type: numeric(9)
- * @property string|null $dropmgn  type: numeric(9)
- * @property string|null $angsmdl  type: numeric(9)
- * @property string|null $angsmgn  type: numeric(9)
- * @property string|null $angsdnd  type: numeric(9)
- * @property string|null $angssewa  type: numeric(9)
- * @property string|null $angske  type: numeric(5)
- * @property string|null $lunasmdl  type: numeric(9)
- * @property string|null $lunasmgn  type: numeric(9)
- * @property string|null $discount  type: numeric(9)
- * @property string|null $ststrn  type: varchar(1)
- * @property string|null $tglproses  type: varchar(8)
+ * @property string $nokontrak type: varchar(11)
+ * @property string|null $ttpum type: numeric(9)
+ * @property string|null $ttpsewa type: numeric(9)
+ * @property string|null $ttpset type: numeric(9)
+ * @property string|null $dropmdl type: numeric(9)
+ * @property string|null $dropmgn type: numeric(9)
+ * @property string|null $angsmdl type: numeric(9)
+ * @property string|null $angsmgn type: numeric(9)
+ * @property string|null $angsdnd type: numeric(9)
+ * @property string|null $angssewa type: numeric(9)
+ * @property string|null $angske type: numeric(5)
+ * @property string|null $lunasmdl type: numeric(9)
+ * @property string|null $lunasmgn type: numeric(9)
+ * @property string|null $discount type: numeric(9)
+ * @property string|null $ststrn type: varchar(1)
+ * @property string|null $tglproses type: varchar(8)
  */
 class Toflmceod extends MciBaseModel
 {

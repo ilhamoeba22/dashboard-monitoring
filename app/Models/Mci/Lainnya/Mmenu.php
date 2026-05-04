@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,13 +20,13 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $Modul  type: varchar(15)
- * @property string $menu  type: varchar(25)
- * @property string $submenu  type: varchar(50)
- * @property string|null $sts  type: varchar(1)
- * @property string|null $PATHICON  type: varchar(200)
- * @property int|null $ISPARENT  type: int(4)
- * @property string|null $WINDOW  type: varchar(150)
+ * @property string $Modul type: varchar(15)
+ * @property string $menu type: varchar(25)
+ * @property string $submenu type: varchar(50)
+ * @property string|null $sts type: varchar(1)
+ * @property string|null $PATHICON type: varchar(200)
+ * @property int|null $ISPARENT type: int(4)
+ * @property string|null $WINDOW type: varchar(150)
  */
 class Mmenu extends MciBaseModel
 {

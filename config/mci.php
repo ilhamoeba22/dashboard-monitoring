@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Config;
 
 /**
  * Konfigurasi MCI Database Dashboard.
- * 
+ *
  * File ini mengatur pattern penamaan database bulanan MCI dan koneksi yang tersedia.
  * Database MCI dibuat setiap bulan dengan format: MCI_{BULAN}{TAHUN}_{DDMMYYYY}
  * Contoh: MCI_MAR26_01042026 (database bulan Maret 2026, di-generate 1 April 2026)
@@ -93,7 +95,7 @@ return [
     'cache' => [
         // Cache selama 60 detik untuk data yang sering diakses
         'ttl' => 60,
-        
+
         // Prefix key cache
         'prefix' => 'mci:',
     ],
@@ -109,7 +111,7 @@ return [
     'query' => [
         // Chunk size untuk proses data besar
         'chunk_size' => 1000,
-        
+
         // Timeout query dalam detik
         'timeout' => 30,
     ],

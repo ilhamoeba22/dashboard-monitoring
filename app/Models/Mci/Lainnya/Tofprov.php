@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,17 +20,17 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdprd  type: varchar(2)
- * @property string|null $noacc  type: varchar(16)
- * @property string|null $nama  type: varchar(30)
- * @property string|null $provawal  type: numeric(9)
- * @property string|null $provbln  type: numeric(9)
- * @property string|null $masa  type: numeric(5)
- * @property string|null $provtot  type: numeric(9)
- * @property string|null $tglprov  type: varchar(8)
- * @property string|null $tgltrnprov  type: varchar(8)
- * @property string|null $provke  type: numeric(5)
- * @property string|null $ststrn  type: varchar(1)
+ * @property string|null $kdprd type: varchar(2)
+ * @property string|null $noacc type: varchar(16)
+ * @property string|null $nama type: varchar(30)
+ * @property string|null $provawal type: numeric(9)
+ * @property string|null $provbln type: numeric(9)
+ * @property string|null $masa type: numeric(5)
+ * @property string|null $provtot type: numeric(9)
+ * @property string|null $tglprov type: varchar(8)
+ * @property string|null $tgltrnprov type: varchar(8)
+ * @property string|null $provke type: numeric(5)
+ * @property string|null $ststrn type: varchar(1)
  */
 class Tofprov extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\BagiHasil;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,25 +20,25 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdprd  type: varchar(2)
- * @property string|null $jkwaktu  type: numeric(5)
- * @property string|null $suku_premi  type: numeric(9)
- * @property string|null $max_nom  type: numeric(9)
- * @property string|null $noacc  type: varchar(11)
- * @property string|null $nosbbpremi  type: varchar(7)
- * @property string|null $stsrec  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgljam  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $chgtgljam  type: varchar(14)
- * @property string|null $chgterm  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $auttgljam  type: varchar(14)
- * @property string|null $autterm  type: varchar(10)
- * @property string|null $stspremi  type: varchar(1)
- * @property string|null $sbbbdd  type: varchar(7)
- * @property string|null $saldorata  type: numeric(9)
+ * @property string|null $kdprd type: varchar(2)
+ * @property string|null $jkwaktu type: numeric(5)
+ * @property string|null $suku_premi type: numeric(9)
+ * @property string|null $max_nom type: numeric(9)
+ * @property string|null $noacc type: varchar(11)
+ * @property string|null $nosbbpremi type: varchar(7)
+ * @property string|null $stsrec type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgljam type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $chgtgljam type: varchar(14)
+ * @property string|null $chgterm type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $auttgljam type: varchar(14)
+ * @property string|null $autterm type: varchar(10)
+ * @property string|null $stspremi type: varchar(1)
+ * @property string|null $sbbbdd type: varchar(7)
+ * @property string|null $saldorata type: numeric(9)
  */
 class Toftpremi extends MciBaseModel
 {

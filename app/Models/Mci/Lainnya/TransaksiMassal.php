@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,27 +20,27 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $noacc  type: varchar(11)
- * @property string|null $nama  type: varchar(30)
- * @property string|null $dokumen  type: varchar(20)
- * @property string|null $nominal  type: numeric(9)
- * @property string|null $jnstrn  type: varchar(1)
- * @property string|null $kdtrn  type: varchar(4)
- * @property string|null $kdkolektor  type: varchar(8)
- * @property string|null $stsrec  type: varchar(1)
- * @property string|null $ststrn  type: varchar(1)
- * @property string|null $stscetak  type: varchar(1)
- * @property string|null $tglproses  type: varchar(8)
- * @property string|null $notrn  type: numeric(9)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgljam  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $chgtgljam  type: varchar(14)
- * @property string|null $chgterm  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $auttgljam  type: varchar(14)
- * @property string|null $autterm  type: varchar(10)
+ * @property string $noacc type: varchar(11)
+ * @property string|null $nama type: varchar(30)
+ * @property string|null $dokumen type: varchar(20)
+ * @property string|null $nominal type: numeric(9)
+ * @property string|null $jnstrn type: varchar(1)
+ * @property string|null $kdtrn type: varchar(4)
+ * @property string|null $kdkolektor type: varchar(8)
+ * @property string|null $stsrec type: varchar(1)
+ * @property string|null $ststrn type: varchar(1)
+ * @property string|null $stscetak type: varchar(1)
+ * @property string|null $tglproses type: varchar(8)
+ * @property string|null $notrn type: numeric(9)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgljam type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $chgtgljam type: varchar(14)
+ * @property string|null $chgterm type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $auttgljam type: varchar(14)
+ * @property string|null $autterm type: varchar(10)
  */
 class TransaksiMassal extends MciBaseModel
 {

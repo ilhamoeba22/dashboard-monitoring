@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Financing;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,9 +20,9 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $nocif  type: varchar(9)
- * @property string|null $stscif_1  type: char(1)
- * @property string|null $golcust  type: varchar(1)
+ * @property string $nocif type: varchar(9)
+ * @property string|null $stscif_1 type: char(1)
+ * @property string|null $golcust type: varchar(1)
  */
 class Toflmbeomcif extends MciBaseModel
 {

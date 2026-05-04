@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\BagiHasil;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,22 +20,22 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $periode  type: varchar(6)
- * @property string|null $kdgol  type: varchar(1)
- * @property string|null $kdrek  type: varchar(1)
- * @property string|null $kdprd  type: varchar(2)
- * @property string $kdloc  type: varchar(2)
- * @property string $nosbb  type: varchar(7)
- * @property string|null $nmsbb  type: varchar(30)
- * @property string|null $saldoeom  type: numeric(9)
- * @property string|null $saldoposisi  type: numeric(9)
- * @property string|null $saldohi  type: numeric(9)
- * @property string|null $saldorata  type: numeric(9)
- * @property string|null $nisbah  type: numeric(5)
- * @property string|null $spread  type: numeric(5)
- * @property string|null $equivrate  type: numeric(5)
- * @property string|null $baghas  type: numeric(9)
- * @property string|null $hari  type: numeric(5)
+ * @property string $periode type: varchar(6)
+ * @property string|null $kdgol type: varchar(1)
+ * @property string|null $kdrek type: varchar(1)
+ * @property string|null $kdprd type: varchar(2)
+ * @property string $kdloc type: varchar(2)
+ * @property string $nosbb type: varchar(7)
+ * @property string|null $nmsbb type: varchar(30)
+ * @property string|null $saldoeom type: numeric(9)
+ * @property string|null $saldoposisi type: numeric(9)
+ * @property string|null $saldohi type: numeric(9)
+ * @property string|null $saldorata type: numeric(9)
+ * @property string|null $nisbah type: numeric(5)
+ * @property string|null $spread type: numeric(5)
+ * @property string|null $equivrate type: numeric(5)
+ * @property string|null $baghas type: numeric(9)
+ * @property string|null $hari type: numeric(5)
  */
 class Toftbhequiveom extends MciBaseModel
 {

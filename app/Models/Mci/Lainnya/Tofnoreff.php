@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,11 +20,11 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $noreff  type: varchar(30)
- * @property string $kodetrn  type: varchar(10)
- * @property string|null $tgltrn  type: varchar(8)
- * @property string|null $tgltrnx  type: varchar(8)
- * @property string|null $ststrn  type: char(1)
+ * @property string $noreff type: varchar(30)
+ * @property string $kodetrn type: varchar(10)
+ * @property string|null $tgltrn type: varchar(8)
+ * @property string|null $tgltrnx type: varchar(8)
+ * @property string|null $ststrn type: char(1)
  */
 class Tofnoreff extends MciBaseModel
 {

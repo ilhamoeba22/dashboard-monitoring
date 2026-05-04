@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Financing;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,23 +20,23 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $nokontrak  type: varchar(11)
- * @property string|null $kdlocasal  type: varchar(2)
- * @property string|null $nama  type: varchar(20)
- * @property string|null $kdloctujuan  type: varchar(2)
- * @property string|null $osmdlc  type: numeric(9)
- * @property string|null $osmgnc  type: numeric(9)
- * @property string|null $sbbpok  type: varchar(7)
- * @property string|null $sbbmydt  type: varchar(7)
- * @property string|null $pokpby  type: varchar(2)
- * @property string|null $tglproses  type: varchar(8)
- * @property string|null $stsrec  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgljam  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $auttgljam  type: varchar(14)
- * @property string|null $autterm  type: varchar(10)
+ * @property string|null $nokontrak type: varchar(11)
+ * @property string|null $kdlocasal type: varchar(2)
+ * @property string|null $nama type: varchar(20)
+ * @property string|null $kdloctujuan type: varchar(2)
+ * @property string|null $osmdlc type: numeric(9)
+ * @property string|null $osmgnc type: numeric(9)
+ * @property string|null $sbbpok type: varchar(7)
+ * @property string|null $sbbmydt type: varchar(7)
+ * @property string|null $pokpby type: varchar(2)
+ * @property string|null $tglproses type: varchar(8)
+ * @property string|null $stsrec type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgljam type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $auttgljam type: varchar(14)
+ * @property string|null $autterm type: varchar(10)
  */
 class Toflmtsloc extends MciBaseModel
 {

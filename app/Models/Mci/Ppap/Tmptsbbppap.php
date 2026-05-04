@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Ppap;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,11 +20,11 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $ID  type: int(4)
- * @property string $kdprd  type: char(2)
- * @property string|null $kdppap  type: char(1)
- * @property string|null $sbbppap  type: char(7)
- * @property string|null $sbbbyppap  type: char(7)
+ * @property int $ID type: int(4)
+ * @property string $kdprd type: char(2)
+ * @property string|null $kdppap type: char(1)
+ * @property string|null $sbbppap type: char(7)
+ * @property string|null $sbbbyppap type: char(7)
  */
 class Tmptsbbppap extends MciBaseModel
 {

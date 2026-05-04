@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Financing;
 
 use App\Models\Mci\MciBaseModel;
+use Carbon\Carbon;
 
 /**
  * Model MCI: TOFLMBEOM_STG
@@ -18,12 +21,12 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $periode  type: varchar(6)
- * @property string|null $nocif  type: varchar(20)
- * @property string|null $stscif2  type: varchar(10)
- * @property string|null $nokontrak  type: varchar(11)
- * @property string|null $stsloan_2  type: varchar(1)
- * @property \Carbon\Carbon $created_at  type: datetime2(8)
+ * @property string $periode type: varchar(6)
+ * @property string|null $nocif type: varchar(20)
+ * @property string|null $stscif2 type: varchar(10)
+ * @property string|null $nokontrak type: varchar(11)
+ * @property string|null $stsloan_2 type: varchar(1)
+ * @property Carbon $created_at type: datetime2(8)
  */
 class ToflmbeomStg extends MciBaseModel
 {

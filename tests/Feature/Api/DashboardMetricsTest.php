@@ -40,14 +40,14 @@ describe('GET /api/v1/dashboard/metrics', function () {
             ->assertJson(['success' => true])
             ->assertJsonStructure([
                 'success',
-                'data'  => ['periode', 'financing', 'saving', 'deposito'],
-                'meta'  => ['generated_at', 'cache_ttl', 'version'],
+                'data' => ['periode', 'financing', 'saving', 'deposito'],
+                'meta' => ['generated_at', 'cache_ttl', 'version'],
             ]);
     });
 
     it('returns 500 when repository throws exception', function () {
         $mock = Mockery::mock(DashboardRepository::class);
-        $mock->shouldReceive('getKeyMetrics')->once()->andThrow(new \RuntimeException('DB error'));
+        $mock->shouldReceive('getKeyMetrics')->once()->andThrow(new RuntimeException('DB error'));
         $this->app->instance(DashboardRepository::class, $mock);
 
         $response = $this->getJson('/api/v1/dashboard/metrics');
@@ -59,7 +59,7 @@ describe('GET /api/v1/dashboard/metrics', function () {
 
 describe('GET /api/v1/dashboard/metrics/financing', function () {
     it('returns financing metrics', function () {
-        $dto    = makeFinancingDTO();
+        $dto = makeFinancingDTO();
         $period = ['year' => 2026, 'month' => 4, 'period' => '202604', 'previous_year' => 2025, 'tgl' => '01042026'];
 
         $mock = Mockery::mock(DashboardRepository::class);
@@ -79,7 +79,7 @@ describe('GET /api/v1/dashboard/metrics/financing', function () {
 
 describe('GET /api/v1/dashboard/metrics/saving', function () {
     it('returns saving metrics', function () {
-        $dto    = makeSavingDTO();
+        $dto = makeSavingDTO();
         $period = ['year' => 2026, 'month' => 4, 'period' => '202604', 'previous_year' => 2025, 'tgl' => '01042026'];
 
         $mock = Mockery::mock(DashboardRepository::class);
@@ -99,7 +99,7 @@ describe('GET /api/v1/dashboard/metrics/saving', function () {
 
 describe('GET /api/v1/dashboard/metrics/deposito', function () {
     it('returns deposito metrics', function () {
-        $dto    = makeDepositoDTO();
+        $dto = makeDepositoDTO();
         $period = ['year' => 2026, 'month' => 4, 'period' => '202604', 'previous_year' => 2025, 'tgl' => '01042026'];
 
         $mock = Mockery::mock(DashboardRepository::class);
@@ -123,9 +123,9 @@ describe('GET /api/v1/dashboard/chart/{type}', function () {
 
         $mock = Mockery::mock(DashboardRepository::class);
         $mock->shouldReceive('getChartDataFromWarehouse')
-             ->once()
-             ->with($type, Mockery::any(), Mockery::any())
-             ->andReturn($chartData);
+            ->once()
+            ->with($type, Mockery::any(), Mockery::any())
+            ->andReturn($chartData);
         $this->app->instance(DashboardRepository::class, $mock);
 
         $response = $this->getJson("/api/v1/dashboard/chart/{$type}");
@@ -182,7 +182,8 @@ describe('POST /api/v1/dashboard/clear-cache', function () {
 
 describe('DashboardRepository::calculateGrowth (via base)', function () {
     it('returns zero growth when previous is zero', function () {
-        $repo   = new class extends \App\Services\Mci\DashboardRepository {
+        $repo = new class extends DashboardRepository
+        {
             public function testGrowth(float $c, float $p): array
             {
                 return $this->calculateGrowth($c, $p);
@@ -196,7 +197,8 @@ describe('DashboardRepository::calculateGrowth (via base)', function () {
     });
 
     it('calculates positive growth correctly', function () {
-        $repo = new class extends \App\Services\Mci\DashboardRepository {
+        $repo = new class extends DashboardRepository
+        {
             public function testGrowth(float $c, float $p): array
             {
                 return $this->calculateGrowth($c, $p);
@@ -211,7 +213,8 @@ describe('DashboardRepository::calculateGrowth (via base)', function () {
     });
 
     it('calculates negative growth correctly', function () {
-        $repo = new class extends \App\Services\Mci\DashboardRepository {
+        $repo = new class extends DashboardRepository
+        {
             public function testGrowth(float $c, float $p): array
             {
                 return $this->calculateGrowth($c, $p);
@@ -251,7 +254,7 @@ describe('GrowthDTO::fromArray', function () {
 
 describe('FinancingMetricsDTO::jsonSerialize', function () {
     it('serializes all fields', function () {
-        $dto  = makeFinancingDTO();
+        $dto = makeFinancingDTO();
         $json = $dto->jsonSerialize();
 
         expect($json)->toHaveKeys(['total_os', 'os_formatted', 'total_npf', 'npf_formatted', 'total_noa', 'total_ao', 'growth', 'noa_growth', 'ao_growth', 'npf_growth']);
@@ -270,58 +273,58 @@ function makeGrowthDTO(float $raw = 0.0): GrowthDTO
 function makeFinancingDTO(): FinancingMetricsDTO
 {
     return new FinancingMetricsDTO(
-        totalOs:      1_000_000_000.0,
-        osFormatted:  'Rp 1.000.000.000',
-        totalNpf:     50_000_000.0,
+        totalOs: 1_000_000_000.0,
+        osFormatted: 'Rp 1.000.000.000',
+        totalNpf: 50_000_000.0,
         npfFormatted: 'Rp 50.000.000',
-        totalNoa:     500,
-        totalAo:      25,
-        growth:       makeGrowthDTO(5.0),
-        noaGrowth:    makeGrowthDTO(2.0),
-        aoGrowth:     makeGrowthDTO(0.0),
-        npfGrowth:    makeGrowthDTO(-1.0),
+        totalNoa: 500,
+        totalAo: 25,
+        growth: makeGrowthDTO(5.0),
+        noaGrowth: makeGrowthDTO(2.0),
+        aoGrowth: makeGrowthDTO(0.0),
+        npfGrowth: makeGrowthDTO(-1.0),
     );
 }
 
 function makeSavingDTO(): SavingMetricsDTO
 {
     return new SavingMetricsDTO(
-        totalSaldo:     500_000_000.0,
+        totalSaldo: 500_000_000.0,
         saldoFormatted: 'Rp 500.000.000',
-        totalNoa:       300,
-        totalAo:        15,
-        growth:         makeGrowthDTO(3.0),
-        noaGrowth:      makeGrowthDTO(1.0),
-        aoGrowth:       makeGrowthDTO(0.0),
+        totalNoa: 300,
+        totalAo: 15,
+        growth: makeGrowthDTO(3.0),
+        noaGrowth: makeGrowthDTO(1.0),
+        aoGrowth: makeGrowthDTO(0.0),
     );
 }
 
 function makeDepositoDTO(): DepositoMetricsDTO
 {
     return new DepositoMetricsDTO(
-        totalSaldo:      200_000_000.0,
-        saldoFormatted:  'Rp 200.000.000',
-        totalBaghas:     10_000_000.0,
+        totalSaldo: 200_000_000.0,
+        saldoFormatted: 'Rp 200.000.000',
+        totalBaghas: 10_000_000.0,
         baghasFormatted: 'Rp 10.000.000',
-        totalNoa:        100,
-        totalAo:         10,
-        growth:          makeGrowthDTO(2.0),
-        noaGrowth:       makeGrowthDTO(1.0),
-        aoGrowth:        makeGrowthDTO(0.0),
-        baghasGrowth:    makeGrowthDTO(4.0),
+        totalNoa: 100,
+        totalAo: 10,
+        growth: makeGrowthDTO(2.0),
+        noaGrowth: makeGrowthDTO(1.0),
+        aoGrowth: makeGrowthDTO(0.0),
+        baghasGrowth: makeGrowthDTO(4.0),
     );
 }
 
 function makeDashboardMetricsDTO(): DashboardMetricsDTO
 {
     return new DashboardMetricsDTO(
-        tgl:         '01042026',
-        year:        2026,
-        month:       4,
-        period:      '202604',
-        financing:   makeFinancingDTO(),
-        saving:      makeSavingDTO(),
-        deposito:    makeDepositoDTO(),
+        tgl: '01042026',
+        year: 2026,
+        month: 4,
+        period: '202604',
+        financing: makeFinancingDTO(),
+        saving: makeSavingDTO(),
+        deposito: makeDepositoDTO(),
         generatedAt: now()->toIso8601String(),
     );
 }

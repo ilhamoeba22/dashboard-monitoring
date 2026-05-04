@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,16 +20,16 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdtrn  type: varchar(4)
- * @property string|null $nmfield  type: varchar(20)
- * @property string|null $x  type: numeric(9)
- * @property string|null $y  type: numeric(9)
- * @property string|null $w  type: numeric(9)
- * @property string|null $h  type: numeric(9)
- * @property string|null $stsrec  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgljam  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
+ * @property string|null $kdtrn type: varchar(4)
+ * @property string|null $nmfield type: varchar(20)
+ * @property string|null $x type: numeric(9)
+ * @property string|null $y type: numeric(9)
+ * @property string|null $w type: numeric(9)
+ * @property string|null $h type: numeric(9)
+ * @property string|null $stsrec type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgljam type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
  */
 class Toftslip extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,25 +20,25 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kode_laporan  type: varchar(4)
- * @property string|null $sandi_form  type: varchar(2)
- * @property string|null $sandi_bank  type: varchar(6)
- * @property string|null $sandi_kantor  type: varchar(3)
- * @property string|null $bulan  type: varchar(2)
- * @property string|null $tahun  type: varchar(4)
- * @property string|null $nomor_rekening  type: varchar(15)
- * @property string|null $jumlah_rekening  type: numeric(5)
- * @property string|null $jns_deposito  type: varchar(2)
- * @property string|null $hubungan  type: varchar(1)
- * @property string|null $lokasi_nasabah  type: varchar(4)
- * @property string|null $tglmulai  type: varchar(8)
- * @property string|null $tglakhir  type: varchar(8)
- * @property string|null $tingkat_imbalan  type: varchar(5)
- * @property string|null $jumlah  type: numeric(9)
- * @property string|null $mtd_bg_hsl_sd  type: varchar(1)
- * @property string|null $gol_nasabah  type: varchar(3)
- * @property string|null $kdloc  type: varchar(2)
- * @property string|null $urut  type: numeric(5)
+ * @property string|null $kode_laporan type: varchar(4)
+ * @property string|null $sandi_form type: varchar(2)
+ * @property string|null $sandi_bank type: varchar(6)
+ * @property string|null $sandi_kantor type: varchar(3)
+ * @property string|null $bulan type: varchar(2)
+ * @property string|null $tahun type: varchar(4)
+ * @property string|null $nomor_rekening type: varchar(15)
+ * @property string|null $jumlah_rekening type: numeric(5)
+ * @property string|null $jns_deposito type: varchar(2)
+ * @property string|null $hubungan type: varchar(1)
+ * @property string|null $lokasi_nasabah type: varchar(4)
+ * @property string|null $tglmulai type: varchar(8)
+ * @property string|null $tglakhir type: varchar(8)
+ * @property string|null $tingkat_imbalan type: varchar(5)
+ * @property string|null $jumlah type: numeric(9)
+ * @property string|null $mtd_bg_hsl_sd type: varchar(1)
+ * @property string|null $gol_nasabah type: varchar(3)
+ * @property string|null $kdloc type: varchar(2)
+ * @property string|null $urut type: numeric(5)
  */
 class Tofform14 extends MciBaseModel
 {

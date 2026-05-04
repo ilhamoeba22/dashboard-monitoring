@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Deposito;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,25 +20,25 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdprd  type: varchar(2)
- * @property string $jkwaktu  type: numeric(5)
- * @property string $jnsjkwaktu  type: varchar(1)
- * @property string $noacc  type: varchar(11)
- * @property string $tglbayar  type: varchar(8)
- * @property string|null $nobilyet  type: varchar(10)
- * @property string|null $fnama  type: varchar(30)
- * @property string|null $nominal  type: numeric(9)
- * @property string|null $rate  type: numeric(5)
- * @property string|null $spread  type: numeric(5)
- * @property string|null $subsiditax  type: numeric(5)
- * @property string|null $bunga  type: numeric(9)
- * @property string|null $pajak  type: numeric(9)
- * @property string|null $subsidi  type: numeric(9)
- * @property string|null $noaccbng  type: varchar(11)
- * @property string|null $ststax  type: varchar(1)
- * @property string|null $sbbtax  type: varchar(11)
- * @property string|null $tglcair  type: varchar(8)
- * @property string|null $usercair  type: varchar(10)
+ * @property string $kdprd type: varchar(2)
+ * @property string $jkwaktu type: numeric(5)
+ * @property string $jnsjkwaktu type: varchar(1)
+ * @property string $noacc type: varchar(11)
+ * @property string $tglbayar type: varchar(8)
+ * @property string|null $nobilyet type: varchar(10)
+ * @property string|null $fnama type: varchar(30)
+ * @property string|null $nominal type: numeric(9)
+ * @property string|null $rate type: numeric(5)
+ * @property string|null $spread type: numeric(5)
+ * @property string|null $subsiditax type: numeric(5)
+ * @property string|null $bunga type: numeric(9)
+ * @property string|null $pajak type: numeric(9)
+ * @property string|null $subsidi type: numeric(9)
+ * @property string|null $noaccbng type: varchar(11)
+ * @property string|null $ststax type: varchar(1)
+ * @property string|null $sbbtax type: varchar(11)
+ * @property string|null $tglcair type: varchar(8)
+ * @property string|null $usercair type: varchar(10)
  */
 class Tofdeptax extends MciBaseModel
 {

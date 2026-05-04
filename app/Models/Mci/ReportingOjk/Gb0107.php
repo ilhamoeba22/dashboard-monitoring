@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\ReportingOjk;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,25 +20,25 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $id  type: int(4)
- * @property string|null $nama  type: varchar(100)
- * @property string|null $noid  type: varchar(30)
- * @property string|null $kepatuhan  type: varchar(1)
- * @property string|null $manajemen_risiko  type: varchar(1)
- * @property string|null $audit_intern  type: varchar(1)
- * @property string|null $apu_dan_ppt  type: varchar(1)
- * @property string|null $fungsi_lainnya  type: varchar(1)
- * @property string|null $tgl_mulai_menjabat  type: varchar(10)
- * @property string|null $no_surat_pengangkatan  type: varchar(30)
- * @property string|null $tanggal_pengangkatan  type: varchar(10)
- * @property string|null $komite_audit  type: varchar(1)
- * @property string|null $komite_pemantau_risiko  type: varchar(1)
- * @property string|null $komite_remunerasi_dan_nominasi  type: varchar(1)
- * @property string|null $status_berhenti_menjabat  type: varchar(1)
- * @property string|null $alasan_berhenti  type: text(16)
- * @property string|null $no_surat_berhenti  type: varchar(30)
- * @property string|null $tanggal_berhenti  type: varchar(10)
- * @property string|null $kom_manajemen_risk  type: varchar(1)
+ * @property int $id type: int(4)
+ * @property string|null $nama type: varchar(100)
+ * @property string|null $noid type: varchar(30)
+ * @property string|null $kepatuhan type: varchar(1)
+ * @property string|null $manajemen_risiko type: varchar(1)
+ * @property string|null $audit_intern type: varchar(1)
+ * @property string|null $apu_dan_ppt type: varchar(1)
+ * @property string|null $fungsi_lainnya type: varchar(1)
+ * @property string|null $tgl_mulai_menjabat type: varchar(10)
+ * @property string|null $no_surat_pengangkatan type: varchar(30)
+ * @property string|null $tanggal_pengangkatan type: varchar(10)
+ * @property string|null $komite_audit type: varchar(1)
+ * @property string|null $komite_pemantau_risiko type: varchar(1)
+ * @property string|null $komite_remunerasi_dan_nominasi type: varchar(1)
+ * @property string|null $status_berhenti_menjabat type: varchar(1)
+ * @property string|null $alasan_berhenti type: text(16)
+ * @property string|null $no_surat_berhenti type: varchar(30)
+ * @property string|null $tanggal_berhenti type: varchar(10)
+ * @property string|null $kom_manajemen_risk type: varchar(1)
  */
 class Gb0107 extends MciBaseModel
 {

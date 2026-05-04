@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,23 +20,23 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $noreff  type: nvarchar(100)
- * @property string $noacc  type: varchar(10)
- * @property string $kdedc  type: varchar(10)
- * @property string $kdkolektor  type: varchar(10)
- * @property string $tgltrn  type: varchar(8)
- * @property string|null $dc  type: varchar(1)
- * @property string|null $tgljam  type: nvarchar(100)
- * @property string|null $amount  type: numeric(9)
- * @property string|null $reffva  type: varchar(50)
- * @property string|null $plat  type: varchar(50)
- * @property string|null $plong  type: varchar(50)
- * @property string|null $norut  type: nvarchar(100)
- * @property string|null $ket  type: nvarchar(100)
- * @property string|null $mitratrx  type: nvarchar(100)
- * @property string|null $norektrx  type: nvarchar(100)
- * @property string|null $notrx  type: nvarchar(100)
- * @property string|null $jmlbill  type: nvarchar(100)
+ * @property string $noreff type: nvarchar(100)
+ * @property string $noacc type: varchar(10)
+ * @property string $kdedc type: varchar(10)
+ * @property string $kdkolektor type: varchar(10)
+ * @property string $tgltrn type: varchar(8)
+ * @property string|null $dc type: varchar(1)
+ * @property string|null $tgljam type: nvarchar(100)
+ * @property string|null $amount type: numeric(9)
+ * @property string|null $reffva type: varchar(50)
+ * @property string|null $plat type: varchar(50)
+ * @property string|null $plong type: varchar(50)
+ * @property string|null $norut type: nvarchar(100)
+ * @property string|null $ket type: nvarchar(100)
+ * @property string|null $mitratrx type: nvarchar(100)
+ * @property string|null $norektrx type: nvarchar(100)
+ * @property string|null $notrx type: nvarchar(100)
+ * @property string|null $jmlbill type: nvarchar(100)
  */
 class Tmpnorutlist extends MciBaseModel
 {

@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 use App\Repositories\Interfaces\CifRepositoryInterface;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\CursorPaginator;
-use Illuminate\Support\Collection;
 use Mockery\MockInterface;
 
 describe('GET /api/v1/cif', function () {
     it('returns CIF list with cursor pagination', function () {
         $mockPaginator = new CursorPaginator(collect([
-            ['nocif' => 'CIF001', 'nm' => 'Budi']
+            ['nocif' => 'CIF001', 'nm' => 'Budi'],
         ]), 50);
 
         $this->mock(CifRepositoryInterface::class, function (MockInterface $mock) use ($mockPaginator) {
@@ -26,11 +26,11 @@ describe('GET /api/v1/cif', function () {
             ->assertJsonStructure([
                 'data' => [
                     'data' => [
-                        '*' => ['nocif', 'nm']
+                        '*' => ['nocif', 'nm'],
                     ],
                     'path',
                     'per_page',
-                ]
+                ],
             ]);
     });
 });
@@ -50,9 +50,9 @@ describe('GET /api/v1/cif/rekapitulasi', function () {
         $response->assertOk()
             ->assertJson([
                 'success' => true,
-                'data'    => [
+                'data' => [
                     ['label' => 'Cabang Pusat', 'id' => '01', 'total_nasabah' => 500],
-                ]
+                ],
             ]);
     });
 
@@ -70,7 +70,7 @@ describe('GET /api/v1/cif/{nocif}', function () {
     it('returns cif detail', function () {
         $mockData = [
             'nocif' => 'CIF123',
-            'nama'  => 'Agus',
+            'nama' => 'Agus',
         ];
 
         $this->mock(CifRepositoryInterface::class, function (MockInterface $mock) use ($mockData) {
@@ -82,13 +82,13 @@ describe('GET /api/v1/cif/{nocif}', function () {
         $response->assertOk()
             ->assertJson([
                 'success' => true,
-                'data'    => $mockData
+                'data' => $mockData,
             ]);
     });
 
     it('returns 404 when nocif not found', function () {
         $this->mock(CifRepositoryInterface::class, function (MockInterface $mock) {
-            $mock->shouldReceive('getDetail')->once()->andThrow(new \Illuminate\Database\Eloquent\ModelNotFoundException());
+            $mock->shouldReceive('getDetail')->once()->andThrow(new ModelNotFoundException);
         });
 
         $response = $this->getJson('/api/v1/cif/CIF999');
@@ -96,7 +96,7 @@ describe('GET /api/v1/cif/{nocif}', function () {
         $response->assertStatus(404)
             ->assertJson([
                 'success' => false,
-                'message' => 'Data CIF tidak ditemukan'
+                'message' => 'Data CIF tidak ditemukan',
             ]);
     });
 });

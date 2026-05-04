@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Warkat;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,24 +20,24 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $nork  type: varchar(11)
- * @property string|null $jnswarkat  type: varchar(1)
- * @property string|null $nowarkawal  type: numeric(9)
- * @property string|null $lembar  type: numeric(5)
- * @property string|null $nowarkakh  type: numeric(9)
- * @property string|null $kdcab  type: varchar(3)
- * @property string|null $kdloc  type: varchar(2)
- * @property string|null $stsrecawal  type: varchar(1)
- * @property string|null $stsrec  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgl  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $chgtgl  type: varchar(14)
- * @property string|null $chgterm  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $auttgl  type: varchar(14)
- * @property string|null $autterm  type: varchar(10)
+ * @property string $nork type: varchar(11)
+ * @property string|null $jnswarkat type: varchar(1)
+ * @property string|null $nowarkawal type: numeric(9)
+ * @property string|null $lembar type: numeric(5)
+ * @property string|null $nowarkakh type: numeric(9)
+ * @property string|null $kdcab type: varchar(3)
+ * @property string|null $kdloc type: varchar(2)
+ * @property string|null $stsrecawal type: varchar(1)
+ * @property string|null $stsrec type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgl type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $chgtgl type: varchar(14)
+ * @property string|null $chgterm type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $auttgl type: varchar(14)
+ * @property string|null $autterm type: varchar(10)
  */
 class Warkath extends MciBaseModel
 {

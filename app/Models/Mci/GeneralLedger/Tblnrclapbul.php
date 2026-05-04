@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\GeneralLedger;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,12 +20,12 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $urut  type: numeric(5)
- * @property string $golac  type: char(1)
- * @property string|null $kdisi  type: char(3)
- * @property string $sandibi  type: varchar(5)
- * @property string|null $ket  type: varchar(100)
- * @property string|null $saldo  type: numeric(9)
+ * @property string $urut type: numeric(5)
+ * @property string $golac type: char(1)
+ * @property string|null $kdisi type: char(3)
+ * @property string $sandibi type: varchar(5)
+ * @property string|null $ket type: varchar(100)
+ * @property string|null $saldo type: numeric(9)
  */
 class Tblnrclapbul extends MciBaseModel
 {

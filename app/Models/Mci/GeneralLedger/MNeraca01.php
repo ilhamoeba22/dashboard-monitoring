@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\GeneralLedger;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,23 +20,23 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kodebank  type: varchar(3)
- * @property string|null $kodecab  type: varchar(2)
- * @property string|null $kodeloc  type: varchar(2)
- * @property string|null $thn  type: varchar(4)
- * @property string|null $bln  type: varchar(2)
- * @property string|null $nosbb  type: varchar(7)
- * @property string|null $nobb  type: varchar(7)
- * @property string|null $tgl01  type: decimal(9)
- * @property string|null $tgl02  type: decimal(9)
- * @property string|null $tgl03  type: decimal(9)
- * @property string|null $tgl04  type: decimal(9)
- * @property string|null $tgl05  type: decimal(9)
- * @property string|null $tgl06  type: decimal(9)
- * @property string|null $tgl07  type: decimal(9)
- * @property string|null $tgl08  type: decimal(9)
- * @property string|null $tgl09  type: decimal(9)
- * @property string|null $tgl10  type: decimal(9)
+ * @property string|null $kodebank type: varchar(3)
+ * @property string|null $kodecab type: varchar(2)
+ * @property string|null $kodeloc type: varchar(2)
+ * @property string|null $thn type: varchar(4)
+ * @property string|null $bln type: varchar(2)
+ * @property string|null $nosbb type: varchar(7)
+ * @property string|null $nobb type: varchar(7)
+ * @property string|null $tgl01 type: decimal(9)
+ * @property string|null $tgl02 type: decimal(9)
+ * @property string|null $tgl03 type: decimal(9)
+ * @property string|null $tgl04 type: decimal(9)
+ * @property string|null $tgl05 type: decimal(9)
+ * @property string|null $tgl06 type: decimal(9)
+ * @property string|null $tgl07 type: decimal(9)
+ * @property string|null $tgl08 type: decimal(9)
+ * @property string|null $tgl09 type: decimal(9)
+ * @property string|null $tgl10 type: decimal(9)
  */
 class MNeraca01 extends MciBaseModel
 {

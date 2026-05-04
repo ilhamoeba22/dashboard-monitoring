@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Sms;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,12 +20,12 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $ID  type: bigint(8)
- * @property string $tglproses  type: varchar(8)
- * @property string $tgltagih  type: varchar(8)
- * @property string|null $nokontrak  type: varchar(11)
- * @property string $nohp  type: varchar(20)
- * @property string|null $status  type: varchar(100)
+ * @property int $ID type: bigint(8)
+ * @property string $tglproses type: varchar(8)
+ * @property string $tgltagih type: varchar(8)
+ * @property string|null $nokontrak type: varchar(11)
+ * @property string $nohp type: varchar(20)
+ * @property string|null $status type: varchar(100)
  */
 class Logsmstag extends MciBaseModel
 {

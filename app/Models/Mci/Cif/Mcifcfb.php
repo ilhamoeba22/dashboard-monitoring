@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Cif;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,26 +20,26 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $nocif  type: varchar(9)
- * @property string $skor_risk  type: varchar(256)
- * @property string $jns_alamat  type: varchar(256)
- * @property string $kd_kerja_lain  type: varchar(256)
- * @property string $kd_bidang_slik_lain  type: varchar(256)
- * @property string $kd_sumb_hasil_lain  type: varchar(256)
- * @property string $notes  type: varchar(256)
- * @property string $username  type: varchar(256)
- * @property string $education_client  type: varchar(256)
- * @property string $industry_client  type: varchar(256)
- * @property string $business_type  type: varchar(256)
- * @property string $business_name  type: varchar(256)
- * @property string $business_industry  type: varchar(256)
- * @property string $other_business_industry  type: varchar(256)
- * @property string $business_address  type: varchar(256)
- * @property string $websites_client  type: varchar(256)
- * @property string $other_business_type  type: varchar(256)
- * @property string $annual_income  type: varchar(256)
- * @property string $business_npwp  type: varchar(256)
- * @property string $nib  type: varchar(256)
+ * @property string $nocif type: varchar(9)
+ * @property string $skor_risk type: varchar(256)
+ * @property string $jns_alamat type: varchar(256)
+ * @property string $kd_kerja_lain type: varchar(256)
+ * @property string $kd_bidang_slik_lain type: varchar(256)
+ * @property string $kd_sumb_hasil_lain type: varchar(256)
+ * @property string $notes type: varchar(256)
+ * @property string $username type: varchar(256)
+ * @property string $education_client type: varchar(256)
+ * @property string $industry_client type: varchar(256)
+ * @property string $business_type type: varchar(256)
+ * @property string $business_name type: varchar(256)
+ * @property string $business_industry type: varchar(256)
+ * @property string $other_business_industry type: varchar(256)
+ * @property string $business_address type: varchar(256)
+ * @property string $websites_client type: varchar(256)
+ * @property string $other_business_type type: varchar(256)
+ * @property string $annual_income type: varchar(256)
+ * @property string $business_npwp type: varchar(256)
+ * @property string $nib type: varchar(256)
  */
 class Mcifcfb extends MciBaseModel
 {

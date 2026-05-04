@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,30 +20,30 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdku  type: char(1)
- * @property string|null $feecust  type: numeric(5)
- * @property string|null $feenoncust  type: numeric(5)
- * @property string|null $feebank  type: numeric(5)
- * @property string|null $feebu  type: numeric(5)
- * @property string|null $feemg  type: numeric(5)
- * @property string|null $feeasb  type: numeric(5)
- * @property string|null $sbbttptrf  type: varchar(7)
- * @property string|null $sbbttpfee  type: varchar(7)
- * @property string|null $sbbpendbank  type: varchar(7)
- * @property string|null $sbbttpmg  type: varchar(7)
- * @property string|null $sbbttpasb  type: varchar(7)
- * @property string|null $stsrec  type: char(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgljam  type: varchar(14)
- * @property string|null $inptgljam_mesin  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $chgtgljam  type: varchar(14)
- * @property string|null $chgterm  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $auttgljam  type: varchar(14)
- * @property string|null $auttgljam_mesin  type: varchar(14)
- * @property string|null $autterm  type: varchar(10)
+ * @property string $kdku type: char(1)
+ * @property string|null $feecust type: numeric(5)
+ * @property string|null $feenoncust type: numeric(5)
+ * @property string|null $feebank type: numeric(5)
+ * @property string|null $feebu type: numeric(5)
+ * @property string|null $feemg type: numeric(5)
+ * @property string|null $feeasb type: numeric(5)
+ * @property string|null $sbbttptrf type: varchar(7)
+ * @property string|null $sbbttpfee type: varchar(7)
+ * @property string|null $sbbpendbank type: varchar(7)
+ * @property string|null $sbbttpmg type: varchar(7)
+ * @property string|null $sbbttpasb type: varchar(7)
+ * @property string|null $stsrec type: char(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgljam type: varchar(14)
+ * @property string|null $inptgljam_mesin type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $chgtgljam type: varchar(14)
+ * @property string|null $chgterm type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $auttgljam type: varchar(14)
+ * @property string|null $auttgljam_mesin type: varchar(14)
+ * @property string|null $autterm type: varchar(10)
  */
 class Toftfeeku extends MciBaseModel
 {

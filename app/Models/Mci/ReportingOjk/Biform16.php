@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\ReportingOjk;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,24 +20,24 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdloc  type: char(2)
- * @property string $noaset  type: varchar(25)
- * @property string|null $jnsaset  type: char(3)
- * @property string|null $latitude  type: numeric(9)
- * @property string|null $longitude  type: numeric(9)
- * @property string|null $nocif  type: varchar(9)
- * @property string|null $noid  type: varchar(16)
- * @property string|null $norek  type: varchar(20)
- * @property string|null $jnsakad  type: char(2)
- * @property string|null $tglayda  type: varchar(8)
- * @property string|null $coll  type: char(1)
- * @property string|null $osmdlc  type: numeric(9)
- * @property string|null $osmgnc  type: numeric(9)
- * @property string|null $nilaiagunan  type: numeric(9)
- * @property string|null $nilaibersih  type: numeric(9)
- * @property string|null $ckpn  type: numeric(9)
- * @property string|null $nilaitercatat  type: numeric(9)
- * @property string|null $jumlah  type: numeric(9)
+ * @property string $kdloc type: char(2)
+ * @property string $noaset type: varchar(25)
+ * @property string|null $jnsaset type: char(3)
+ * @property string|null $latitude type: numeric(9)
+ * @property string|null $longitude type: numeric(9)
+ * @property string|null $nocif type: varchar(9)
+ * @property string|null $noid type: varchar(16)
+ * @property string|null $norek type: varchar(20)
+ * @property string|null $jnsakad type: char(2)
+ * @property string|null $tglayda type: varchar(8)
+ * @property string|null $coll type: char(1)
+ * @property string|null $osmdlc type: numeric(9)
+ * @property string|null $osmgnc type: numeric(9)
+ * @property string|null $nilaiagunan type: numeric(9)
+ * @property string|null $nilaibersih type: numeric(9)
+ * @property string|null $ckpn type: numeric(9)
+ * @property string|null $nilaitercatat type: numeric(9)
+ * @property string|null $jumlah type: numeric(9)
  */
 class Biform16 extends MciBaseModel
 {

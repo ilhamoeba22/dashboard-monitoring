@@ -33,10 +33,10 @@ final readonly class DepositoMetricsDTO implements JsonSerializable
             baghasFormatted: $data['baghas_formatted'] ?? 'Rp 0',
             totalNoa: (int) ($data['total_noa'] ?? 0),
             totalAo: (int) ($data['total_ao'] ?? 0),
-            growth: GrowthDTO::fromArray($data['growth'] ?? []),
-            noaGrowth: GrowthDTO::fromArray($data['noa_growth'] ?? []),
-            aoGrowth: GrowthDTO::fromArray($data['ao_growth'] ?? []),
-            baghasGrowth: GrowthDTO::fromArray($data['baghas_growth'] ?? []),
+            growth: GrowthDTO::fromArray(is_array($data['growth'] ?? []) ? ($data['growth'] ?? []) : []),
+            noaGrowth: GrowthDTO::fromArray(is_array($data['noa_growth'] ?? []) ? ($data['noa_growth'] ?? []) : []),
+            aoGrowth: GrowthDTO::fromArray(is_array($data['ao_growth'] ?? []) ? ($data['ao_growth'] ?? []) : []),
+            baghasGrowth: GrowthDTO::fromArray(is_array($data['baghas_growth'] ?? []) ? ($data['baghas_growth'] ?? []) : []),
         );
     }
 
@@ -49,10 +49,10 @@ final readonly class DepositoMetricsDTO implements JsonSerializable
             'baghas_formatted' => $this->baghasFormatted,
             'total_noa' => $this->totalNoa,
             'total_ao' => $this->totalAo,
-            'growth' => $this->growth,
-            'noa_growth' => $this->noaGrowth,
-            'ao_growth' => $this->aoGrowth,
-            'baghas_growth' => $this->baghasGrowth,
+            'growth' => $this->growth->jsonSerialize(),
+            'noa_growth' => $this->noaGrowth->jsonSerialize(),
+            'ao_growth' => $this->aoGrowth->jsonSerialize(),
+            'baghas_growth' => $this->baghasGrowth->jsonSerialize(),
         ];
     }
 }

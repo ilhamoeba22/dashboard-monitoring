@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,22 +20,22 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdpt  type: varchar(10)
- * @property string|null $nim  type: varchar(20)
- * @property string|null $nama  type: varchar(50)
- * @property string|null $progstudy  type: varchar(50)
- * @property string|null $thnakademik  type: varchar(10)
- * @property string|null $kelas  type: varchar(10)
- * @property string|null $sex  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgljam  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $chgtgljam  type: varchar(14)
- * @property string|null $chgterm  type: varchar(10)
- * @property string $email  type: varchar(50)
- * @property string $nohp  type: varchar(20)
- * @property string $stssent  type: varchar(1)
+ * @property string|null $kdpt type: varchar(10)
+ * @property string|null $nim type: varchar(20)
+ * @property string|null $nama type: varchar(50)
+ * @property string|null $progstudy type: varchar(50)
+ * @property string|null $thnakademik type: varchar(10)
+ * @property string|null $kelas type: varchar(10)
+ * @property string|null $sex type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgljam type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $chgtgljam type: varchar(14)
+ * @property string|null $chgterm type: varchar(10)
+ * @property string $email type: varchar(50)
+ * @property string $nohp type: varchar(20)
+ * @property string $stssent type: varchar(1)
  */
 class Tofmpt extends MciBaseModel
 {

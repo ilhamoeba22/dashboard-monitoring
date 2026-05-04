@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\UserAuth;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,19 +20,19 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $id  type: bigint(8)
- * @property string $userid  type: varchar(20)
- * @property string $kdid  type: varchar(20)
- * @property string $traceid  type: varchar(20)
- * @property string $appid  type: varchar(20)
- * @property string $inptgljam  type: varchar(20)
- * @property string|null $web_version  type: varchar(20)
- * @property string|null $server_version  type: varchar(20)
- * @property string|null $ip_address  type: varchar(50)
- * @property string|null $lokasi  type: varchar(255)
- * @property string|null $rc  type: varchar(20)
- * @property string|null $rcdesc  type: varchar(255)
- * @property string|null $description  type: varchar(-1)
+ * @property int $id type: bigint(8)
+ * @property string $userid type: varchar(20)
+ * @property string $kdid type: varchar(20)
+ * @property string $traceid type: varchar(20)
+ * @property string $appid type: varchar(20)
+ * @property string $inptgljam type: varchar(20)
+ * @property string|null $web_version type: varchar(20)
+ * @property string|null $server_version type: varchar(20)
+ * @property string|null $ip_address type: varchar(50)
+ * @property string|null $lokasi type: varchar(255)
+ * @property string|null $rc type: varchar(20)
+ * @property string|null $rcdesc type: varchar(255)
+ * @property string|null $description type: varchar(-1)
  */
 class Webuserlog extends MciBaseModel
 {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Sms;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,16 +20,16 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $ID  type: numeric(9)
- * @property string|null $tgl  type: varchar(8)
- * @property string|null $modul  type: varchar(10)
- * @property string|null $term  type: varchar(10)
- * @property string|null $ip  type: varchar(20)
- * @property string|null $jamin  type: varchar(10)
- * @property string|null $jamout  type: varchar(10)
- * @property string|null $userid  type: varchar(10)
- * @property string|null $ket  type: varchar(100)
- * @property string|null $fungsi  type: varchar(2)
+ * @property string $ID type: numeric(9)
+ * @property string|null $tgl type: varchar(8)
+ * @property string|null $modul type: varchar(10)
+ * @property string|null $term type: varchar(10)
+ * @property string|null $ip type: varchar(20)
+ * @property string|null $jamin type: varchar(10)
+ * @property string|null $jamout type: varchar(10)
+ * @property string|null $userid type: varchar(10)
+ * @property string|null $ket type: varchar(100)
+ * @property string|null $fungsi type: varchar(2)
  */
 class Toflogact extends MciBaseModel
 {

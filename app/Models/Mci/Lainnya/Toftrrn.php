@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,16 +20,16 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $tgltrn  type: varchar(8)
- * @property string $batch  type: numeric(5)
- * @property string $notrn  type: numeric(5)
- * @property string $external_id  type: varchar(256)
- * @property string $rrn  type: varchar(256)
- * @property string $channelid  type: varchar(100)
- * @property string $parm1  type: varchar(256)
- * @property string $parm2  type: varchar(256)
- * @property string $parm3  type: varchar(256)
- * @property string $parm4  type: varchar(256)
+ * @property string $tgltrn type: varchar(8)
+ * @property string $batch type: numeric(5)
+ * @property string $notrn type: numeric(5)
+ * @property string $external_id type: varchar(256)
+ * @property string $rrn type: varchar(256)
+ * @property string $channelid type: varchar(100)
+ * @property string $parm1 type: varchar(256)
+ * @property string $parm2 type: varchar(256)
+ * @property string $parm3 type: varchar(256)
+ * @property string $parm4 type: varchar(256)
  */
 class Toftrrn extends MciBaseModel
 {

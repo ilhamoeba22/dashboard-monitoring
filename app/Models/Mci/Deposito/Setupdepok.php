@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Deposito;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,11 +20,11 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdprd  type: varchar(2)
- * @property string|null $jw  type: numeric(5)
- * @property string|null $kdjw  type: varchar(1)
- * @property string|null $sbbpok  type: varchar(7)
- * @property string|null $sbbbaghas  type: varchar(7)
+ * @property string $kdprd type: varchar(2)
+ * @property string|null $jw type: numeric(5)
+ * @property string|null $kdjw type: varchar(1)
+ * @property string|null $sbbpok type: varchar(7)
+ * @property string|null $sbbbaghas type: varchar(7)
  */
 class Setupdepok extends MciBaseModel
 {

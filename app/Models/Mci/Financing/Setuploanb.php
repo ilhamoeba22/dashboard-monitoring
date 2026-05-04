@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Financing;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,11 +20,11 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdprd  type: varchar(2)
- * @property string|null $urut  type: numeric(5)
- * @property string|null $ket  type: varchar(30)
- * @property string|null $nosbb  type: varchar(7)
- * @property string|null $nomby  type: numeric(9)
+ * @property string $kdprd type: varchar(2)
+ * @property string|null $urut type: numeric(5)
+ * @property string|null $ket type: varchar(30)
+ * @property string|null $nosbb type: varchar(7)
+ * @property string|null $nomby type: numeric(9)
  */
 class Setuploanb extends MciBaseModel
 {

@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Traits;
+
+use Carbon\Carbon;
 
 /**
  * HasMciCasts
@@ -25,14 +29,14 @@ trait HasMciCasts
      * Konversi string "YYYYMMDD" → Carbon.
      * Return null kalau kosong / tidak valid.
      */
-    public function parseMciDate(?string $value): ?\Carbon\Carbon
+    public function parseMciDate(?string $value): ?Carbon
     {
         if ($value === null || trim($value) === '' || strlen($value) < 8) {
             return null;
         }
 
         try {
-            return \Carbon\Carbon::createFromFormat('Ymd', substr($value, 0, 8));
+            return Carbon::createFromFormat('Ymd', substr($value, 0, 8));
         } catch (\Throwable $e) {
             return null;
         }
@@ -41,14 +45,14 @@ trait HasMciCasts
     /**
      * Konversi string "YYYYMMDDHHMMSS" → Carbon.
      */
-    public function parseMciDatetime(?string $value): ?\Carbon\Carbon
+    public function parseMciDatetime(?string $value): ?Carbon
     {
         if ($value === null || trim($value) === '' || strlen($value) < 14) {
             return $this->parseMciDate($value);
         }
 
         try {
-            return \Carbon\Carbon::createFromFormat('YmdHis', substr($value, 0, 14));
+            return Carbon::createFromFormat('YmdHis', substr($value, 0, 14));
         } catch (\Throwable $e) {
             return null;
         }

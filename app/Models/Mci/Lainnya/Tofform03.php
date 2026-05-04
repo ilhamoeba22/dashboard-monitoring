@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,22 +20,22 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $kdbank  type: varchar(3)
- * @property string|null $sandibank  type: varchar(9)
- * @property string|null $nmbank  type: varchar(100)
- * @property string|null $hubungan  type: varchar(1)
- * @property string|null $jnspenempatan  type: varchar(2)
- * @property string|null $tglmulai  type: varchar(8)
- * @property string|null $tglakhir  type: varchar(8)
- * @property string|null $coll  type: varchar(1)
- * @property string|null $rate  type: varchar(4)
- * @property string|null $nominal  type: numeric(9)
- * @property string|null $jnsagunan  type: varchar(1)
- * @property string|null $nilaiagunan  type: numeric(9)
- * @property string|null $ppap  type: numeric(9)
- * @property string|null $mtdbghsl  type: varchar(1)
- * @property string|null $goljam  type: varchar(3)
- * @property string|null $bagjam  type: varchar(4)
+ * @property string|null $kdbank type: varchar(3)
+ * @property string|null $sandibank type: varchar(9)
+ * @property string|null $nmbank type: varchar(100)
+ * @property string|null $hubungan type: varchar(1)
+ * @property string|null $jnspenempatan type: varchar(2)
+ * @property string|null $tglmulai type: varchar(8)
+ * @property string|null $tglakhir type: varchar(8)
+ * @property string|null $coll type: varchar(1)
+ * @property string|null $rate type: varchar(4)
+ * @property string|null $nominal type: numeric(9)
+ * @property string|null $jnsagunan type: varchar(1)
+ * @property string|null $nilaiagunan type: numeric(9)
+ * @property string|null $ppap type: numeric(9)
+ * @property string|null $mtdbghsl type: varchar(1)
+ * @property string|null $goljam type: varchar(3)
+ * @property string|null $bagjam type: varchar(4)
  */
 class Tofform03 extends MciBaseModel
 {

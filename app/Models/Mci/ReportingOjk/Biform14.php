@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\ReportingOjk;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,25 +20,25 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdloc  type: char(2)
- * @property string $nocif  type: varchar(9)
- * @property string|null $nama  type: varchar(50)
- * @property string|null $noid  type: varchar(20)
- * @property string|null $groupdeb  type: varchar(15)
- * @property string|null $goldeb  type: varchar(6)
- * @property string|null $hubbank  type: varchar(1)
- * @property string|null $jnsaset  type: varchar(3)
- * @property string|null $norek  type: varchar(11)
- * @property string|null $tgleff  type: varchar(8)
- * @property string|null $tglexp  type: varchar(8)
- * @property string|null $tujuan  type: char(1)
- * @property string|null $mtdangs  type: char(1)
- * @property string|null $hargabeli  type: numeric(9)
- * @property string|null $progress  type: numeric(5)
- * @property string|null $nocifpemesan  type: varchar(9)
- * @property string|null $norekpemesan  type: varchar(9)
- * @property string|null $termin  type: numeric(9)
- * @property string|null $jumlah  type: numeric(9)
+ * @property string $kdloc type: char(2)
+ * @property string $nocif type: varchar(9)
+ * @property string|null $nama type: varchar(50)
+ * @property string|null $noid type: varchar(20)
+ * @property string|null $groupdeb type: varchar(15)
+ * @property string|null $goldeb type: varchar(6)
+ * @property string|null $hubbank type: varchar(1)
+ * @property string|null $jnsaset type: varchar(3)
+ * @property string|null $norek type: varchar(11)
+ * @property string|null $tgleff type: varchar(8)
+ * @property string|null $tglexp type: varchar(8)
+ * @property string|null $tujuan type: char(1)
+ * @property string|null $mtdangs type: char(1)
+ * @property string|null $hargabeli type: numeric(9)
+ * @property string|null $progress type: numeric(5)
+ * @property string|null $nocifpemesan type: varchar(9)
+ * @property string|null $norekpemesan type: varchar(9)
+ * @property string|null $termin type: numeric(9)
+ * @property string|null $jumlah type: numeric(9)
  */
 class Biform14 extends MciBaseModel
 {

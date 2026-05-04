@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Channel;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,7 +20,7 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $stsclose  type: varchar(1)
+ * @property string $stsclose type: varchar(1)
  */
 class Tofcloseechannel extends MciBaseModel
 {

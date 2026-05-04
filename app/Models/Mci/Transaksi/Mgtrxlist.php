@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Transaksi;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,28 +20,28 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $tgltrn  type: varchar(8)
- * @property string|null $jam  type: varchar(6)
- * @property string|null $iddevice  type: varchar(80)
- * @property string|null $notrx  type: varchar(25)
- * @property string|null $noacc  type: varchar(30)
- * @property string|null $noacclawan  type: varchar(30)
- * @property string|null $nominal  type: numeric(9)
- * @property string|null $ket  type: varchar(50)
- * @property string|null $prdid  type: varchar(10)
- * @property string|null $prdname  type: varchar(50)
- * @property string|null $bankid  type: varchar(25)
- * @property string|null $banknama  type: varchar(50)
- * @property string|null $admin  type: numeric(9)
- * @property string|null $total  type: numeric(9)
- * @property string|null $billerreff  type: varchar(100)
- * @property string|null $konten  type: text(16)
- * @property string|null $status  type: varchar(1)
- * @property string|null $kdtrf  type: varchar(20)
- * @property string|null $parm1  type: varchar(255)
- * @property string|null $parm2  type: varchar(255)
- * @property string|null $parm3  type: varchar(255)
- * @property string|null $parm4  type: varchar(255)
+ * @property string|null $tgltrn type: varchar(8)
+ * @property string|null $jam type: varchar(6)
+ * @property string|null $iddevice type: varchar(80)
+ * @property string|null $notrx type: varchar(25)
+ * @property string|null $noacc type: varchar(30)
+ * @property string|null $noacclawan type: varchar(30)
+ * @property string|null $nominal type: numeric(9)
+ * @property string|null $ket type: varchar(50)
+ * @property string|null $prdid type: varchar(10)
+ * @property string|null $prdname type: varchar(50)
+ * @property string|null $bankid type: varchar(25)
+ * @property string|null $banknama type: varchar(50)
+ * @property string|null $admin type: numeric(9)
+ * @property string|null $total type: numeric(9)
+ * @property string|null $billerreff type: varchar(100)
+ * @property string|null $konten type: text(16)
+ * @property string|null $status type: varchar(1)
+ * @property string|null $kdtrf type: varchar(20)
+ * @property string|null $parm1 type: varchar(255)
+ * @property string|null $parm2 type: varchar(255)
+ * @property string|null $parm3 type: varchar(255)
+ * @property string|null $parm4 type: varchar(255)
  */
 class Mgtrxlist extends MciBaseModel
 {

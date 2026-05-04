@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
-use Monolog\Handler\SyslogUdpHandler;
 use Monolog\Processor\PsrLogMessageProcessor;
 
 return [
@@ -12,23 +13,17 @@ return [
     | Default Log Channel
     |--------------------------------------------------------------------------
     |
-    | This option defines the default log channel that is utilized to write
-    | messages to your logs. The value provided here should match one of
-    | the channels present in the list of "channels" configured below.
+    | Semua log akan tertulis ke single file: logs/laravel.log
+    | Rotation: 5MB per file, keep 14 days
     |
     */
 
-    'default' => env('LOG_CHANNEL', 'stack'),
+    'default' => env('LOG_CHANNEL', 'single'),
 
     /*
     |--------------------------------------------------------------------------
     | Deprecations Log Channel
     |--------------------------------------------------------------------------
-    |
-    | This option controls the log channel that should be used to log warnings
-    | regarding deprecated PHP and library features. This allows you to get
-    | your application ready for upcoming major versions of dependencies.
-    |
     */
 
     'deprecations' => [
@@ -41,12 +36,11 @@ return [
     | Log Channels
     |--------------------------------------------------------------------------
     |
-    | Here you may configure the log channels for your application. Laravel
-    | utilizes the Monolog PHP logging library, which includes a variety
-    | of powerful log handlers and formatters that you're free to use.
-    |
-    | Available drivers: "single", "daily", "slack", "syslog",
-    |                    "errorlog", "monolog", "custom", "stack"
+    | CENTRALIZED LOGGING:
+    | - single: Semua log ke satu file (laravel.log)
+    | - daily:  Rotasi harian (laravel-YYYY-MM-DD.log)
+    | - metrics: Performa & metrics saja
+    | - api: API request/response
     |
     */
 
@@ -54,10 +48,13 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            'channels' => ['single'],
             'ignore_exceptions' => false,
         ],
 
+        // ==========================================
+        // CENTRALIZED: Single log file (PRIMARY)
+        // ==========================================
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
@@ -65,33 +62,64 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // ==========================================
+        // DAILY ROTATION:一个新文件每天
+        // ==========================================
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
-            'days' => env('LOG_DAILY_DAYS', 14),
+            'days' => 14,  // Keep 14 days
+            'replace_placeholders' => true,
+        ],
+
+        // ==========================================
+        // METRICS: Performa query & API response
+        // ==========================================
+        'metrics' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/metrics.log'),
+            'level' => 'debug',
+            'replace_placeholders' => true,
+        ],
+
+        // ==========================================
+        // API: API request/response tracking
+        // ==========================================
+        'api' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/api.log'),
+            'level' => 'debug',
+            'replace_placeholders' => true,
+        ],
+
+        // ==========================================
+        // SLOW QUERY: Database query yang >100ms
+        // ==========================================
+        'slow_query' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/slow-query.log'),
+            'level' => 'debug',
+            'replace_placeholders' => true,
+        ],
+
+        // ==========================================
+        // ERROR ONLY: Hanya error & critical
+        // ==========================================
+        'error' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/error.log'),
+            'level' => 'error',
             'replace_placeholders' => true,
         ],
 
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),
-            'username' => env('LOG_SLACK_USERNAME', env('APP_NAME', 'Laravel')),
+            'username' => env('LOG_SLACK_USERNAME', env('APP_NAME', 'MCI Dashboard')),
             'emoji' => env('LOG_SLACK_EMOJI', ':boom:'),
             'level' => env('LOG_LEVEL', 'critical'),
             'replace_placeholders' => true,
-        ],
-
-        'papertrail' => [
-            'driver' => 'monolog',
-            'level' => env('LOG_LEVEL', 'debug'),
-            'handler' => env('LOG_PAPERTRAIL_HANDLER', SyslogUdpHandler::class),
-            'handler_with' => [
-                'host' => env('PAPERTRAIL_URL'),
-                'port' => env('PAPERTRAIL_PORT'),
-                'connectionString' => 'tls://'.env('PAPERTRAIL_URL').':'.env('PAPERTRAIL_PORT'),
-            ],
-            'processors' => [PsrLogMessageProcessor::class],
         ],
 
         'stderr' => [
@@ -101,21 +129,7 @@ return [
             'handler_with' => [
                 'stream' => 'php://stderr',
             ],
-            'formatter' => env('LOG_STDERR_FORMATTER'),
-            'processors' => [PsrLogMessageProcessor::class],
-        ],
-
-        'syslog' => [
-            'driver' => 'syslog',
-            'level' => env('LOG_LEVEL', 'debug'),
-            'facility' => env('LOG_SYSLOG_FACILITY', LOG_USER),
-            'replace_placeholders' => true,
-        ],
-
-        'errorlog' => [
-            'driver' => 'errorlog',
-            'level' => env('LOG_LEVEL', 'debug'),
-            'replace_placeholders' => true,
+            'processor' => [PsrLogMessageProcessor::class],
         ],
 
         'null' => [
@@ -125,15 +139,6 @@ return [
 
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
-        ],
-
-        // RULE #10: Channel khusus untuk monitoring performa query & metrics
-        'metrics' => [
-            'driver'              => 'daily',
-            'path'                => storage_path('logs/metrics.log'),
-            'level'               => 'debug',
-            'days'                => 30,
-            'replace_placeholders' => true,
         ],
 
     ],

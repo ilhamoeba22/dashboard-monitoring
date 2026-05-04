@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\GeneralLedger;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,16 +20,16 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $nosbb  type: varchar(11)
- * @property string|null $nobb  type: varchar(11)
- * @property string|null $golongan  type: varchar(1)
- * @property string|null $kdcab  type: varchar(3)
- * @property string|null $kdloc  type: varchar(2)
- * @property string|null $namaaccount  type: varchar(30)
- * @property string|null $statusac  type: varchar(1)
- * @property string|null $thn  type: varchar(4)
- * @property string|null $bln  type: varchar(2)
- * @property string|null $saldo  type: numeric(9)
+ * @property string $nosbb type: varchar(11)
+ * @property string|null $nobb type: varchar(11)
+ * @property string|null $golongan type: varchar(1)
+ * @property string|null $kdcab type: varchar(3)
+ * @property string|null $kdloc type: varchar(2)
+ * @property string|null $namaaccount type: varchar(30)
+ * @property string|null $statusac type: varchar(1)
+ * @property string|null $thn type: varchar(4)
+ * @property string|null $bln type: varchar(2)
+ * @property string|null $saldo type: numeric(9)
  */
 class Tofnrceoy extends MciBaseModel
 {

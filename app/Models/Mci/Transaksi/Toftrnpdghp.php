@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Transaksi;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,15 +20,15 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property int $ID  type: bigint(8)
- * @property string $nohp  type: varchar(20)
- * @property string $imei  type: varchar(30)
- * @property string $tgltrn  type: varchar(8)
- * @property string $batch  type: numeric(5)
- * @property string $notrn  type: numeric(5)
- * @property string $kunci  type: varchar(150)
- * @property string $ststrn  type: char(1)
- * @property string $stspost  type: char(1)
+ * @property int $ID type: bigint(8)
+ * @property string $nohp type: varchar(20)
+ * @property string $imei type: varchar(30)
+ * @property string $tgltrn type: varchar(8)
+ * @property string $batch type: numeric(5)
+ * @property string $notrn type: numeric(5)
+ * @property string $kunci type: varchar(150)
+ * @property string $ststrn type: char(1)
+ * @property string $stspost type: char(1)
  */
 class Toftrnpdghp extends MciBaseModel
 {

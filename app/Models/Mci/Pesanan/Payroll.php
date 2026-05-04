@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Pesanan;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,27 +20,27 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $kdcab  type: varchar(3)
- * @property string $nocif  type: varchar(9)
- * @property string $kdcomp  type: varchar(3)
- * @property string $noacc  type: varchar(11)
- * @property string|null $kdguna  type: varchar(1)
- * @property string|null $ket  type: varchar(40)
- * @property string|null $tglproc  type: varchar(2)
- * @property string|null $byproc  type: numeric(9)
- * @property string|null $stsrec  type: varchar(1)
- * @property string|null $inpuser  type: varchar(10)
- * @property string|null $inptgl  type: varchar(14)
- * @property string|null $inpterm  type: varchar(10)
- * @property string|null $chguser  type: varchar(10)
- * @property string|null $chgtgl  type: varchar(14)
- * @property string|null $chgterm  type: varchar(10)
- * @property string|null $autuser  type: varchar(10)
- * @property string|null $auttgl  type: varchar(14)
- * @property string|null $autterm  type: varchar(10)
- * @property string|null $deluser  type: varchar(10)
- * @property string|null $deltgl  type: varchar(14)
- * @property string|null $delterm  type: varchar(10)
+ * @property string $kdcab type: varchar(3)
+ * @property string $nocif type: varchar(9)
+ * @property string $kdcomp type: varchar(3)
+ * @property string $noacc type: varchar(11)
+ * @property string|null $kdguna type: varchar(1)
+ * @property string|null $ket type: varchar(40)
+ * @property string|null $tglproc type: varchar(2)
+ * @property string|null $byproc type: numeric(9)
+ * @property string|null $stsrec type: varchar(1)
+ * @property string|null $inpuser type: varchar(10)
+ * @property string|null $inptgl type: varchar(14)
+ * @property string|null $inpterm type: varchar(10)
+ * @property string|null $chguser type: varchar(10)
+ * @property string|null $chgtgl type: varchar(14)
+ * @property string|null $chgterm type: varchar(10)
+ * @property string|null $autuser type: varchar(10)
+ * @property string|null $auttgl type: varchar(14)
+ * @property string|null $autterm type: varchar(10)
+ * @property string|null $deluser type: varchar(10)
+ * @property string|null $deltgl type: varchar(14)
+ * @property string|null $delterm type: varchar(10)
  */
 class Payroll extends MciBaseModel
 {

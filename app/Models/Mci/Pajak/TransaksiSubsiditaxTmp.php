@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Pajak;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,11 +20,11 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $jnstrn  type: varchar(10)
- * @property string|null $noacc  type: varchar(11)
- * @property string|null $noacc_dr  type: varchar(11)
- * @property string|null $noacc_cr  type: varchar(11)
- * @property string|null $nominal  type: numeric(9)
+ * @property string $jnstrn type: varchar(10)
+ * @property string|null $noacc type: varchar(11)
+ * @property string|null $noacc_dr type: varchar(11)
+ * @property string|null $noacc_cr type: varchar(11)
+ * @property string|null $nominal type: numeric(9)
  */
 class TransaksiSubsiditaxTmp extends MciBaseModel
 {

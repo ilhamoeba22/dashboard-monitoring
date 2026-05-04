@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Channel;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,17 +20,17 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $noacc  type: varchar(10)
- * @property string|null $nocif  type: varchar(9)
- * @property string $nama  type: varchar(30)
- * @property string|null $alamat  type: varchar(100)
- * @property string|null $kdkolektor  type: varchar(10)
- * @property string|null $kdmitra  type: varchar(10)
- * @property string|null $sahirtab  type: numeric(9)
- * @property string|null $sahirloan  type: numeric(9)
- * @property string|null $tid  type: varchar(8)
- * @property string|null $downloaded  type: varchar(1)
- * @property string|null $kdloc  type: varchar(2)
+ * @property string $noacc type: varchar(10)
+ * @property string|null $nocif type: varchar(9)
+ * @property string $nama type: varchar(30)
+ * @property string|null $alamat type: varchar(100)
+ * @property string|null $kdkolektor type: varchar(10)
+ * @property string|null $kdmitra type: varchar(10)
+ * @property string|null $sahirtab type: numeric(9)
+ * @property string|null $sahirloan type: numeric(9)
+ * @property string|null $tid type: varchar(8)
+ * @property string|null $downloaded type: varchar(1)
+ * @property string|null $kdloc type: varchar(2)
  */
 class Tmpedcmastlx extends MciBaseModel
 {

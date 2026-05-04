@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,24 +20,24 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $td01kdcab  type: varchar(3)
- * @property string $td01kdprd  type: varchar(2)
- * @property string|null $td01masa  type: numeric(5)
- * @property string|null $td01jmasa  type: varchar(1)
- * @property string|null $td01ket  type: varchar(30)
- * @property string|null $td01rateo  type: numeric(5)
- * @property string|null $td01raten  type: numeric(5)
- * @property string|null $td01tgrat  type: varchar(8)
- * @property string|null $td01strec  type: varchar(1)
- * @property string|null $td01inusr  type: varchar(10)
- * @property string|null $td01intgl  type: varchar(14)
- * @property string|null $td01indev  type: varchar(10)
- * @property string|null $td01chusr  type: varchar(10)
- * @property string|null $td01chtgl  type: varchar(14)
- * @property string|null $td01chdev  type: varchar(10)
- * @property string|null $td01auusr  type: varchar(10)
- * @property string|null $td01autgl  type: varchar(14)
- * @property string|null $td01audev  type: varchar(10)
+ * @property string $td01kdcab type: varchar(3)
+ * @property string $td01kdprd type: varchar(2)
+ * @property string|null $td01masa type: numeric(5)
+ * @property string|null $td01jmasa type: varchar(1)
+ * @property string|null $td01ket type: varchar(30)
+ * @property string|null $td01rateo type: numeric(5)
+ * @property string|null $td01raten type: numeric(5)
+ * @property string|null $td01tgrat type: varchar(8)
+ * @property string|null $td01strec type: varchar(1)
+ * @property string|null $td01inusr type: varchar(10)
+ * @property string|null $td01intgl type: varchar(14)
+ * @property string|null $td01indev type: varchar(10)
+ * @property string|null $td01chusr type: varchar(10)
+ * @property string|null $td01chtgl type: varchar(14)
+ * @property string|null $td01chdev type: varchar(10)
+ * @property string|null $td01auusr type: varchar(10)
+ * @property string|null $td01autgl type: varchar(14)
+ * @property string|null $td01audev type: varchar(10)
  */
 class Tdp001 extends MciBaseModel
 {

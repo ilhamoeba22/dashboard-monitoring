@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,24 +20,24 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string $nosbb  type: varchar(11)
- * @property string $nobb  type: varchar(11)
- * @property string $posisi  type: varchar(1)
- * @property string|null $pindsaldo  type: numeric(9)
- * @property string|null $jan  type: numeric(9)
- * @property string|null $feb  type: numeric(9)
- * @property string|null $mar  type: numeric(9)
- * @property string|null $apr  type: numeric(9)
- * @property string|null $mei  type: numeric(9)
- * @property string|null $jun  type: numeric(9)
- * @property string|null $jul  type: numeric(9)
- * @property string|null $ags  type: numeric(9)
- * @property string|null $sep  type: numeric(9)
- * @property string|null $okt  type: numeric(9)
- * @property string|null $nov  type: numeric(9)
- * @property string|null $des  type: numeric(9)
- * @property string $tahun  type: numeric(5)
- * @property string|null $kdloc  type: varchar(2)
+ * @property string $nosbb type: varchar(11)
+ * @property string $nobb type: varchar(11)
+ * @property string $posisi type: varchar(1)
+ * @property string|null $pindsaldo type: numeric(9)
+ * @property string|null $jan type: numeric(9)
+ * @property string|null $feb type: numeric(9)
+ * @property string|null $mar type: numeric(9)
+ * @property string|null $apr type: numeric(9)
+ * @property string|null $mei type: numeric(9)
+ * @property string|null $jun type: numeric(9)
+ * @property string|null $jul type: numeric(9)
+ * @property string|null $ags type: numeric(9)
+ * @property string|null $sep type: numeric(9)
+ * @property string|null $okt type: numeric(9)
+ * @property string|null $nov type: numeric(9)
+ * @property string|null $des type: numeric(9)
+ * @property string $tahun type: numeric(5)
+ * @property string|null $kdloc type: varchar(2)
  */
 class MAnggaran extends MciBaseModel
 {

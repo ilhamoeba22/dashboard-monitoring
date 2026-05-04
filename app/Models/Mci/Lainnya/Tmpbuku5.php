@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models\Mci\Lainnya;
 
 use App\Models\Mci\MciBaseModel;
@@ -18,13 +20,13 @@ use App\Models\Mci\MciBaseModel;
  *  - Kolom dengan spasi/karakter khusus diakses via:
  *    $model->getAttribute('NAMA KOLOM')  atau  $model->{'NAMA KOLOM'}.
  *
- * @property string|null $urut  type: varchar(2)
- * @property string|null $tgl  type: varchar(8)
- * @property string|null $debet  type: varchar(18)
- * @property string|null $kredit  type: varchar(18)
- * @property string|null $saldo  type: varchar(18)
- * @property string|null $ket  type: varchar(40)
- * @property string|null $batch  type: varchar(4)
+ * @property string|null $urut type: varchar(2)
+ * @property string|null $tgl type: varchar(8)
+ * @property string|null $debet type: varchar(18)
+ * @property string|null $kredit type: varchar(18)
+ * @property string|null $saldo type: varchar(18)
+ * @property string|null $ket type: varchar(40)
+ * @property string|null $batch type: varchar(4)
  */
 class Tmpbuku5 extends MciBaseModel
 {

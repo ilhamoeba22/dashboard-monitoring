@@ -16,9 +16,17 @@ Route::prefix('financing')->group(function () {
         return Inertia::render('Financing/Overview');
     });
 
-    // Nominatif (existing)
+    // Nominatif
     Route::get('/nominatif', function () {
-        return Inertia::render('Financing/Index');
+        return Inertia::render('Financing/Nominatif');
+    });
+
+    Route::get('/sindikasi', function () {
+        return Inertia::render('Financing/Sindikasi');
+    });
+
+    Route::get('/karyawan', function () {
+        return Inertia::render('Financing/Karyawan');
     });
 });
 

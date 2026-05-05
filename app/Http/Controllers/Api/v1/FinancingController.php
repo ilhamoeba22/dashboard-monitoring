@@ -29,6 +29,8 @@ class FinancingController extends Controller
                 'search' => $request->query('search'),
                 'cabang' => $request->query('cabang'),
                 'ao' => $request->query('ao'),
+                'kol' => $request->query('kol'),
+                'type' => $request->query('type'),
             ];
 
             $perPage = (int) $request->query('per_page', '50');
@@ -70,6 +72,26 @@ class FinancingController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memuat data AO',
+            ], 500);
+        }
+    }
+
+    /**
+     * GET /api/v1/financing/cabangs
+     */
+    public function cabangs(): JsonResponse
+    {
+        try {
+            $data = $this->repository->getUniqueCabangs();
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat data Cabang',
             ], 500);
         }
     }

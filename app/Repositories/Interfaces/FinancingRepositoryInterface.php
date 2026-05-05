@@ -4,23 +4,28 @@ declare(strict_types=1);
 
 namespace App\Repositories\Interfaces;
 
-use Illuminate\Contracts\Pagination\CursorPaginator;
+use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Support\Collection;
 
 interface FinancingRepositoryInterface
 {
     /**
      * Dapatkan daftar data nominatif nasabah pembiayaan.
-     * Menggunakan cursor pagination untuk performa optimal.
+     * Menggunakan pagination untuk mendukung lompatan halaman di UI.
      *
      * @param  array<string, mixed>  $filters
      */
-    public function getNominative(array $filters = [], int $perPage = 50): LengthAwarePaginator|CursorPaginator;
+    public function getNominative(array $filters = [], int $perPage = 50): Paginator;
 
     /**
      * Dapatkan daftar nama AO yang unik.
      */
     public function getUniqueAos(): Collection;
+
+    /**
+     * Dapatkan daftar cabang yang unik.
+     */
+    public function getUniqueCabangs(): Collection;
 
     /**
      * Dapatkan detail jadwal angsuran berdasarkan nomor kontrak.
@@ -41,5 +46,5 @@ interface FinancingRepositoryInterface
      *
      * @param  array<string, mixed>  $filters
      */
-    public function getJatuhTempo(array $filters = [], int $perPage = 50): CursorPaginator;
+    public function getJatuhTempo(array $filters = [], int $perPage = 50): Paginator;
 }

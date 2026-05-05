@@ -6,7 +6,7 @@
         <title inertia><?php echo e(config('app.name', 'MCI Dashboard')); ?></title>
 
         <!-- Favicon -->
-        <link rel="icon" type="image/png" href="/assets/images/logos/head_logo.png">
+        <link rel="icon" type="image/png" href="<?php echo e(asset('assets/images/logos/head_logo.png')); ?>">
 
         <!-- Google Fonts: DM Sans + Plus Jakarta Sans -->
         <link rel="preconnect" href="https://fonts.googleapis.com">

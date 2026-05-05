@@ -3,6 +3,7 @@ import { ref, computed, onMounted, mergeProps } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { useTheme } from 'vuetify'
 import logoMci from '@/assets/images/logos/logo_mci.png'
+import headLogo from '@/assets/images/logos/head_logo.png'
 
 const theme = useTheme()
 const isDark = ref(theme.global.name.value === 'dark')
@@ -25,8 +26,14 @@ const navItems = [
     value: 'pembiayaan',
     children: [
       { title: 'Overview', icon: 'ri-pie-chart-2-line', href: '/financing' },
+      { type: 'subheader', title: 'DATA ENTRY' },
       { title: 'Nominatif', icon: 'ri-list-unordered', href: '/financing/nominatif' },
+      { title: 'Sindikasi', icon: 'ri-group-line', href: '/financing/sindikasi' },
+      { title: 'Karyawan', icon: 'ri-user-star-line', href: '/financing/karyawan' },
+      { type: 'subheader', title: 'REKAPITULASI' },
       { title: 'Rekapitulasi', icon: 'ri-bar-chart-2-line', href: '/financing/rekapitulasi' },
+      { title: 'Kolektibilitas', icon: 'ri-pie-chart-line', href: '/financing/coll' },
+      { title: 'Risk Aggregation', icon: 'ri-shield-user-line', href: '/financing/risk' },
     ]
   },
   { title: 'Nasabah (CIF)', subtitle: 'Customer Data', icon: 'ri-user-star-line', href: '/cif' },
@@ -37,14 +44,15 @@ const navItems = [
 // Open Groups State (Vuetify 3 uses array of values on VList)
 const openedGroups = ref([])
 
-function isActive(href) {
-  if (href === '/') return currentPath.value === '/'
+function isActive(href, exact = false) {
+  if (!href) return false
+  if (exact || href === '/') return currentPath.value === href
   return currentPath.value.startsWith(href)
 }
 
 function isParentActive(item) {
   if (!item.children) return isActive(item.href)
-  return item.children.some(child => isActive(child.href))
+  return item.children.some(child => child.href && isActive(child.href, true))
 }
 
 function toggleTheme() {
@@ -94,10 +102,10 @@ function navigate(href) {
         style="min-height: 68px; border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));"
       >
         <img
-          :src="logoMci"
+          :src="rail ? headLogo : logoMci"
           alt="MCI"
           :style="{
-            height: rail ? '36px' : '42px',
+            height: rail ? '32px' : '42px',
             width: 'auto',
             objectFit: 'contain',
             transition: 'all 0.2s ease',
@@ -140,28 +148,43 @@ function navigate(href) {
               </VTooltip>
             </template>
 
-            <!-- Children Items -->
-            <VListItem
-              v-for="child in item.children"
-              :key="child.href"
-              :value="child.href"
-              :active="isActive(child.href)"
-              color="primary"
-              rounded="xl"
-              class="mb-1 ms-3"
-              @click="navigate(child.href)"
-            >
-              <template #prepend>
-                <VIcon
-                  :icon="child.icon"
-                  size="18"
-                  :color="isActive(child.href) ? 'primary' : undefined"
-                />
+            <!-- Children Items (Hidden in Rail mode to fix bleeding) -->
+            <template v-if="!rail">
+              <template v-for="child in item.children" :key="child.title">
+                
+                <!-- Subheader -->
+                <VListSubheader 
+                  v-if="child.type === 'subheader'" 
+                  class="text-uppercase font-weight-bold text-slate-500 mt-2 mb-1"
+                  style="font-size: 9px !important; height: 24px; padding-inline-start: 16px !important;"
+                >
+                  {{ child.title }}
+                </VListSubheader>
+
+                <!-- Regular Child Item -->
+                <VListItem
+                  v-else
+                  :key="child.href"
+                  :value="child.href"
+                  :active="isActive(child.href, true)"
+                  color="primary"
+                  rounded="xl"
+                  class="mb-1 ms-3"
+                  @click="navigate(child.href)"
+                >
+                  <template #prepend>
+                    <VIcon
+                      :icon="child.icon"
+                      size="18"
+                      :color="isActive(child.href, true) ? 'primary' : undefined"
+                    />
+                  </template>
+                  <VListItemTitle class="font-weight-medium" style="font-size: 12.5px;">
+                    {{ child.title }}
+                  </VListItemTitle>
+                </VListItem>
               </template>
-              <VListItemTitle class="font-weight-medium" style="font-size: 12.5px;">
-                {{ child.title }}
-              </VListItemTitle>
-            </VListItem>
+            </template>
           </VListGroup>
 
           <!-- Item tanpa children -> VListItem biasa -->

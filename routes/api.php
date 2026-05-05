@@ -71,8 +71,9 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
         // Existing endpoints
         Route::get('/nominative', [FinancingController::class, 'nominative']);
         Route::get('/rekapitulasi', [FinancingController::class, 'rekapitulasi']);
-        Route::get('/jatuh-tempo', [FinancingController::class, 'jatuhTempo']);
+        Route::get('/nominative', [FinancingController::class, 'nominative']);
         Route::get('/aos', [FinancingController::class, 'aos']);
+        Route::get('/cabangs', [FinancingController::class, 'cabangs']);
         Route::get('/{nokontrak}/angsuran', [FinancingController::class, 'angsuran']);
     });
 

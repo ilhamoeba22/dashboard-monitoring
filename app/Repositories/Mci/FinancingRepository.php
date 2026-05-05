@@ -6,11 +6,12 @@ namespace App\Repositories\Mci;
 
 use App\Models\Mci\Financing\Toflmb;
 use App\Models\Mci\Financing\Tofrs;
+use App\Models\Mci\Master\Cabang;
 use App\Models\Mci\Marketing\Ao;
 use App\Repositories\Interfaces\FinancingRepositoryInterface;
 use App\Services\Mci\MciBaseRepository;
 use Carbon\Carbon;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -23,65 +24,110 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
     }
 
     /**
-     * Dapatkan daftar data nominatif nasabah pembiayaan dengan Eager Loading.
-     * Tidak lagi melooping data di PHP untuk kalkulasi sisa jadwal.
+     * Dapatkan daftar data nominatif nasabah pembiayaan dengan Optimized Joins.
+     * Menggunakan standard pagination agar mendukung lompatan halaman di UI.
      *
      * @param  array<string, mixed>  $filters
      */
-    public function getNominative(array $filters = [], int $perPage = 50): LengthAwarePaginator
+    public function getNominative(array $filters = [], int $perPage = 50): Paginator
     {
-        $query = Toflmb::query()
-            ->with([
-                'ao:kdao,nmao',
-                'cif:nocif,tgllhr,alamat', // Load tgllhr untuk kalkulasi UMUR & KELOMPOK UMUR
-                'tabunganPokok:notab,saldoblok,sahirrp', // Load sahirrp & saldoblok untuk SALDO NETTO
-                'cabang:kdloc,nama',
-                'wilayah:kodewil,ket',
-                'segmenPasar:kdseg,ket',
-                'produk:kdprd,ket',
-            ])
-            ->where('stsrec', 'A')
-            ->where('stsacc', '<>', 'W')
+        // G2 Data Entry: Rebuild dengan Logika Proyek Legacy (Murni Query Builder untuk Performa)
+        $query = DB::connection($this->connection)->table('TOFLMB as a')
+            ->leftJoin('AO as b', 'a.kdaoh', '=', 'b.kdao')
+            ->leftJoin('mCIF as c', 'a.nocif', '=', 'c.nocif')
+            ->leftJoin('TOFTABC as d', 'a.acpok', '=', 'd.notab')
+            ->leftJoin('CABANG as e', 'a.kdloc', '=', 'e.kdloc')
+            ->leftJoin('WILAYAH as f', 'a.kdwil', '=', 'f.kodewil')
+            ->leftJoin('SEGMEN as h', 'a.segmen', '=', 'h.kdseg')
+            ->leftJoin('SETUPLOAN as i', 'a.kdprd', '=', 'i.kdprd')
             ->select([
-                'TOFLMB.*',
-                // Raw SQL untuk menghitung total_bayar langsung di query tanpa N+1 join TOFRS massal
-                DB::raw("(SELECT COUNT(*) FROM TOFRS WHERE TOFRS.nokontrak = TOFLMB.nokontrak AND TOFRS.stsbyr IN ('L', 'LUNAS')) as total_bayar"),
-            ]);
+                'a.nokontrak', 'a.nocif', 'a.nama', 'c.tgllhr', 'a.segmen', 'h.ket as nm_segmen',
+                'a.tgleff', 'a.jw', 'a.kdjw', 'a.tglexp', 'a.noakad', 'a.mdlawal', 'a.osmdlc',
+                'a.tgkmdl', 'a.tgkmgn', 'a.haritgk', 'a.tglmacet', 'a.colbaru',
+                'a.htgagun', 'a.ppap', 'c.alamat', 'a.acpok', 'd.saldoblok',
+                'd.sahirrp', 'a.rateeff', 'a.rateflat', 'a.kdaoh', 'b.nmao',
+                'e.nama as nama_cabang', 'f.ket as nama_wilayah', 'i.ket as nama_produk',
+                // Rule #11: Subquery untuk total_bayar (menghindari JOIN + GROUP BY massal)
+                DB::raw("(SELECT COUNT(*) FROM TOFRS WHERE TOFRS.nokontrak = a.nokontrak AND TOFRS.stsbyr IN ('L', 'LUNAS')) as total_bayar")
+            ])
+            ->where('a.stsrec', 'A')
+            ->where('a.stsacc', '<>', 'W');
 
-        // Filter: Pencarian Nama atau No Kontrak
+        // Filter Type (Logic from Legacy)
+        if (! empty($filters['type'])) {
+            if ($filters['type'] === 'sindikasi') {
+                $query->where('a.lb_jnspiutang', '10');
+            } elseif ($filters['type'] === 'karyawan') {
+                $query->where('c.stskaryawan', 'Y');
+            }
+        }
+
+        // Filter: Pencarian Nama atau No Kontrak (Prefix 'a.' untuk menghindari Ambiguous Column)
         if (! empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
-                $q->where('nama', 'like', "%{$search}%")
-                    ->orWhere('nokontrak', 'like', "%{$search}%");
+                $q->where('a.nama', 'like', "%{$search}%")
+                  ->orWhere('a.nokontrak', 'like', "%{$search}%");
             });
         }
 
-        // Filter: Cabang
         if (! empty($filters['cabang'])) {
-            $query->where('kdloc', $filters['cabang']);
+            $query->where('e.nama', 'like', "%{$filters['cabang']}%");
         }
 
-        // Filter: AO
+        if (! empty($filters['kol'])) {
+            $query->where('a.colbaru', $filters['kol']);
+        }
+
         if (! empty($filters['ao'])) {
-            $query->where('kdaoh', $filters['ao']);
+            $query->where('a.kdaoh', $filters['ao']);
         }
 
-        // Urutkan default (Sama dengan lama: nmao asc, colbaru desc, nama asc)
-        $query->orderBy('kdaoh', 'asc') // Sort by kdaoh for cursor safety
-            ->orderBy('colbaru', 'desc')
-            ->orderBy('nokontrak', 'asc'); // Primary/unique key at the end for cursor pagination
+        // Urutkan default (Nama nasabah)
+        $query->orderBy('a.nama', 'asc');
 
-        // H5 Fix: Gunakan paginate() untuk fetch all (bypass 500 limit cursorPaginate)
-        if ($perPage >= 100000) {
-            $result = $query->paginate($perPage);
-        } else {
-            $result = $query->cursorPaginate($perPage);
-        }
+        // Rule #3: Server-Side Pagination
+        $result = $query->paginate($perPage);
 
-        // Transform setiap record untuk menambah field kalkulasi
+        // Transformasi koleksi (Logic Business mapping)
         $result->getCollection()->transform(function ($item) {
-            return $this->transformFinancingRecord($item);
+            $age = $item->tgllhr ? Carbon::parse($item->tgllhr)->age : 0;
+            
+            // Saldo Netto logic: sahirrp - (saldoblok + buffer 20k)
+            $sahirrp = (float)($item->sahirrp ?? 0);
+            $saldoblok = (float)($item->saldoblok ?? 0);
+            $saldo_netto = max(0, $sahirrp - ($saldoblok + 20000));
+
+            return [
+                'nokontrak' => trim((string)$item->nokontrak),
+                'nocif' => trim((string)$item->nocif),
+                'nama' => $item->nama,
+                'umur' => $age,
+                'kelompok_umur' => $this->getKelompokUmur($item->tgllhr),
+                'segmen' => $item->nm_segmen ?? 'N/A',
+                'noakad' => $item->noakad,
+                'tgleff' => $this->formatSafeDate((string)$item->tgleff),
+                'jw' => (int)$item->jw,
+                'sisajw' => (int)$item->jw - (int)$item->total_bayar,
+                'tglexp' => $this->formatSafeDate((string)$item->tglexp),
+                'mdlawal' => (float)$item->mdlawal,
+                'osmdlc' => (float)$item->osmdlc,
+                'tgkmdl' => (float)$item->tgkmdl,
+                'tgkmgn' => (float)$item->tgkmgn,
+                'haritgk' => (int)$item->haritgk,
+                'colbaru' => $item->colbaru,
+                'tglmacet' => $this->formatSafeDate((string)$item->tglmacet),
+                'saldo_netto' => $saldo_netto,
+                'keterangan_debet' => ($saldo_netto > ($item->tgkmdl + $item->tgkmgn)) ? 'Cukup' : 'Kurang',
+                'tunggakan_vs_tabungan' => $saldo_netto - ($item->tgkmdl + $item->tgkmgn),
+                'htgagun' => (float)$item->htgagun,
+                'ppap' => (float)$item->ppap,
+                'ao' => $item->nmao ?? 'N/A',
+                'cabang' => $item->nama_cabang ?? 'N/A',
+                'wilayah' => $item->nama_wilayah ?? 'N/A',
+                'alamat' => $item->alamat,
+                'produk' => $item->nama_produk ?? 'N/A',
+            ];
         });
 
         return $result;
@@ -96,6 +142,18 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
             ->select('kdao', 'nmao')
             ->whereNotNull('nmao')
             ->orderBy('nmao')
+            ->get();
+    }
+
+    /**
+     * Dapatkan daftar unik Cabang untuk filter dropdown.
+     */
+    public function getUniqueCabangs(): Collection
+    {
+        return Cabang::query()
+            ->select('kdloc', 'nama')
+            ->whereNotNull('nama')
+            ->orderBy('kdloc')
             ->get();
     }
 
@@ -334,7 +392,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
     /**
      * Dapatkan daftar pembiayaan yang sudah atau akan jatuh tempo (bulan ini / lewat).
      */
-    public function getJatuhTempo(array $filters = [], int $perPage = 50): LengthAwarePaginator
+    public function getJatuhTempo(array $filters = [], int $perPage = 50): Paginator
     {
         $query = Toflmb::query()
             ->with([

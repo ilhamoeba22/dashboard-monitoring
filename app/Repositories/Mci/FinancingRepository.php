@@ -390,6 +390,212 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
     }
 
     /**
+     * Dapatkan rekapitulasi master dengan breakdown kolektibilitas Kol1-Kol5 + NPF Ratio.
+     *
+     * Fitur utama:
+     *  - Single-hit SQL (Conditional Aggregation, bukan PIVOT/looping PHP)
+     *  - Mendukung 6 dimensi: cabang, wilayah, ao, produk, segmen, sekon
+     *  - NPF Formula standar BI/OJK: (Kol3+Kol4+Kol5 OS) / Total OS × 100%
+     *  - Cache 60 detik sesuai RULE #6 MciBaseRepository
+     *  - Log query lambat >100ms sesuai RULE #10
+     *
+     * @param  string  $groupBy  Dimensi: cabang|wilayah|ao|produk|segmen|sekon
+     * @param  string  $cabang   Filter kode cabang (opsional, '' = semua)
+     * @return array{rows: Collection, totals: array<string,mixed>, meta: array<string,mixed>}
+     */
+    public function getRekapMaster(string $groupBy = 'cabang', string $cabang = ''): array
+    {
+        $validGroups = ['cabang', 'wilayah', 'ao', 'produk', 'segmen', 'sekon'];
+        if (! in_array($groupBy, $validGroups, true)) {
+            throw new \InvalidArgumentException("Invalid group_by: {$groupBy}. Valid: ".implode(', ', $validGroups));
+        }
+
+        $cacheKey = "financing:rekap_master:{$groupBy}:".($cabang ?: 'all');
+        $start    = microtime(true);
+        $memory   = memory_get_usage(true);
+
+        /** @var array<string,mixed> $cached */
+        $cached = Cache::remember($cacheKey, 60, function () use ($groupBy, $cabang): array {
+            // ─── Build dimensi config ─────────────────────────────────────
+            $dimConfig = $this->resolveDimensionConfig($groupBy);
+
+            // ─── Conditional Aggregation: Kol 1-5 (NOA & OS) + NPF Ratio ─
+            $aggregates = "
+                COUNT(a.nokontrak)                                            AS noa,
+                SUM(a.osmdlc)                                                 AS total_os,
+                SUM(a.ppap)                                                   AS total_ppap,
+                SUM(CASE WHEN a.colbaru = '1' THEN 1    ELSE 0 END)          AS kol1_noa,
+                SUM(CASE WHEN a.colbaru = '2' THEN 1    ELSE 0 END)          AS kol2_noa,
+                SUM(CASE WHEN a.colbaru = '3' THEN 1    ELSE 0 END)          AS kol3_noa,
+                SUM(CASE WHEN a.colbaru = '4' THEN 1    ELSE 0 END)          AS kol4_noa,
+                SUM(CASE WHEN a.colbaru = '5' THEN 1    ELSE 0 END)          AS kol5_noa,
+                SUM(CASE WHEN a.colbaru = '1' THEN a.osmdlc ELSE 0 END)      AS kol1_os,
+                SUM(CASE WHEN a.colbaru = '2' THEN a.osmdlc ELSE 0 END)      AS kol2_os,
+                SUM(CASE WHEN a.colbaru = '3' THEN a.osmdlc ELSE 0 END)      AS kol3_os,
+                SUM(CASE WHEN a.colbaru = '4' THEN a.osmdlc ELSE 0 END)      AS kol4_os,
+                SUM(CASE WHEN a.colbaru = '5' THEN a.osmdlc ELSE 0 END)      AS kol5_os,
+                SUM(CASE WHEN a.colbaru IN ('3','4','5') THEN a.osmdlc ELSE 0 END) AS npf_os,
+                SUM(CASE WHEN a.colbaru IN ('3','4','5') THEN 1    ELSE 0 END)     AS npf_noa,
+                CASE WHEN SUM(a.osmdlc) > 0
+                    THEN ROUND(
+                        SUM(CASE WHEN a.colbaru IN ('3','4','5') THEN a.osmdlc ELSE 0 END)
+                        / SUM(a.osmdlc) * 100, 2)
+                    ELSE 0
+                END AS npf_ratio
+            ";
+
+            // ─── Build JOIN & SELECT ──────────────────────────────────────
+            $joinClause   = $dimConfig['join'];
+            $labelSelect  = $dimConfig['label'];
+            $idSelect     = $dimConfig['id'];
+            $groupByClause = $dimConfig['group_by'];
+            $orderByClause = $dimConfig['order_by'];
+
+            // ─── Optional cabang filter ───────────────────────────────────
+            $cabangFilter = '';
+            $bindings = [];
+            if ($cabang !== '') {
+                $cabangFilter = "AND a.kdloc = ?";
+                $bindings[] = $cabang;
+            }
+
+            $sql = "
+                SELECT
+                    {$labelSelect} AS label,
+                    {$idSelect}    AS id,
+                    {$aggregates}
+                FROM TOFLMB a
+                {$joinClause}
+                WHERE a.stsrec = 'A'
+                  AND a.stsacc <> 'W'
+                  {$cabangFilter}
+                GROUP BY {$groupByClause}
+                ORDER BY {$orderByClause}
+            ";
+
+            /** @var array<int,object> $rows */
+            $rows = DB::connection($this->connection)->select($sql, $bindings);
+            $collection = collect($rows)->map(fn (object $r) => $this->castRekapRow($r));
+
+            // ─── Calculate Totals ─────────────────────────────────────────
+            $totals = [
+                'noa'        => (int)   $collection->sum('noa'),
+                'total_os'   => (float) $collection->sum('total_os'),
+                'npf_os'     => (float) $collection->sum('npf_os'),
+                'npf_noa'    => (int)   $collection->sum('npf_noa'),
+                'total_ppap' => (float) $collection->sum('total_ppap'),
+                'npf_ratio'  => 0.0,
+            ];
+
+            if ($totals['total_os'] > 0) {
+                $totals['npf_ratio'] = round(($totals['npf_os'] / $totals['total_os']) * 100, 2);
+            }
+
+            return [
+                'rows'   => $collection->toArray(),
+                'totals' => $totals,
+                'meta'   => [
+                    'group_by'     => $groupBy,
+                    'generated_at' => now()->toIso8601String(),
+                    'row_count'    => $collection->count(),
+                ],
+            ];
+        });
+
+        $this->logPerformance(__METHOD__, $start, $memory);
+
+        return [
+            'rows'   => collect($cached['rows']),
+            'totals' => $cached['totals'],
+            'meta'   => $cached['meta'],
+        ];
+    }
+
+    /**
+     * Resolve konfigurasi JOIN, SELECT, dan GROUP BY berdasarkan dimensi.
+     *
+     * @return array{join: string, label: string, id: string, group_by: string, order_by: string}
+     */
+    private function resolveDimensionConfig(string $groupBy): array
+    {
+        return match ($groupBy) {
+            'cabang' => [
+                'join'     => 'LEFT JOIN CABANG b ON a.kdloc = b.kdloc',
+                'label'    => 'ISNULL(b.nama, \'(Tanpa Cabang)\')',
+                'id'       => 'ISNULL(a.kdloc, \'\')',
+                'group_by' => 'a.kdloc, b.nama',
+                'order_by' => 'b.nama ASC',
+            ],
+            'wilayah' => [
+                'join'     => 'LEFT JOIN WILAYAH b ON a.kdwil = b.kodewil',
+                'label'    => 'ISNULL(b.ket, \'(Tanpa Wilayah)\')',
+                'id'       => 'ISNULL(a.kdwil, \'\')',
+                'group_by' => 'a.kdwil, b.ket',
+                'order_by' => 'b.ket ASC',
+            ],
+            'ao' => [
+                'join'     => 'LEFT JOIN AO b ON a.kdaoh = b.kdao',
+                'label'    => 'ISNULL(b.nmao, \'(Tanpa AO)\')',
+                'id'       => 'ISNULL(a.kdaoh, \'\')',
+                'group_by' => 'a.kdaoh, b.nmao',
+                'order_by' => 'b.nmao ASC',
+            ],
+            'produk' => [
+                'join'     => 'LEFT JOIN SETUPLOAN b ON a.kdprd = b.kdprd',
+                'label'    => 'ISNULL(b.ket, \'(Produk Tidak Diketahui)\')',
+                'id'       => 'ISNULL(a.kdprd, \'\')',
+                'group_by' => 'a.kdprd, b.ket',
+                'order_by' => 'b.ket ASC',
+            ],
+            'segmen' => [
+                'join'     => 'LEFT JOIN SEGMEN b ON a.segmen = b.kdseg',
+                'label'    => 'ISNULL(b.ket, \'(Segmen Tidak Diketahui)\')',
+                'id'       => 'ISNULL(a.segmen, \'\')',
+                'group_by' => 'a.segmen, b.ket',
+                'order_by' => 'b.ket ASC',
+            ],
+            'sekon' => [
+                // Tidak ada tabel referensi SEKON — kode langsung dari TOFLMB
+                'join'     => '',
+                'label'    => 'ISNULL(a.sekon, \'(Tanpa Sektor)\')',
+                'id'       => 'ISNULL(a.sekon, \'\')',
+                'group_by' => 'a.sekon',
+                'order_by' => 'a.sekon ASC',
+            ],
+            default => throw new \InvalidArgumentException("Dimensi tidak valid: {$groupBy}"),
+        };
+    }
+
+    /**
+     * Cast raw SQL row ke tipe data yang tepat (hindari string dari SQLSRV).
+     *
+     * @return array<string, mixed>
+     */
+    private function castRekapRow(object $row): array
+    {
+        return [
+            'label'      => (string) ($row->label    ?? ''),
+            'id'         => (string) ($row->id       ?? ''),
+            'noa'        => (int)    ($row->noa       ?? 0),
+            'total_os'   => (float)  ($row->total_os  ?? 0),
+            'total_ppap' => (float)  ($row->total_ppap ?? 0),
+            'kol1_noa'   => (int)    ($row->kol1_noa  ?? 0),
+            'kol2_noa'   => (int)    ($row->kol2_noa  ?? 0),
+            'kol3_noa'   => (int)    ($row->kol3_noa  ?? 0),
+            'kol4_noa'   => (int)    ($row->kol4_noa  ?? 0),
+            'kol5_noa'   => (int)    ($row->kol5_noa  ?? 0),
+            'kol1_os'    => (float)  ($row->kol1_os   ?? 0),
+            'kol2_os'    => (float)  ($row->kol2_os   ?? 0),
+            'kol3_os'    => (float)  ($row->kol3_os   ?? 0),
+            'kol4_os'    => (float)  ($row->kol4_os   ?? 0),
+            'kol5_os'    => (float)  ($row->kol5_os   ?? 0),
+            'npf_os'     => (float)  ($row->npf_os    ?? 0),
+            'npf_noa'    => (int)    ($row->npf_noa   ?? 0),
+            'npf_ratio'  => (float)  ($row->npf_ratio ?? 0),
+        ];
+    }
+
+    /**
      * Dapatkan daftar pembiayaan yang sudah atau akan jatuh tempo (bulan ini / lewat).
      */
     public function getJatuhTempo(array $filters = [], int $perPage = 50): Paginator

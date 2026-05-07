@@ -154,6 +154,53 @@ class FinancingController extends Controller
     }
 
     /**
+     * GET /api/v1/financing/rekap-master
+     *
+     * Master Rekap Console — Single-hit query dengan breakdown Kol1-Kol5 + NPF Ratio.
+     * Mendukung 6 dimensi analisis via parameter group_by.
+     *
+     * Query Params:
+     *   group_by : cabang|wilayah|ao|produk|segmen|sekon  (default: cabang)
+     *   cabang   : kode cabang untuk filter (opsional, '' = semua)
+     */
+    public function rekapMaster(Request $request): JsonResponse
+    {
+        try {
+            $groupBy = (string) $request->query('group_by', 'cabang');
+            $cabang  = (string) $request->query('cabang', '');
+
+            $validGroups = ['cabang', 'wilayah', 'ao', 'produk', 'segmen', 'sekon'];
+            if (! in_array($groupBy, $validGroups, true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Parameter group_by tidak valid.',
+                    'valid'   => $validGroups,
+                ], 422);
+            }
+
+            $result = $this->repository->getRekapMaster($groupBy, $cabang);
+
+            return response()->json([
+                'success' => true,
+                'meta'    => $result['meta'],
+                'totals'  => $result['totals'],
+                'rows'    => $result['rows']->values(),
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat Master Rekap Console.',
+                'debug'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * GET /api/v1/financing/jatuh-tempo
      */
     public function jatuhTempo(Request $request): JsonResponse

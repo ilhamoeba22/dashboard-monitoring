@@ -42,6 +42,17 @@ interface FinancingRepositoryInterface
     public function getRekapitulasi(string $groupBy): Collection;
 
     /**
+     * Dapatkan data rekapitulasi master dengan breakdown kolektibilitas Kol1-Kol5 lengkap.
+     * Single-hit query menggunakan Conditional Aggregation.
+     * Mendukung 6 dimensi: cabang|wilayah|ao|produk|segmen|sekon.
+     *
+     * @param  string  $groupBy  Dimensi analisis
+     * @param  string  $cabang   Filter kode cabang (opsional, kosong = semua)
+     * @return array{rows: Collection, totals: array<string,mixed>, meta: array<string,mixed>}
+     */
+    public function getRekapMaster(string $groupBy = 'cabang', string $cabang = ''): array;
+
+    /**
      * Dapatkan daftar pembiayaan yang sudah atau akan jatuh tempo.
      *
      * @param  array<string, mixed>  $filters

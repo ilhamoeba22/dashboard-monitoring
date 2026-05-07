@@ -279,29 +279,29 @@ Kolektibilitas dibaca dari field `colbaru` yang sudah ditetapkan CBS MCI.
 - [x] Tidak ada tabel SEKON referensi — gunakan GROUP BY sekon langsung
 - [x] Konfirmasi tabel SEGMEN
 
-### STEP 1: Backend
-- [ ] `FinancingRepository::getRekapMaster()` — SQL conditional aggregation
-- [ ] `FinancingRepositoryInterface` — tambah signature method
-- [ ] `FinancingController::rekapMaster()` — validasi params, return JSON
-- [ ] `routes/api.php` — daftarkan route GET rekap-master
-- [ ] **Verifikasi:** Bandingkan total NPF dengan laporan legacy `mdb-dashboard`
+### STEP 1: Backend — SELESAI
+- [x] `FinancingRepository::getRekapMaster()` — SQL conditional aggregation
+- [x] `FinancingRepositoryInterface` — tambah signature method
+- [x] `FinancingController::rekapMaster()` — validasi params, return JSON
+- [x] `routes/api.php` — daftarkan route GET rekap-master
+- [x] **Verifikasi:** Bandingkan total NPF dengan laporan legacy `mdb-dashboard`
 
-### STEP 2: Frontend Grid Mode
-- [ ] Hapus placeholder ComingSoon di `Rekapitulasi.vue`
-- [ ] 4 Summary Scorecards KPI
-- [ ] Dimensi Toggle dropdown
-- [ ] Metric Switcher button group
-- [ ] Filter Cabang
-- [ ] Tabel matriks Kol 1-5 dengan Heatmap NPF
-- [ ] Zero Noise Filter
+### STEP 2: Frontend Grid Mode — SELESAI
+- [x] Hapus placeholder ComingSoon di `Rekapitulasi.vue`
+- [x] 4 Summary Scorecards KPI
+- [x] Dimensi Toggle dropdown
+- [x] Metric Switcher button group
+- [x] Filter Cabang
+- [x] Tabel matriks Kol 1-5 dengan Heatmap NPF
+- [x] Zero Noise Filter
 
-### STEP 3: Chart Mode & Polish
-- [ ] View Toggle Grid ↔ Chart
-- [ ] ApexCharts TreeMap (distribusi O/S)
-- [ ] ApexCharts Donut (NPF vs Lancar)
-- [ ] Final QA vs `RiskAggregation.vue` dan sistem legacy
-- [ ] `npm run build`
-- [ ] Update `UPDATE_LOG.md`
+### STEP 3: Chart Mode & Polish — SELESAI
+- [x] View Toggle Grid ↔ Chart
+- [x] ApexCharts TreeMap (distribusi O/S)
+- [x] ApexCharts Donut (NPF vs Lancar)
+- [x] Final QA vs `RiskAggregation.vue` dan sistem legacy
+- [x] `npm run build`
+- [x] Update `UPDATE_LOG.md`
 
 ---
 

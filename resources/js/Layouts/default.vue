@@ -19,27 +19,80 @@ const currentPath = computed(() => {
 // Navigation Items
 const navItems = [
   { title: 'Dashboard', subtitle: 'Executive Overview', icon: 'ri-dashboard-2-line', href: '/' },
+
+  // ========== PEMBIAYAAN (18 halaman, 8 grup) ==========
   { 
     title: 'Pembiayaan', 
     subtitle: 'Financing Module', 
     icon: 'ri-bank-line', 
     value: 'pembiayaan',
     children: [
+      // G1: OVERVIEW
       { title: 'Overview', icon: 'ri-pie-chart-2-line', href: '/financing' },
+
+      // G2: DATA ENTRY
       { type: 'subheader', title: 'DATA ENTRY' },
-      { title: 'Nominatif', icon: 'ri-list-unordered', href: '/financing/nominatif' },
+      { title: 'Nominatif', icon: 'ri-list-check-3', href: '/financing/nominatif' },
       { title: 'Sindikasi', icon: 'ri-group-line', href: '/financing/sindikasi' },
-      { title: 'Karyawan', icon: 'ri-user-star-line', href: '/financing/karyawan' },
+      { title: 'Karyawan', icon: 'ri-id-card-line', href: '/financing/karyawan' },
+
+      // G3: PERKEMBANGAN
+      { type: 'subheader', title: 'ANALITIK & TARGET' },
+      { title: 'Perkembangan', icon: 'ri-line-chart-line', href: '/financing/perkembangan' },
+      { title: 'Target RBB', icon: 'ri-focus-2-line', href: '/financing/target' },
+
+      // G4: REKAPITULASI
       { type: 'subheader', title: 'REKAPITULASI' },
-      { title: 'Rekapitulasi', icon: 'ri-bar-chart-2-line', href: '/financing/rekapitulasi' },
-      { title: 'Kolektibilitas', icon: 'ri-pie-chart-line', href: '/financing/coll' },
-      { title: 'Risk Aggregation', icon: 'ri-shield-user-line', href: '/financing/risk' },
+      { title: 'Rekapitulasi', icon: 'ri-bar-chart-grouped-line', href: '/financing/rekapitulasi' },
+      { title: 'Kolektibilitas', icon: 'ri-stack-line', href: '/financing/coll' },
+      { title: 'Risk Aggregation', icon: 'ri-shield-keyhole-line', href: '/financing/risk' },
+
+      // G5: TUNGGAKAN
+      { type: 'subheader', title: 'TUNGGAKAN' },
+      { title: 'Jatuh Tempo', icon: 'ri-alarm-warning-line', href: '/financing/jatuh-tempo' },
+      { title: 'Coll Monitoring', icon: 'ri-eye-line', href: '/financing/coll-monitoring' },
+
+      // G6: RESTRUKTURISASI
+      { type: 'subheader', title: 'RESTRUKTURISASI' },
+      { title: 'Restrukturisasi', icon: 'ri-refresh-line', href: '/financing/restrukturisasi' },
+      { title: 'Top-Up', icon: 'ri-add-circle-line', href: '/financing/top-up' },
+
+      // G7: PENYELESAIAN
+      { type: 'subheader', title: 'PENYELESAIAN' },
+      { title: 'PPKA', icon: 'ri-file-damage-line', href: '/financing/ppka' },
+      { title: 'Settlement', icon: 'ri-hand-coin-line', href: '/financing/settlement' },
+      { title: 'Write-Off', icon: 'ri-delete-back-2-line', href: '/financing/write-off' },
+      { title: 'Yield', icon: 'ri-percent-line', href: '/financing/yield' },
+
+      // G8: PERFORMANCE
+      { type: 'subheader', title: 'PERFORMANCE' },
+      { title: 'Repayment Rate', icon: 'ri-speed-line', href: '/financing/repayment-rate' },
+      { title: 'Repayment (Baru)', icon: 'ri-speed-up-line', href: '/financing/repayment-rate-new' },
     ]
   },
+
+  // ========== NASABAH (CIF) ==========
   { title: 'Nasabah (CIF)', subtitle: 'Customer Data', icon: 'ri-user-star-line', href: '/cif' },
+
+  // ========== FUNDING ==========
   { title: 'Funding', subtitle: 'Tabungan & Deposito', icon: 'ri-safe-2-line', href: '/funding' },
+
+  // ========== LAPORAN ==========
   { title: 'Laporan', subtitle: 'Reporting Module', icon: 'ri-file-chart-2-line', href: '/reporting' },
+
+  // ========== ADMINISTRATOR ==========
+  { 
+    title: 'Administrator', 
+    subtitle: 'Control Center', 
+    icon: 'ri-shield-user-line', 
+    value: 'administrator',
+    children: [
+      { type: 'subheader', title: 'ADMINISTRATOR' },
+      { title: 'Data Management', icon: 'ri-settings-5-line', href: '/admin/management' },
+    ]
+  },
 ]
+
 
 // Open Groups State (Vuetify 3 uses array of values on VList)
 const openedGroups = ref([])

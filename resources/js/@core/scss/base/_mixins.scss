@@ -2,7 +2,11 @@
 @use "@styles/variables/vuetify.scss";
 
 @mixin elevation($z, $important: false) {
-  box-shadow: 0px calc(#{$z} * 1px) calc(#{$z} * 2.5px) rgba(0, 0, 0, 0.15) if($important, !important, null);
+  @if $important {
+    box-shadow: 0px calc(#{$z} * 1px) calc(#{$z} * 2.5px) rgba(0, 0, 0, 0.15) !important;
+  } @else {
+    box-shadow: 0px calc(#{$z} * 1px) calc(#{$z} * 2.5px) rgba(0, 0, 0, 0.15);
+  }
 }
 
 // #region before-pseudo
@@ -29,7 +33,11 @@
   #{$component} {
     box-shadow: none !important;
     // stylelint-disable-next-line annotation-no-unknown
-    #{$border-property}: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) if($important, !important, null);
+    @if $important {
+        #{$border-property}: 1px solid rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+    } @else {
+        #{$border-property}: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    }
   }
 }
 

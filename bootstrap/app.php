@@ -31,5 +31,13 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->reportable(function (\Throwable $e) {
+            \Log::error('Global Exception: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+        });
+
+        // Force JSON responses for all API routes — prevents 302 redirect
+        // that causes MethodNotAllowedHttpException on POST-only endpoints
+        $exceptions->shouldRenderJsonWhen(function (\Illuminate\Http\Request $request) {
+            return $request->is('api/*') || $request->expectsJson();
+        });
     })->create();

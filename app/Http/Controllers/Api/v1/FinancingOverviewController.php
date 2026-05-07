@@ -35,10 +35,11 @@ class FinancingOverviewController extends Controller
      *
      * Full overview - semua data (realtime, trend, comparison)
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
-            $data = $this->repository->getCompleteOverview();
+            $kdloc = $request->get('cabang');
+            $data = $this->repository->getCompleteOverview($kdloc);
 
             return response()->json([
                 'success' => true,

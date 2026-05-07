@@ -36,6 +36,57 @@ class FinancingOverviewRepository
         $this->mciService = $mciService;
     }
 
+    /**
+     * Get complete overview for the analytical dashboard
+     */
+    public function getCompleteOverview(?string $kdloc = null): array
+    {
+        $realtime = $this->getRealtimeMetrics($kdloc);
+        $trend = $this->getTrendData(12, $kdloc);
+        $topNpf = $this->queryTopNpf($kdloc);
+
+        return array_merge($realtime, [
+            'trend' => $trend['series'] ?? [],
+            'top_npf' => $topNpf,
+        ]);
+    }
+
+    /**
+     * Query top 5 high risk NPF accounts
+     */
+    public function queryTopNpf(?string $kdloc = null): array
+    {
+        $where = "WHERE stsrec = 'A' AND stsacc <> 'W' AND colbarU IN ('3','4','5')";
+        $params = [];
+        
+        if ($kdloc && $kdloc !== 'Semua Cabang') {
+            $where .= " AND kdloc = ?";
+            $params[] = $kdloc;
+        }
+
+        $result = $this->executeRaw("
+            SELECT TOP 5
+                nokontrak,
+                nama,
+                CAST(osmdlc AS DECIMAL(18,2)) as osmdlc,
+                CAST(tgkmdl AS DECIMAL(18,2)) as tgkmdl,
+                colbarU
+            FROM TOFLMB 
+            $where
+            ORDER BY osmdlc DESC
+        ", $params);
+
+        return collect($result)->map(function ($row) {
+            return [
+                'nokontrak' => trim($row->nokontrak),
+                'nama' => $row->nama,
+                'osmdlc' => (float) $row->osmdlc,
+                'tgkmdl' => (float) $row->tgkmdl,
+                'colbaru' => $row->colbarU,
+            ];
+        })->toArray();
+    }
+
     // ============================================================
     // REALTIME METRICS (from current SQL Server database)
     // ============================================================
@@ -43,32 +94,32 @@ class FinancingOverviewRepository
     /**
      * Get realtime overview metrics from active database
      */
-    public function getRealtimeMetrics(): array
+    public function getRealtimeMetrics(?string $kdloc = null): array
     {
         $activeDb = $this->mciService->getActiveDatabase();
-        $cacheKey = 'financing.overview.realtime.'.md5($activeDb);
+        $cacheKey = 'financing.overview.realtime.'.md5($activeDb . ($kdloc ?? 'all'));
 
-        return Cache::remember($cacheKey, self::CACHE_REALTIME, function () use ($activeDb) {
+        return Cache::remember($cacheKey, self::CACHE_REALTIME, function () use ($activeDb, $kdloc) {
             // Overall metrics
-            $overall = $this->queryOverall();
+            $overall = $this->queryOverall($kdloc);
 
             // By kolektibilitas
-            $byKol = $this->queryByKolektibilitas();
+            $byKol = $this->queryByKolektibilitas($kdloc);
 
             // By segmen
-            $bySegmen = $this->queryBySegmen();
+            $bySegmen = $this->queryBySegmen($kdloc);
 
             // By AO
-            $byAo = $this->queryByAo();
+            $byAo = $this->queryByAo($kdloc);
 
             // By Produk
-            $byProduk = $this->queryByProduk();
+            $byProduk = $this->queryByProduk($kdloc);
 
             // Jatuh Tempo Bulan Ini
-            $jatuhTempo = $this->queryJatuhTempo();
+            $jatuhTempo = $this->queryJatuhTempo($kdloc);
 
             // Realisasi Bulan Kemarin (atau Berjalan)
-            $realisasiKemarin = $this->queryRealisasiKemarin();
+            $realisasiKemarin = $this->queryRealisasiKemarin($kdloc);
 
             return [
                 'summary' => $overall,
@@ -88,8 +139,16 @@ class FinancingOverviewRepository
     /**
      * Query overall metrics
      */
-    private function queryOverall(): array
+    private function queryOverall(?string $kdloc = null): array
     {
+        $where = "WHERE stsrec = 'A' AND stsacc <> 'W'";
+        $params = [];
+        
+        if ($kdloc && $kdloc !== 'Semua Cabang') {
+            $where .= " AND kdloc = ?";
+            $params[] = $kdloc;
+        }
+
         $result = $this->executeRaw("
             SELECT 
                 COUNT(*) as total_noa,
@@ -99,8 +158,8 @@ class FinancingOverviewRepository
                 AVG(CAST(colbarU AS FLOAT)) as avg_kolek,
                 SUM(ISNULL(CAST(ppap AS DECIMAL(18,2)), 0)) as total_ppap
             FROM TOFLMB 
-            WHERE stsrec = 'A' AND stsacc <> 'W'
-        ");
+            $where
+        ", $params);
 
         $row = $result[0] ?? null;
         $totalOsmdlc = (float) ($row->total_osmdlc ?? 0);
@@ -110,13 +169,15 @@ class FinancingOverviewRepository
         $totalOs = $totalOsmdlc;
 
         // NPF calculation (Kol 3, 4, 5)
+        $npfWhere = $where . " AND colbarU IN ('3','4','5')";
         $npfResult = $this->executeRaw("
             SELECT 
                 COUNT(*) as npf_noa,
                 SUM(CAST(osmdlc AS DECIMAL(18,2))) as npf_osmdlc
             FROM TOFLMB 
-            WHERE stsrec = 'A' AND stsacc <> 'W' AND colbarU IN ('3','4','5')
-        ");
+            $npfWhere
+        ", $params);
+        
         $npfRow = $npfResult[0] ?? null;
         $npfOsmdlc = (float) ($npfRow->npf_osmdlc ?? 0);
         $npfPersen = $totalOsmdlc > 0 ? round(($npfOsmdlc / $totalOsmdlc) * 100, 2) : 0;
@@ -138,8 +199,16 @@ class FinancingOverviewRepository
     /**
      * Query metrics by kolektibilitas
      */
-    private function queryByKolektibilitas(): array
+    private function queryByKolektibilitas(?string $kdloc = null): array
     {
+        $where = "WHERE stsrec = 'A' AND stsacc <> 'W'";
+        $params = [];
+        
+        if ($kdloc && $kdloc !== 'Semua Cabang') {
+            $where .= " AND kdloc = ?";
+            $params[] = $kdloc;
+        }
+
         $result = $this->executeRaw("
             SELECT 
                 colbarU,
@@ -148,10 +217,10 @@ class FinancingOverviewRepository
                 SUM(CAST(osmgnc AS DECIMAL(18,2))) as osmgnc,
                 AVG(CAST(colbarU AS FLOAT)) as avg_kolek
             FROM TOFLMB 
-            WHERE stsrec = 'A' AND stsacc <> 'W'
+            $where
             GROUP BY colbarU
             ORDER BY colbarU
-        ");
+        ", $params);
 
         $kolLabels = [
             '1' => 'Lancar',
@@ -181,8 +250,16 @@ class FinancingOverviewRepository
     /**
      * Query metrics by segmen
      */
-    private function queryBySegmen(): array
+    private function queryBySegmen(?string $kdloc = null): array
     {
+        $where = "WHERE f.stsrec = 'A' AND f.stsacc <> 'W'";
+        $params = [];
+        
+        if ($kdloc && $kdloc !== 'Semua Cabang') {
+            $where .= " AND f.kdloc = ?";
+            $params[] = $kdloc;
+        }
+
         $result = $this->executeRaw("
             SELECT 
                 ISNULL(s.kdseg, 'UNKNOWN') as kdseg,
@@ -192,10 +269,10 @@ class FinancingOverviewRepository
                 SUM(CASE WHEN f.colbarU IN ('3','4','5') THEN CAST(f.osmdlc AS DECIMAL(18,2)) ELSE 0 END) as npf_os
             FROM TOFLMB f
             LEFT JOIN SEGMEN s ON f.segmen = s.kdseg
-            WHERE f.stsrec = 'A' AND f.stsacc <> 'W'
+            $where
             GROUP BY s.kdseg, s.ket
             ORDER BY osmdlc DESC
-        ");
+        ", $params);
 
         return collect($result)->map(function ($row) {
             $osmdlc = (float) $row->osmdlc;
@@ -214,8 +291,16 @@ class FinancingOverviewRepository
     /**
      * Query metrics by AO (Account Officer)
      */
-    private function queryByAo(): array
+    private function queryByAo(?string $kdloc = null): array
     {
+        $where = "WHERE f.stsrec = 'A' AND f.stsacc <> 'W'";
+        $params = [];
+        
+        if ($kdloc && $kdloc !== 'Semua Cabang') {
+            $where .= " AND f.kdloc = ?";
+            $params[] = $kdloc;
+        }
+
         $result = $this->executeRaw("
             SELECT TOP 8
                 ISNULL(a.kdao, 'UNKNOWN') as kdao,
@@ -225,10 +310,10 @@ class FinancingOverviewRepository
                 SUM(CASE WHEN f.colbarU IN ('3','4','5') THEN CAST(f.osmdlc AS DECIMAL(18,2)) ELSE 0 END) as npf_os
             FROM TOFLMB f
             LEFT JOIN AO a ON f.kdaoh = a.kdao
-            WHERE f.stsrec = 'A' AND f.stsacc <> 'W'
+            $where
             GROUP BY a.kdao, a.nmao
             ORDER BY osmdlc DESC
-        ");
+        ", $params);
 
         return collect($result)->map(function ($row) {
             $osmdlc = (float) $row->osmdlc;
@@ -247,8 +332,16 @@ class FinancingOverviewRepository
     /**
      * Query distribusi per Produk
      */
-    private function queryByProduk(): array
+    private function queryByProduk(?string $kdloc = null): array
     {
+        $where = "WHERE f.stsrec = 'A' AND f.stsacc <> 'W'";
+        $params = [];
+        
+        if ($kdloc && $kdloc !== 'Semua Cabang') {
+            $where .= " AND f.kdloc = ?";
+            $params[] = $kdloc;
+        }
+
         $result = $this->executeRaw("
             SELECT TOP 8
                 ISNULL(f.kdprd, 'UNKNOWN') as kdprd,
@@ -258,10 +351,10 @@ class FinancingOverviewRepository
                 SUM(CASE WHEN f.stsrec = 'A' AND f.colbarU IN ('3','4','5') THEN CAST(f.osmdlc AS DECIMAL(18,2)) ELSE 0 END) as npf_os
             FROM TOFLMB f
             LEFT JOIN SETUPLOAN s ON f.kdprd = s.kdprd
-            WHERE f.stsrec = 'A' AND f.stsacc <> 'W'
+            $where
             GROUP BY f.kdprd, s.ket
             ORDER BY osmdlc DESC
-        ");
+        ", $params);
 
         return collect($result)->map(function ($row) {
             $osmdlc = (float) $row->osmdlc;
@@ -302,7 +395,7 @@ class FinancingOverviewRepository
             ->where('f.stsacc', '<>', 'W')
             ->whereBetween('f.tglexp', [$start, $end]);
 
-        if ($kdloc) {
+        if ($kdloc && $kdloc !== 'Semua Cabang') {
             $query->where('f.kdloc', $kdloc);
         }
 
@@ -359,7 +452,7 @@ class FinancingOverviewRepository
                     ->whereColumn('hp.nokontrak', 'l.nokontrak');
             });
 
-        if ($kdloc) {
+        if ($kdloc && $kdloc !== 'Semua Cabang') {
             $query->where('l.kdloc', $kdloc);
         }
 
@@ -385,39 +478,46 @@ class FinancingOverviewRepository
      * Get Trend Data (Pencairan & NOA) dari SQL Server
      * Murni trend performa pencairan bulanan (Apple to Apple)
      */
-    public function getTrendData(int $months = 12): array
+    public function getTrendData(int $months = 12, ?string $kdloc = null): array
     {
-        $cacheKey = "financing.overview.trend.disbursement.{$months}";
+        $cacheKey = "financing.overview.trend.disbursement.{$months}." . ($kdloc ?? 'all');
 
-        return Cache::remember($cacheKey, self::CACHE_TREND, function () use ($months) {
+        return Cache::remember($cacheKey, self::CACHE_TREND, function () use ($months, $kdloc) {
             // Deteksi periode maksimal dari database aktif
             $activeDb = $this->mciService->getActiveDatabase();
             $dbDate = $this->mciService->parseDatabaseDate($activeDb);
             $maxPeriod = $dbDate ? $dbDate->format('Ym') : now()->format('Ym');
 
-            $sql = <<<'SQL'
+            $where = "WHERE LEFT(tglakad, 6) <= ? AND stsrec = 'A' AND stsacc <> 'W'";
+            $params = [$maxPeriod];
+
+            if ($kdloc && $kdloc !== 'Semua Cabang') {
+                $where .= " AND kdloc = ?";
+                $params[] = $kdloc;
+            }
+
+            $sql = <<<SQL
                 SELECT 
                     LEFT(tglakad, 6) as periode,
                     SUM(CAST(mdlawal AS DECIMAL(18,2))) as total_nominal,
+                    SUM(CASE WHEN colbarU IN ('3','4','5') THEN CAST(osmdlc AS DECIMAL(18,2)) ELSE 0 END) as total_npf,
                     COUNT(nokontrak) as total_noa
                 FROM TOFLMB
-                WHERE LEFT(tglakad, 6) <= ?
-                  AND stsrec = 'A'
+                $where
                 GROUP BY LEFT(tglakad, 6)
                 ORDER BY periode DESC
             SQL;
 
-            $results = $this->executeRaw($sql, [$maxPeriod]);
+            $results = $this->executeRaw($sql, $params);
             
-            // Transformasi data agar sesuai dengan frontend (Values & NOA)
-            // Ambil $months terakhir dan urutkan kronologis (Lama -> Baru)
             $trend = collect($results)
                 ->take($months)
                 ->reverse()
                 ->map(function($row) {
                     return [
                         'periode' => $row->periode,
-                        'total_os' => (float) $row->total_nominal, // Mapping ke total_os agar frontend tidak banyak berubah
+                        'total_os' => (float) $row->total_nominal,
+                        'total_npf' => (float) $row->total_npf,
                         'total_noa' => (int) $row->total_noa
                     ];
                 })

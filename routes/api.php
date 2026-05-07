@@ -6,9 +6,11 @@ use App\Http\Controllers\Api\v1\CifController;
 use App\Http\Controllers\Api\v1\DashboardMetricsController;
 use App\Http\Controllers\Api\v1\DepositController;
 use App\Http\Controllers\Api\v1\FinancingController;
+use App\Http\Controllers\Api\v1\FinancingGrowthController;
 use App\Http\Controllers\Api\v1\FinancingOverviewController;
 use App\Http\Controllers\Api\v1\ReportingController;
 use App\Http\Controllers\Api\v1\SavingController;
+use App\Http\Controllers\Api\v1\TargetController;
 use App\Services\Mci\MciConnectionService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -61,6 +63,19 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
     // FINANCING MODULE API
     // ==========================================
     Route::prefix('financing')->group(function () {
+        // Target Management (G3: Target)
+        Route::prefix('targets')->group(function () {
+            Route::get('/', [TargetController::class, 'index']);
+            Route::get('/analytics', [TargetController::class, 'dashboard']); // Enterprise monitoring dashboard
+            Route::get('/template', [TargetController::class, 'downloadTemplate']);
+            Route::match(['get', 'post'], '/import', [TargetController::class, 'importRbb']);
+            Route::post('/transfer', [TargetController::class, 'transfer']);
+            Route::get('/history', [TargetController::class, 'uploadHistory']);
+        });
+
+        // Growth analysis (G3: Perkembangan)
+        Route::get('/growth-trend', [FinancingGrowthController::class, 'getGrowthTrend']);
+
         // Overview endpoints (G1: Dashboard Ringan)
         Route::get('/overview', [FinancingOverviewController::class, 'index']);
         Route::get('/overview/realtime', [FinancingOverviewController::class, 'realtime']);
@@ -71,7 +86,6 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
         // Existing endpoints
         Route::get('/nominative', [FinancingController::class, 'nominative']);
         Route::get('/rekapitulasi', [FinancingController::class, 'rekapitulasi']);
-        Route::get('/nominative', [FinancingController::class, 'nominative']);
         Route::get('/aos', [FinancingController::class, 'aos']);
         Route::get('/cabangs', [FinancingController::class, 'cabangs']);
         Route::get('/{nokontrak}/angsuran', [FinancingController::class, 'angsuran']);

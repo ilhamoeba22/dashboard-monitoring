@@ -60,17 +60,16 @@ const agingChartOpts = computed(() => ({
 // Chart 2: Sektor Ekonomi TreeMap
 const sektorTreeMapSeries = computed(() => [{
   data: qualityData.value.sektor
-    .filter(r => parseFloat(r.npf_os || 0) > 0)
     .map(r => ({
     x: r.label || '(Tanpa Sektor)',
-    y: Number((parseFloat(r.npf_os || 0) / 1e9).toFixed(3)) // Miliar
+    y: Number((parseFloat(r.total_os || 0) / 1e9).toFixed(3)) // Miliar
   }))
 }])
 
 const sektorTreeMapOpts = computed(() => ({
   chart: { type: 'treemap', toolbar: { show: false }, fontFamily: 'Plus Jakarta Sans' },
-  title: { text: 'Konsentrasi NPF Outstanding per Sektor Ekonomi (Miliar)', style: { fontWeight: 600 } },
-  colors: ['#dc2626'],
+  title: { text: 'Konsentrasi Eksposur Modal (Outstanding) per Sektor Ekonomi (Miliar)', style: { fontWeight: 600 } },
+  colors: ['#3B82F6'], // Gunakan warna biru untuk eksposur modal umum (safe)
   plotOptions: {
     treemap: {
       enableShades: true,
@@ -78,7 +77,7 @@ const sektorTreeMapOpts = computed(() => ({
     }
   },
   tooltip: {
-    y: { formatter: (val) => `Rp ${val.toFixed(3)} M` }
+    y: { formatter: (val) => `Rp ${val.toFixed(3)} M (Total O/S)` }
   }
 }))
 
@@ -229,14 +228,44 @@ watch([selectedDimension, selectedCabang], fetchQualityData)
         <!-- TAB 2: RISK EXPOSURE (TREEMAP) -->
         <v-window-item value="exposure">
           <v-row>
-            <v-col cols="12">
-              <div class="pa-4 bg-slate-50 rounded-xl border border-dashed mb-6">
-                <p class="text-body-2 text-medium-emphasis mb-0">
-                  <v-icon icon="ri-information-line" start size="small"></v-icon>
-                  Visualisasi di bawah menunjukkan konsentrasi pembiayaan berdasarkan <strong>Sektor Ekonomi</strong>. Semakin besar kotak, semakin tinggi eksposur modal kita pada sektor tersebut.
+            <v-col cols="12" lg="8">
+              <div v-if="!isLoading">
+                <VueApexCharts type="treemap" height="500" :options="sektorTreeMapOpts" :series="sektorTreeMapSeries" />
+              </div>
+            </v-col>
+
+            <v-col cols="12" lg="4">
+              <div class="pa-5 bg-slate-50 rounded-xl border border-dashed mb-6">
+                <div class="d-flex align-center gap-2 mb-3">
+                  <v-icon icon="ri-information-line" color="primary"></v-icon>
+                  <span class="font-weight-bold text-primary">Interpretasi Exposure</span>
+                </div>
+                <p class="text-caption text-medium-emphasis leading-relaxed mb-0">
+                  Visualisasi di samping menunjukkan konsentrasi pembiayaan berdasarkan <strong>Sektor Ekonomi</strong>. 
+                  Semakin besar kotak, semakin tinggi eksposur modal bank pada sektor tersebut. Kotak yang dominan menandakan ketergantungan portofolio pada sektor spesifik.
                 </p>
               </div>
-              <VueApexCharts type="treemap" height="500" :options="sektorTreeMapOpts" :series="sektorTreeMapSeries" />
+
+              <div class="text-overline font-weight-black text-medium-emphasis mb-2 px-1">Ringkasan Sektor (Top Exposure)</div>
+              <v-list lines="two" class="border rounded-xl bg-transparent pa-0 overflow-hidden">
+                <template v-for="(s, idx) in qualityData.sektor.slice(0, 8)" :key="idx">
+                  <v-list-item>
+                    <template #prepend>
+                      <v-avatar color="primary-lighten-5" rounded="lg" size="32" class="mr-1">
+                        <span class="text-[10px] font-weight-black text-primary">{{ idx + 1 }}</span>
+                      </v-avatar>
+                    </template>
+                    <v-list-item-title class="text-caption font-weight-bold">{{ s.label || 'Lainnya' }}</v-list-item-title>
+                    <v-list-item-subtitle class="text-[10px] d-flex justify-space-between mt-1">
+                      <span>OS: {{ formatRp(s.total_os) }}</span>
+                      <span :class="parseFloat(s.npf_os) > 0 ? 'text-error font-weight-bold' : ''">
+                        NPF: {{ ((parseFloat(s.npf_os)/parseFloat(s.total_os))*100).toFixed(2) }}%
+                      </span>
+                    </v-list-item-subtitle>
+                  </v-list-item>
+                  <v-divider v-if="idx < 7 && idx < qualityData.sektor.length - 1"></v-divider>
+                </template>
+              </v-list>
             </v-col>
           </v-row>
         </v-window-item>

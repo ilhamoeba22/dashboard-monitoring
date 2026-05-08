@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\v1\DepositController;
 use App\Http\Controllers\Api\v1\FinancingController;
 use App\Http\Controllers\Api\v1\FinancingGrowthController;
 use App\Http\Controllers\Api\v1\FinancingOverviewController;
+use App\Http\Controllers\Api\v1\FinancingTunggakanController;
 use App\Http\Controllers\Api\v1\ReportingController;
 use App\Http\Controllers\Api\v1\SavingController;
 use App\Http\Controllers\Api\v1\TargetController;
@@ -91,6 +92,12 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
         Route::get('/aos', [FinancingController::class, 'aos']);
         Route::get('/cabangs', [FinancingController::class, 'cabangs']);
         Route::get('/{nokontrak}/angsuran', [FinancingController::class, 'angsuran']);
+        
+        // Modul Tunggakan (G5)
+        Route::prefix('tunggakan')->group(function () {
+            Route::get('/jatuh-tempo', [FinancingTunggakanController::class, 'jatuhTempo']);
+            Route::get('/coll-monitoring', [FinancingTunggakanController::class, 'collMonitoring']);
+        });
     });
 
     // === DASHBOARD ENDPOINTS ===

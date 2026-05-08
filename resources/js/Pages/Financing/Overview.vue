@@ -131,6 +131,14 @@ const trendStats = computed(() => {
   }
 })
 
+// Quick Links Configuration
+const quickLinks = [
+  { title: 'Master Console', icon: 'ri-bar-chart-grouped-line', color: 'primary', route: '/financing/rekapitulasi', desc: 'Analisis volume, NOA, O/S multidimensi' },
+  { title: 'Quality & Risk', icon: 'ri-shield-keyhole-line', color: 'error', route: '/financing/quality', desc: 'Monitoring NPF, aging, konsentrasi risiko' },
+  { title: 'Data Nominatif', icon: 'ri-list-check-3', color: 'success', route: '/financing/nominatif', desc: 'Data rinci per rekening nasabah' },
+  { title: 'Target RBB', icon: 'ri-focus-2-line', color: 'warning', route: '/financing/target', desc: 'Pencapaian vs target tahunan' },
+]
+
 async function handleMultiCompare() {
     await store.fetchMultiComparison()
 }
@@ -197,6 +205,27 @@ onMounted(() => {
 
     <!-- ======================== REALTIME MODE ======================== -->
     <template v-else-if="viewMode === 'realtime' && hasData">
+      <!-- QUICK ACTIONS -->
+      <div class="mb-6">
+        <v-row>
+          <v-col cols="12" sm="6" md="3" v-for="(link, i) in quickLinks" :key="i">
+            <a :href="link.route" style="text-decoration: none;">
+              <v-card hover class="h-100 rounded-xl border transition-swing shadow-sm" style="background: white;">
+                <v-card-text class="d-flex align-start gap-3 pa-4">
+                  <v-avatar :color="link.color + '-lighten-4'" rounded="lg" size="48">
+                    <v-icon :color="link.color" :icon="link.icon" size="24"></v-icon>
+                  </v-avatar>
+                  <div>
+                    <div class="font-weight-bold text-slate-800 text-subtitle-1">{{ link.title }}</div>
+                    <div class="text-caption text-medium-emphasis mt-1 lh-sm">{{ link.desc }}</div>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </a>
+          </v-col>
+        </v-row>
+      </div>
+
       <SummaryCards :data="store.realtimeData" />
       
       <!-- Two-Pillar Masonry Layout -->
@@ -468,6 +497,51 @@ onMounted(() => {
           </v-card>
         </v-col>
 
+      </v-row>
+
+      <!-- TOP RISKS ALERT -->
+      <v-row class="mt-2">
+        <v-col cols="12">
+          <v-card class="rounded-xl border shadow-sm overflow-hidden" elevation="0">
+            <v-card-title class="bg-error-lighten-5 py-3 px-4 d-flex align-center gap-2">
+              <v-icon icon="ri-alarm-warning-fill" color="error"></v-icon>
+              <span class="text-subtitle-1 font-weight-bold text-error">Top High-Risk Alerts (NPF)</span>
+            </v-card-title>
+            <v-divider></v-divider>
+            
+            <v-table density="comfortable" hover>
+              <thead>
+                <tr>
+                  <th class="text-caption font-weight-bold">NASABAH</th>
+                  <th class="text-right text-caption font-weight-bold">O/S POKOK</th>
+                  <th class="text-right text-caption font-weight-bold">TUNGGAKAN</th>
+                  <th class="text-center text-caption font-weight-bold">KOL</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="isLoading">
+                  <td colspan="4" class="text-center py-4"><v-progress-circular indeterminate size="24" color="primary"></v-progress-circular></td>
+                </tr>
+                <tr v-else-if="!store.realtimeData?.top_npf || store.realtimeData.top_npf.length === 0">
+                  <td colspan="4" class="text-center py-4 text-medium-emphasis">Tidak ada peringatan NPF tinggi</td>
+                </tr>
+                <tr v-for="item in (store.realtimeData?.top_npf || [])" :key="item.nokontrak" v-else>
+                  <td class="py-2">
+                    <div class="font-weight-bold text-body-2">{{ item.nama }}</div>
+                    <div class="text-caption text-medium-emphasis font-mono">{{ item.nokontrak }}</div>
+                  </td>
+                  <td class="text-right font-weight-medium text-caption">Rp {{ formatCurrency(item.osmdlc) }}</td>
+                  <td class="text-right text-error font-weight-bold text-caption">Rp {{ formatCurrency(item.tgkmdl) }}</td>
+                  <td class="text-center">
+                    <v-chip size="small" :color="getKolColor(item.colbaru)" variant="flat" class="font-weight-bold px-3">
+                      {{ item.colbaru }}
+                    </v-chip>
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+          </v-card>
+        </v-col>
       </v-row>
     </template>
 

@@ -1,431 +1,303 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { Head, Link } from '@inertiajs/vue3'
 import DefaultLayout from '@/layouts/default.vue'
+import VueApexCharts from 'vue3-apexcharts'
+import axios from 'axios'
 
 defineOptions({ layout: DefaultLayout })
 
-
-
 // State
-const loading = ref(true)
-const tableLoading = ref(false)
-const error = ref(null)
-const search = ref('')
-const groupBy = ref('kolektibilitas')
-const data = ref([])
-const rekapData = ref([])
-const jatuhTempo = ref([])
-const activeTab = ref('nominatif')
-const cursor = ref(null)
-const hasMore = ref(true)
-const loadMoreLoading = ref(false)
-const totalCount = ref(0)
+const isLoading = ref(true)
+const selectedCabang = ref('Semua Cabang')
+const cabangs = ref([])
 
-const headers = [
-  { title: 'No.', key: 'no', sortable: false, width: '50px', align: 'center' },
-  { title: 'No. CIF', key: 'nocif', sortable: true, width: '100px' },
-  { title: 'No. Kontrak', key: 'nokontrak', sortable: true, width: '130px' },
-  { title: 'Nama Nasabah', key: 'nama', sortable: true },
-  { title: 'Umur', key: 'umur', sortable: true, width: '60px', align: 'center' },
-  { title: 'Kel. Umur', key: 'kelompok_umur', sortable: true, width: '80px', align: 'center' },
-  { title: 'Segmen', key: 'segmen', sortable: true, width: '120px' },
-  { title: 'No. Akad', key: 'noakad', sortable: true, width: '130px' },
-  { title: 'Tgl Efektif', key: 'tgleff', sortable: true, width: '100px' },
-  { title: 'JW (Bln)', key: 'jw', sortable: true, width: '70px', align: 'center' },
-  { title: 'Sisa JW', key: 'sisajw', sortable: true, width: '70px', align: 'center' },
-  { title: 'Tgl Expired', key: 'tglexp', sortable: true, width: '100px' },
-  { title: 'Modal Awal', key: 'mdlawal', sortable: true, align: 'end' },
-  { title: 'O/S Modal', key: 'osmdlc', sortable: true, align: 'end' },
-  { title: 'Tunggak Modal', key: 'tgkmdl', sortable: true, align: 'end' },
-  { title: 'Tunggak Margin', key: 'tgkmgn', sortable: true, align: 'end' },
-  { title: 'Kolektibilitas', key: 'colbaru', sortable: true, align: 'center', width: '100px' },
-  { title: 'Tgl Macet', key: 'tglmacet', sortable: true, width: '100px' },
-  { title: 'Saldo Tabungan', key: 'saldo_netto', sortable: true, align: 'end' },
-  { title: 'Ket. Debet', key: 'keterangan_debet', sortable: true, align: 'center', width: '90px' },
-  { title: 'Tjgkn vs Tab.', key: 'tunggakan_vs_tabungan', sortable: true, align: 'end' },
-  { title: 'Nilai Jaminan', key: 'htgagun', sortable: true, align: 'end' },
-  { title: 'PPKA', key: 'ppap', sortable: true, align: 'end' },
-  { title: 'AO', key: 'ao', sortable: true, width: '100px' },
-  { title: 'Cabang', key: 'cabang', sortable: true, width: '100px' },
-  { title: 'Wilayah', key: 'wilayah', sortable: true, width: '100px' },
-  { title: 'Alamat', key: 'alamat', sortable: false },
+const overviewData = ref({
+  summary: { total_os: 0, total_noa: 0, npf_os: 0, npf_ratio: 0, total_tunggakan: 0 },
+  trend: [],
+  kolektibilitas: [],
+  segmen: [],
+  cabang: [],
+  top_npf: []
+})
+
+// Quick Links Configuration
+const quickLinks = [
+  { title: 'Master Console', icon: 'ri-bar-chart-grouped-line', color: 'primary', route: '/financing/rekapitulasi', desc: 'Analisis volume, NOA, O/S multidimensi' },
+  { title: 'Quality & Risk', icon: 'ri-shield-keyhole-line', color: 'error', route: '/financing/quality', desc: 'Monitoring NPF, aging, konsentrasi risiko' },
+  { title: 'Data Nominatif', icon: 'ri-list-check-3', color: 'success', route: '/financing/nominatif', desc: 'Data rinci per rekening nasabah' },
+  { title: 'Target RBB', icon: 'ri-focus-2-line', color: 'warning', route: '/financing/target', desc: 'Pencapaian vs target RBB tahunan' },
 ]
 
-const rekapHeaders = [
-  { title: 'Grup', key: 'label', sortable: true },
-  { title: 'Jumlah Rekening', key: 'noa', sortable: true, align: 'end' },
-  { title: 'Total Plafond', key: 'total_mdlawal', sortable: true, align: 'end' },
-  { title: 'Total Outstanding', key: 'total_osmdlc', sortable: true, align: 'end' },
-  { title: 'Avg Rate', key: 'avg_rate', sortable: true, align: 'end' },
-]
+// Computed Charts
+const trendChartOptions = computed(() => ({
+  chart: { type: 'area', fontFamily: "'Plus Jakarta Sans', sans-serif", toolbar: { show: false }, zoom: { enabled: false } },
+  dataLabels: { enabled: false },
+  stroke: { curve: 'smooth', width: 3 },
+  xaxis: { categories: overviewData.value.trend.map(t => t.month) },
+  yaxis: { labels: { formatter: (val) => `Rp ${(val / 1e9).toFixed(1)}M` } },
+  colors: ['#0ea5e9'],
+  fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 100] } },
+  title: { text: 'Pertumbuhan Portofolio (12 Bulan)', style: { fontWeight: 600 } }
+}))
 
-const jtHeaders = [
-  { title: 'No. Kontrak', key: 'nokontrak', width: '150px' },
-  { title: 'Nama', key: 'nama' },
-  { title: 'Jatuh Tempo', key: 'tglexp', width: '130px' },
-  { title: 'Sisa Pokok', key: 'osmdlc', align: 'end' },
-  { title: 'Status', key: 'status', align: 'center' },
-]
+const trendChartSeries = computed(() => [{
+  name: 'Total O/S Pokok',
+  data: overviewData.value.trend.map(t => parseFloat(t.total_os))
+}])
 
-const groupOptions = [
-  { value: 'kolektibilitas', title: 'Kolektibilitas' },
-  { value: 'cabang', title: 'Per Cabang' },
-  { value: 'ao', title: 'Per AO' },
-  { value: 'produk', title: 'Per Produk' },
-  { value: 'segmen', title: 'Per Segmen' },
-]
+const kolDonutOptions = computed(() => ({
+  chart: { type: 'donut', fontFamily: "'Plus Jakarta Sans', sans-serif" },
+  labels: overviewData.value.kolektibilitas.map(k => k.label),
+  colors: ['#22c55e', '#3b82f6', '#f59e0b', '#f97316', '#ef4444'],
+  dataLabels: { enabled: false },
+  legend: { position: 'bottom' },
+  title: { text: 'Distribusi Kolektibilitas', style: { fontWeight: 600 } }
+}))
 
-function formatRp(v) {
-  if (!v && v !== 0) return '—'
-  const n = parseFloat(v)
-  if (isNaN(n)) return '—'
-  if (n >= 1e9) return `Rp ${(n / 1e9).toFixed(2)} M`
-  if (n >= 1e6) return `Rp ${(n / 1e6).toFixed(1)} Jt`
-  return `Rp ${n.toLocaleString('id-ID')}`
+const kolDonutSeries = computed(() => overviewData.value.kolektibilitas.map(k => parseFloat(k.total_os)))
+
+// Helpers
+const formatRp = (v) => {
+  if (!v) return 'Rp 0'
+  if (v >= 1e9) return `Rp ${(v / 1e9).toFixed(2)} Miliar`
+  if (v >= 1e6) return `Rp ${(v / 1e6).toFixed(2)} Juta`
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v)
+}
+const formatNum = (v) => new Intl.NumberFormat('id-ID').format(v || 0)
+
+// API Fetch
+const fetchCabangs = async () => {
+  try {
+    const res = await axios.get('/api/v1/financing/cabangs')
+    if (res.data.success) {
+      cabangs.value = [{ kdloc: 'Semua Cabang', nama: 'Semua Cabang' }, ...res.data.data]
+    }
+  } catch (e) { console.error(e) }
 }
 
-function formatDate(v) {
-  if (!v || v === '0000-00-00' || v === '1900-01-01') return '—'
+const fetchOverview = async () => {
+  isLoading.value = true
   try {
-    // Format: YYYY-MM-DD -> DD MMM YYYY
-    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
-      const [y, m, d] = v.split('-')
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
-      return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`
+    const params = selectedCabang.value !== 'Semua Cabang' ? { cabang: selectedCabang.value } : {}
+    const res = await axios.get('/api/v1/financing/overview', { params })
+    if (res.data.success) {
+      overviewData.value = {
+        summary: res.data.data.summary || overviewData.value.summary,
+        trend: res.data.data.trend || [],
+        kolektibilitas: res.data.data.kolektibilitas || [],
+        segmen: res.data.data.segmen || [],
+        cabang: res.data.data.cabang || [],
+        top_npf: res.data.data.top_npf || []
+      }
     }
-    // Format: YYYYMMDD (integer/string)
-    if (/^\d{8}$/.test(String(v))) {
-      const y = String(v).substring(0, 4)
-      const m = String(v).substring(4, 6)
-      const d = String(v).substring(6, 8)
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
-      return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`
-    }
-    return v
   } catch (e) {
-    return '—'
+    console.error(e)
+  } finally {
+    isLoading.value = false
   }
 }
 
-function kolBadge(kol) {
-  const k = String(kol).toLowerCase()
-  if (k.includes('lancar') && !k.includes('kurang')) return 'success'
-  if (k.includes('kurang')) return 'info'
-  if (k.includes('diragukan')) return 'warning'
-  if (k.includes('macet') || k.includes('5') || kol === '4') return 'error'
-  if (kol === '1') return 'success'
-  if (kol === '2') return 'info'
-  if (kol === '3') return 'warning'
-  return 'secondary'
-}
-
-async function fetchNominatif(reset = false) {
-  if (reset) {
-    data.value = []
-    cursor.value = null
-    hasMore.value = true
-  }
-  
-  tableLoading.value = true
-  try {
-    const params = new URLSearchParams({ per_page: 500 })
-    if (search.value) params.append('search', search.value)
-    if (cursor.value) params.append('cursor', cursor.value)
-    const url = `/api/v1/financing/nominative?${params}`
-    const r = await fetch(url)
-    const json = await r.json()
-    
-    if (json.data?.data) {
-      const newData = json.data.data.filter(item => !data.value.some(existing => existing.nokontrak === item.nokontrak))
-      data.value = [...data.value, ...newData]
-      cursor.value = json.data.meta?.next_cursor ?? null
-      hasMore.value = json.data.meta?.has_more ?? false
-      totalCount.value = json.data.meta?.total ?? data.value.length
-    } else if (json.data) {
-      data.value = json.data
-      totalCount.value = json.data.length
-      hasMore.value = false
-    }
-  } catch (e) { error.value = e.message } finally { tableLoading.value = false }
-}
-
-async function loadMore() {
-  if (loadMoreLoading.value || !hasMore.value) return
-  loadMoreLoading.value = true
-  try {
-    await fetchNominatif(false)
-  } finally { loadMoreLoading.value = false }
-}
-
-async function fetchRekap() {
-  tableLoading.value = true
-  try {
-    const r = await fetch(`/api/v1/financing/rekapitulasi?group_by=${groupBy.value}`)
-    const json = await r.json()
-    rekapData.value = json.data ?? []
-  } catch (e) { error.value = e.message } finally { tableLoading.value = false }
-}
-
-async function fetchJatuhTempo() {
-  tableLoading.value = true
-  try {
-    const r = await fetch(`/api/v1/financing/jatuh-tempo?per_page=50`)
-    const json = await r.json()
-    jatuhTempo.value = json.data?.data ?? json.data ?? []
-  } catch (e) { error.value = e.message } finally { tableLoading.value = false }
-}
-
-onMounted(async () => {
-  loading.value = true
-  await fetchNominatif()
-  loading.value = false
+onMounted(() => {
+  fetchCabangs()
+  fetchOverview()
 })
 
-watch(activeTab, (tab) => {
-  if (tab === 'nominatif') fetchNominatif(true)
-  else if (tab === 'rekapitulasi') fetchRekap()
-  else if (tab === 'jatuh-tempo') fetchJatuhTempo()
-})
-
-watch(groupBy, () => { if (activeTab.value === 'rekapitulasi') fetchRekap() })
-
-let searchTimer = null
-watch(search, () => {
-  clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => { if (activeTab.value === 'nominatif') fetchNominatif(true) }, 500)
-})
+const badgeColor = (kol) => {
+  if (kol <= 2) return 'success'
+  if (kol == 3) return 'warning'
+  return 'error'
+}
 </script>
 
 <template>
-  <!-- Header -->
-  <div class="d-flex align-start align-md-center justify-space-between flex-column flex-md-row gap-3 mb-6">
-    <div>
-      <div class="d-flex align-center gap-2 mb-1">
-        <VAvatar color="primary" variant="tonal" size="32" rounded="lg">
-          <VIcon icon="ri-bank-line" size="18" />
-        </VAvatar>
-        <h1 class="text-h5 font-weight-bold mb-0" style="font-family: 'Plus Jakarta Sans', sans-serif;">
-          Pembiayaan
-        </h1>
+  <div class="financing-overview">
+    <Head title="Financing Overview" />
+
+    <!-- HERO HEADER -->
+    <div class="d-flex flex-column flex-md-row justify-space-between align-center mb-6 gap-4">
+      <div>
+        <div class="d-flex align-center gap-3">
+          <v-avatar color="primary" variant="tonal" rounded="lg" size="48">
+            <v-icon icon="ri-dashboard-2-line" size="28" />
+          </v-avatar>
+          <h1 class="text-h4 font-weight-black text-slate-800">Executive Overview</h1>
+        </div>
+        <p class="text-subtitle-2 text-medium-emphasis mb-0 mt-1 ms-14">Ringkasan performa dan kesehatan portofolio pembiayaan secara realtime.</p>
       </div>
-      <p class="text-body-2 text-medium-emphasis mb-0 ms-10">
-        Monitoring pembiayaan aktif — nominatif, rekapitulasi, dan jatuh tempo
-      </p>
+
+      <div class="d-flex align-center bg-white pa-2 rounded-xl border shadow-sm" style="min-width: 250px;">
+        <v-select
+          v-model="selectedCabang"
+          :items="cabangs"
+          item-title="nama"
+          item-value="kdloc"
+          prepend-inner-icon="ri-store-2-line"
+          variant="solo"
+          density="compact"
+          flat hide-details
+          rounded="lg"
+          @update:model-value="fetchOverview"
+        ></v-select>
+      </div>
     </div>
-    <VChip color="primary" variant="tonal" size="small" prepend-icon="ri-database-2-line">
-      Financing Module
-    </VChip>
+
+    <!-- QUICK ACTIONS -->
+    <div class="mb-6">
+      <v-row>
+        <v-col cols="12" sm="6" md="3" v-for="(link, i) in quickLinks" :key="i">
+          <Link :href="link.route" style="text-decoration: none;">
+            <v-card hover class="h-100 rounded-xl border transition-swing">
+              <v-card-text class="d-flex align-start gap-3">
+                <v-avatar :color="link.color + '-lighten-4'" rounded="lg">
+                  <v-icon :color="link.color" :icon="link.icon"></v-icon>
+                </v-avatar>
+                <div>
+                  <div class="font-weight-bold text-slate-800">{{ link.title }}</div>
+                  <div class="text-caption text-medium-emphasis mt-1 lh-sm">{{ link.desc }}</div>
+                </div>
+              </v-card-text>
+            </v-card>
+          </Link>
+        </v-col>
+      </v-row>
+    </div>
+
+    <v-divider class="mb-6"></v-divider>
+
+    <!-- KEY PERFORMANCE INDICATORS -->
+    <v-row class="mb-6">
+      <v-col cols="12" md="3">
+        <v-card class="rounded-xl border shadow-sm bg-gradient-primary text-white h-100">
+          <v-card-text>
+            <div class="text-overline" style="opacity: 0.8">TOTAL PORTOFOLIO</div>
+            <div class="text-h4 font-weight-black mb-1">{{ formatRp(overviewData.summary.total_os) }}</div>
+            <div class="d-flex align-center gap-2 mt-4">
+              <v-icon icon="ri-group-line" size="small"></v-icon>
+              <span class="text-caption">{{ formatNum(overviewData.summary.total_noa) }} Rekening Aktif</span>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" md="3">
+        <v-card class="rounded-xl border shadow-sm h-100">
+          <v-card-text>
+            <div class="text-overline text-medium-emphasis">TOTAL TUNGGAKAN</div>
+            <div class="text-h4 font-weight-black mb-1 text-warning-darken-2">{{ formatRp(overviewData.summary.total_tunggakan || 0) }}</div>
+            <div class="text-caption text-medium-emphasis mt-4">Tunggakan pokok berjalan</div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" md="3">
+        <v-card class="rounded-xl border shadow-sm h-100">
+          <v-card-text>
+            <div class="text-overline text-medium-emphasis">EXPOSURE NPF</div>
+            <div class="text-h4 font-weight-black mb-1 text-error">{{ formatRp(overviewData.summary.npf_os) }}</div>
+            <div class="d-flex align-center gap-2 mt-4">
+              <v-icon icon="ri-error-warning-line" size="small" color="error"></v-icon>
+              <span class="text-caption font-weight-medium text-error">{{ formatNum(overviewData.summary.npf_noa) }} Rekening Macet</span>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" md="3">
+        <v-card class="rounded-xl border shadow-sm h-100" :style="overviewData.summary.npf_ratio > 5 ? 'border-left: 4px solid #ef4444 !important' : 'border-left: 4px solid #22c55e !important'">
+          <v-card-text class="d-flex flex-column h-100 justify-center align-center text-center">
+            <div class="text-overline text-medium-emphasis mb-2">NPF RATIO</div>
+            <div class="text-h2 font-weight-black" :class="overviewData.summary.npf_ratio > 5 ? 'text-error' : 'text-success'">
+              {{ Number(overviewData.summary.npf_ratio || 0).toFixed(2) }}%
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- CHARTS & TABLES -->
+    <v-row>
+      <!-- Trend Area Chart -->
+      <v-col cols="12" lg="8">
+        <v-card class="rounded-xl border shadow-sm h-100">
+          <v-card-text>
+            <div v-if="!isLoading && overviewData.trend.length">
+              <VueApexCharts type="area" height="350" :options="trendChartOptions" :series="trendChartSeries" />
+            </div>
+            <div v-else class="d-flex justify-center align-center" style="height: 350px">
+              <v-progress-circular indeterminate color="primary"></v-progress-circular>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <!-- Donut Chart Kolektibilitas -->
+      <v-col cols="12" lg="4">
+        <v-card class="rounded-xl border shadow-sm h-100">
+          <v-card-text class="d-flex align-center justify-center h-100">
+            <div v-if="!isLoading && overviewData.kolektibilitas.length" class="w-100">
+              <VueApexCharts type="donut" height="300" :options="kolDonutOptions" :series="kolDonutSeries" />
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- TOP RISKS ALERT -->
+    <v-row class="mt-4">
+      <v-col cols="12">
+        <v-card class="rounded-xl border shadow-sm overflow-hidden">
+          <v-card-title class="bg-error-lighten-5 py-3 px-4 d-flex align-center gap-2">
+            <v-icon icon="ri-alarm-warning-fill" color="error"></v-icon>
+            <span class="text-subtitle-1 font-weight-bold text-error">Top High-Risk Alerts (NPF)</span>
+          </v-card-title>
+          <v-divider></v-divider>
+          
+          <v-table density="comfortable" hover>
+            <thead>
+              <tr>
+                <th class="text-caption font-weight-bold">NASABAH</th>
+                <th class="text-right text-caption font-weight-bold">O/S POKOK</th>
+                <th class="text-right text-caption font-weight-bold">TUNGGAKAN</th>
+                <th class="text-center text-caption font-weight-bold">KOL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="isLoading">
+                <td colspan="4" class="text-center py-4"><v-progress-circular indeterminate size="24"></v-progress-circular></td>
+              </tr>
+              <tr v-else-if="overviewData.top_npf.length === 0">
+                <td colspan="4" class="text-center py-4 text-medium-emphasis">Tidak ada peringatan NPF tinggi</td>
+              </tr>
+              <tr v-for="item in overviewData.top_npf" :key="item.nokontrak" v-else>
+                <td>
+                  <div class="font-weight-bold text-body-2">{{ item.nama }}</div>
+                  <div class="text-caption text-medium-emphasis font-mono">{{ item.nokontrak }}</div>
+                </td>
+                <td class="text-right font-weight-medium">{{ formatRp(item.osmdlc) }}</td>
+                <td class="text-right text-error font-weight-bold">{{ formatRp(item.tgkmdl) }}</td>
+                <td class="text-center">
+                  <v-chip size="x-small" :color="badgeColor(item.colbaru)" variant="flat" class="font-weight-bold">
+                    {{ item.colbaru }}
+                  </v-chip>
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+        </v-card>
+      </v-col>
+    </v-row>
+
   </div>
-
-  <VAlert v-if="error" type="warning" variant="tonal" closable class="mb-4" :text="`Koneksi API: ${error}`" />
-
-  <!-- Tabs -->
-  <VCard elevation="0" border rounded="xl">
-    <VTabs v-model="activeTab" color="primary" class="border-b">
-      <VTab value="nominatif" prepend-icon="ri-list-unordered">Nominatif</VTab>
-      <VTab value="rekapitulasi" prepend-icon="ri-bar-chart-2-line">Rekapitulasi</VTab>
-      <VTab value="jatuh-tempo" prepend-icon="ri-calendar-event-line">Jatuh Tempo</VTab>
-    </VTabs>
-
-    <!-- Nominatif -->
-    <VTabsWindow v-model="activeTab">
-      <VTabsWindowItem value="nominatif">
-        <VCardText>
-          <VTextField
-            v-model="search"
-            placeholder="Cari nama nasabah, no. kontrak..."
-            prepend-inner-icon="ri-search-line"
-            variant="outlined"
-            density="compact"
-            clearable
-            hide-details
-            class="mb-4"
-            style="max-width: 400px;"
-          />
-          <div class="d-flex align-center justify-space-between mt-4">
-            <span class="text-body-2 text-medium-emphasis">
-              Total: {{ totalCount.toLocaleString('id-ID') }} data
-            </span>
-            <VBtn
-              v-if="hasMore"
-              variant="tonal"
-              color="primary"
-              size="small"
-              :loading="loadMoreLoading"
-              @click="loadMore"
-            >
-              <VIcon icon="ri-add-line" start />
-              Muat Lebih Banyak ({{ data.length }})
-            </VBtn>
-          </div>
-          <VDataTable
-            :headers="headers"
-            :items="data"
-            :loading="tableLoading || loading"
-            density="comfortable"
-            :items-per-page="-1"
-            class="rounded-lg border"
-            hover
-          >
-            <template #item.no="{ item, index }">
-              {{ index + 1 }}
-            </template>
-            <template #item.nocif="{ item }">
-              {{ item.nocif || '—' }}
-            </template>
-            <template #item.segmen="{ item }">
-              {{ item.segmen_pasar?.ket || '—' }}
-            </template>
-            <template #item.tgleff="{ item }">
-              {{ formatDate(item.tgleff) }}
-            </template>
-            <template #item.sisajw="{ item }">
-              {{ (item.jw || 0) - (item.total_bayar || 0) }}
-            </template>
-            <template #item.tglexp="{ item }">
-              {{ formatDate(item.tglexp) }}
-            </template>
-            <template #item.mdlawal="{ item }">
-              <span class="financial-number">{{ formatRp(item.mdlawal) }}</span>
-            </template>
-            <template #item.osmdlc="{ item }">
-              <span class="financial-number font-weight-semibold">{{ formatRp(item.osmdlc) }}</span>
-            </template>
-            <template #item.tgkmdl="{ item }">
-              <span class="financial-number">{{ formatRp(item.tgkmdl) }}</span>
-            </template>
-            <template #item.tgkmgn="{ item }">
-              <span class="financial-number">{{ formatRp(item.tgkmgn) }}</span>
-            </template>
-            <template #item.colbaru="{ item }">
-              <VChip :color="kolBadge(item.colbaru)" size="small" variant="tonal">
-                {{ `Kol. ${item.colbaru}` }}
-              </VChip>
-            </template>
-            <template #item.tglmacet="{ item }">
-              {{ formatDate(item.tglmacet) }}
-            </template>
-            <template #item.saldo_netto="{ item }">
-              <span class="financial-number">{{ formatRp(item.saldo_netto) }}</span>
-            </template>
-            <template #item.keterangan_debet="{ item }">
-              <VChip
-                :color="item.keterangan_debet === 'Cukup' ? 'success' : 'secondary'"
-                size="small"
-                variant="tonal"
-              >
-                {{ item.keterangan_debet || '—' }}
-              </VChip>
-            </template>
-            <template #item.tunggakan_vs_tabungan="{ item }">
-              <span class="financial-number" :class="item.tunggakan_vs_tabungan < 0 ? 'text-error' : ''">
-                {{ formatRp(item.tunggakan_vs_tabungan) }}
-              </span>
-            </template>
-            <template #item.htgagun="{ item }">
-              <span class="financial-number">{{ formatRp(item.htgagun) }}</span>
-            </template>
-            <template #item.ppap="{ item }">
-              <span class="financial-number">{{ formatRp(item.ppap) }}</span>
-            </template>
-            <template #item.ao="{ item }">
-              {{ item.ao?.nmao || '—' }}
-            </template>
-            <template #item.cabang="{ item }">
-              {{ item.cabang?.nama || '—' }}
-            </template>
-            <template #item.wilayah="{ item }">
-              {{ item.wilayah?.ket || '—' }}
-            </template>
-            <template #item.alamat="{ item }">
-              {{ item.cif?.alamat || '—' }}
-            </template>
-            <template #no-data>
-              <div class="text-center py-8 text-medium-emphasis">
-                <VIcon icon="ri-file-search-line" size="48" class="mb-2" style="opacity: 0.3;" />
-                <p class="text-body-2">Tidak ada data atau koneksi SQL Server belum aktif</p>
-              </div>
-            </template>
-          </VDataTable>
-        </VCardText>
-      </VTabsWindowItem>
-
-      <!-- Rekapitulasi -->
-      <VTabsWindowItem value="rekapitulasi">
-        <VCardText>
-          <div class="d-flex align-center gap-3 mb-4">
-            <span class="text-body-2 font-weight-medium">Kelompokkan berdasarkan:</span>
-            <VSelect
-              v-model="groupBy"
-              :items="groupOptions"
-              item-title="title"
-              item-value="value"
-              density="compact"
-              variant="outlined"
-              hide-details
-              style="max-width: 200px;"
-            />
-          </div>
-          <VDataTable
-            :headers="rekapHeaders"
-            :items="rekapData"
-            :loading="tableLoading"
-            density="comfortable"
-            class="rounded-lg border"
-            hover
-          >
-            <template #item.total_mdlawal="{ item }">
-              <span class="financial-number">{{ formatRp(item.total_mdlawal) }}</span>
-            </template>
-            <template #item.total_osmdlc="{ item }">
-              <span class="financial-number font-weight-semibold text-primary">
-                {{ formatRp(item.total_osmdlc) }}
-              </span>
-            </template>
-            <template #item.avg_rate="{ item }">
-              <span class="financial-number">{{ parseFloat(item.avg_rate).toFixed(2) }}%</span>
-            </template>
-            <template #no-data>
-              <div class="text-center py-8 text-medium-emphasis">
-                <p class="text-body-2">Klik tab Rekapitulasi untuk memuat data</p>
-              </div>
-            </template>
-          </VDataTable>
-        </VCardText>
-      </VTabsWindowItem>
-
-      <!-- Jatuh Tempo -->
-      <VTabsWindowItem value="jatuh-tempo">
-        <VCardText>
-          <VDataTable
-            :headers="jtHeaders"
-            :items="jatuhTempo"
-            :loading="tableLoading"
-            density="comfortable"
-            class="rounded-lg border"
-            hover
-          >
-            <template #item.tglexp="{ item }">
-              {{ item.tglexp ? `${item.tglexp.substring(6,8)}/${item.tglexp.substring(4,6)}/${item.tglexp.substring(0,4)}` : '—' }}
-            </template>
-            <template #item.osmdlc="{ item }">
-              <span class="financial-number font-weight-semibold text-error">
-                {{ formatRp(item.osmdlc) }}
-              </span>
-            </template>
-            <template #item.status="{ item }">
-              <VChip :color="kolBadge(item.colbaru)" size="small" variant="tonal">
-                {{ item.colbaru ? `Kol. ${item.colbaru}` : 'Aktif' }}
-              </VChip>
-            </template>
-            <template #no-data>
-              <div class="text-center py-8 text-medium-emphasis">
-                <p class="text-body-2">Klik tab Jatuh Tempo untuk memuat data</p>
-              </div>
-            </template>
-          </VDataTable>
-        </VCardText>
-      </VTabsWindowItem>
-    </VTabsWindow>
-  </VCard>
 </template>
+
+<style scoped>
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
+}
+.lh-sm { line-height: 1.25 !important; }
+.transition-swing { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1); }
+</style>

@@ -92,7 +92,7 @@ export const useFinancingStore = defineStore('financing', () => {
     errorRealtime.value = null
     
     try {
-      const response = await fetch(`${API}/overview/realtime`)
+      const response = await fetch(`${API}/overview`)
       const json = await response.json()
       
       if (json.success) {

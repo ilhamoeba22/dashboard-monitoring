@@ -53,6 +53,16 @@ interface FinancingRepositoryInterface
     public function getRekapMaster(string $groupBy = 'cabang', string $cabang = ''): array;
 
     /**
+     * Analisis Kualitas Aset & Risiko (Aging, Risk Concentration, Coverage).
+     * Single-hit analytics untuk dashboard Quality & Risk.
+     *
+     * @param  string  $groupBy  Dimensi analisis (cabang|produk|ao)
+     * @param  string  $cabang   Filter kode cabang (opsional)
+     * @return array<string, mixed>
+     */
+    public function getQualityAnalytics(string $groupBy = 'cabang', string $cabang = ''): array;
+
+    /**
      * Dapatkan daftar pembiayaan yang sudah atau akan jatuh tempo.
      *
      * @param  array<string, mixed>  $filters

@@ -23,11 +23,9 @@ Route::prefix('financing')->group(function () {
     Route::get('/perkembangan', fn() => Inertia::render('Financing/Perkembangan'))->name('financing.perkembangan');
     Route::get('/target', fn() => Inertia::render('Financing/Target'))->name('financing.target');
 
-    // G4: Rekapitulasi
+    // G4: Rekapitulasi & Quality
     Route::get('/rekapitulasi', fn() => Inertia::render('Financing/Rekapitulasi'))->name('financing.rekapitulasi');
-    Route::get('/coll', fn() => Inertia::render('Financing/Kolektibilitas'))->name('financing.coll');
-    Route::get('/risk', fn() => Inertia::render('Financing/RiskAggregation'))->name('financing.risk');
-
+    Route::get('/quality', fn() => Inertia::render('Financing/Quality'))->name('financing.quality');
     // G5: Tunggakan
     Route::get('/jatuh-tempo', fn() => Inertia::render('Financing/JatuhTempo'))->name('financing.jatuh-tempo');
     Route::get('/coll-monitoring', fn() => Inertia::render('Financing/CollMonitoring'))->name('financing.coll-monitoring');

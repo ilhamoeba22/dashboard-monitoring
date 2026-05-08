@@ -596,6 +596,104 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
     }
 
     /**
+     * Analisis Kualitas Aset & Risiko (Aging, Risk Concentration, Coverage).
+     * Single-hit analytics untuk dashboard Quality & Risk.
+     */
+    public function getQualityAnalytics(string $groupBy = 'cabang', string $cabang = ''): array
+    {
+        $validGroups = ['cabang', 'produk', 'ao'];
+        if (! in_array($groupBy, $validGroups, true)) {
+            $groupBy = 'cabang';
+        }
+
+        $cacheKey = "financing:quality_analytics:{$groupBy}:".($cabang ?: 'all');
+        $start    = microtime(true);
+        $memory   = memory_get_usage(true);
+
+        $data = Cache::remember($cacheKey, 60, function () use ($groupBy, $cabang): array {
+            $dimConfig = $this->resolveDimensionConfig($groupBy);
+            $joinClause = $dimConfig['join'];
+            $labelSelect = $dimConfig['label'];
+            $groupByClause = $dimConfig['group_by'];
+
+            $cabangFilter = '';
+            $bindings = [];
+            if ($cabang !== '') {
+                $cabangFilter = "AND a.kdloc = ?";
+                $bindings[] = $cabang;
+            }
+
+            // 1. Aging Buckets Aggregation
+            $sqlAging = "
+                SELECT 
+                    {$labelSelect} AS label,
+                    SUM(CASE WHEN a.haritgk = 0 THEN a.osmdlc ELSE 0 END) AS aging_0,
+                    SUM(CASE WHEN a.haritgk BETWEEN 1 AND 30 THEN a.osmdlc ELSE 0 END) AS aging_1_30,
+                    SUM(CASE WHEN a.haritgk BETWEEN 31 AND 60 THEN a.osmdlc ELSE 0 END) AS aging_31_60,
+                    SUM(CASE WHEN a.haritgk BETWEEN 61 AND 90 THEN a.osmdlc ELSE 0 END) AS aging_61_90,
+                    SUM(CASE WHEN a.haritgk > 90 THEN a.osmdlc ELSE 0 END) AS aging_npf,
+                    SUM(a.osmdlc) AS total_os
+                FROM TOFLMB a
+                {$joinClause}
+                WHERE a.stsrec = 'A' AND a.stsacc <> 'W' {$cabangFilter}
+                GROUP BY {$groupByClause}
+                HAVING SUM(a.osmdlc) > 0
+                ORDER BY total_os DESC
+            ";
+
+            // 2. Risk Concentration (Sektor Ekonomi)
+            $sqlSektor = "
+                SELECT 
+                    ISNULL(a.sekon, 'Lainnya') AS label,
+                    SUM(a.osmdlc) AS total_os,
+                    SUM(CASE WHEN a.colbaru IN ('3','4','5') THEN a.osmdlc ELSE 0 END) AS npf_os
+                FROM TOFLMB a
+                WHERE a.stsrec = 'A' AND a.stsacc <> 'W' {$cabangFilter}
+                GROUP BY a.sekon
+                ORDER BY total_os DESC
+            ";
+
+            // 3. Top 10 Risk Alert (Nasabah NPF / Tunggakan Tinggi)
+            $sqlAlert = "
+                SELECT TOP 10
+                    a.nokontrak, a.nama, a.osmdlc, a.tgkmdl, a.haritgk, a.colbaru as coll
+                FROM TOFLMB a
+                WHERE a.stsrec = 'A' AND a.stsacc <> 'W' AND a.colbaru IN ('2','3','4','5')
+                {$cabangFilter}
+                ORDER BY a.tgkmdl DESC
+            ";
+
+            $agingRows = DB::connection($this->connection)->select($sqlAging, $bindings);
+            $sektorRows = DB::connection($this->connection)->select($sqlSektor, $bindings);
+            $alertRows = DB::connection($this->connection)->select($sqlAlert, $bindings);
+
+            // Calculate Global Metrics
+            $totalOS = collect($agingRows)->sum('total_os');
+            $totalNPF = collect($sektorRows)->sum('npf_os');
+            $totalPPAP = DB::connection($this->connection)->table('TOFLMB')
+                ->where('stsrec', 'A')->where('stsacc', '<>', 'W')
+                ->when($cabang !== '', fn($q) => $query->where('kdloc', $cabang))
+                ->sum('ppap');
+
+            return [
+                'aging' => $agingRows,
+                'sektor' => $sektorRows,
+                'alerts' => $alertRows,
+                'summary' => [
+                    'total_os' => (float) $totalOS,
+                    'total_npf' => (float) $totalNPF,
+                    'total_ppap' => (float) $totalPPAP,
+                    'npf_ratio' => $totalOS > 0 ? round(($totalNPF / $totalOS) * 100, 2) : 0,
+                    'coverage_ratio' => $totalNPF > 0 ? round(($totalPPAP / $totalNPF) * 100, 2) : 0,
+                ]
+            ];
+        });
+
+        $this->logPerformance(__METHOD__, $start, $memory);
+        return $data;
+    }
+
+    /**
      * Dapatkan daftar pembiayaan yang sudah atau akan jatuh tempo (bulan ini / lewat).
      */
     public function getJatuhTempo(array $filters = [], int $perPage = 50): Paginator

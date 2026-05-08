@@ -31,10 +31,11 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
       }"
     />
     
-    <VerticalNavSectionTitle :item="{ heading: 'ANALITIK & TARGET' }" />
+    <VerticalNavSectionTitle :item="{ heading: 'BISNIS & RISIKO' }" />
+    <VerticalNavLink :item="{ title: 'Rekapitulasi', to: '/financing/rekapitulasi', icon: 'ri-bar-chart-grouped-line' }" />
+    <VerticalNavLink :item="{ title: 'Quality & Risk', to: '/financing/quality', icon: 'ri-shield-keyhole-line' }" />
     <VerticalNavLink :item="{ title: 'Perkembangan', to: '/financing/perkembangan', icon: 'ri-line-chart-line' }" />
     <VerticalNavLink :item="{ title: 'Target RBB', to: '/financing/target', icon: 'ri-focus-2-line' }" />
-    <VerticalNavLink :item="{ title: 'Risk Aggregation', to: '/financing/risk', icon: 'ri-shield-keyhole-line' }" />
   </VerticalNavGroup>
 
   <VerticalNavLink

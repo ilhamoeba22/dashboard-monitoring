@@ -201,6 +201,34 @@ class FinancingController extends Controller
     }
 
     /**
+     * Asset Quality & Risk Analytics — Single-hit query untuk dashboard Quality.
+     *
+     * Query Params:
+     *   group_by : cabang|produk|ao (default: cabang)
+     *   cabang   : kode cabang untuk filter (opsional)
+     */
+    public function qualityAnalytics(Request $request): JsonResponse
+    {
+        try {
+            $groupBy = (string) $request->query('group_by', 'cabang');
+            $cabang  = (string) $request->query('cabang', '');
+
+            $data = $this->repository->getQualityAnalytics($groupBy, $cabang);
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat Asset Quality Analytics',
+                'debug' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * GET /api/v1/financing/jatuh-tempo
      */
     public function jatuhTempo(Request $request): JsonResponse

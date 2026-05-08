@@ -714,6 +714,9 @@ class FinancingOverviewRepository
     private function executeRaw(string $sql, array $params = []): array
     {
         try {
+            // Ensure connection is switched to the active database before querying
+            $this->mciService->getConnection();
+            
             return DB::connection($this->connection)->select($sql, $params);
         } catch (\Throwable $e) {
             \Log::error('FinancingOverviewRepository::executeRaw failed', [

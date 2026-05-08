@@ -41,11 +41,10 @@ const navItems = [
       { title: 'Perkembangan', icon: 'ri-line-chart-line', href: '/financing/perkembangan' },
       { title: 'Target RBB', icon: 'ri-focus-2-line', href: '/financing/target' },
 
-      // G4: REKAPITULASI
-      { type: 'subheader', title: 'REKAPITULASI' },
+      // G4: MASTER CONSOLE
+      { type: 'subheader', title: 'MASTER CONSOLE' },
       { title: 'Rekapitulasi', icon: 'ri-bar-chart-grouped-line', href: '/financing/rekapitulasi' },
-      { title: 'Kolektibilitas', icon: 'ri-stack-line', href: '/financing/coll' },
-      { title: 'Risk Aggregation', icon: 'ri-shield-keyhole-line', href: '/financing/risk' },
+      { title: 'Quality & Risk', icon: 'ri-shield-keyhole-line', href: '/financing/quality' },
 
       // G5: TUNGGAKAN
       { type: 'subheader', title: 'TUNGGAKAN' },

@@ -193,11 +193,11 @@ watch([selectedDimension, selectedCabang], () => {
             </v-avatar>
             <div>
               <h2 class="text-h5 font-weight-bold mb-0">Master Rekap Console</h2>
-              <div class="text-caption text-medium-emphasis">Satu pandangan terpadu untuk performa & risiko portofolio</div>
+              <div class="text-caption text-medium-emphasis">Volume & distribusi bisnis pembiayaan per dimensi — Analisis risiko di <a href="/financing/quality" class="text-primary font-weight-medium">Quality Console</a></div>
             </div>
           </div>
 
-          <div class="d-flex flex-wrap gap-3 align-center">
+          <div class="d-flex flex-wrap align-center ga-3">
             <!-- Dimensi Toggle -->
             <v-select
               v-model="selectedDimension"
@@ -210,6 +210,7 @@ watch([selectedDimension, selectedCabang], () => {
               hide-details
               style="min-width: 200px"
               rounded="lg"
+              class="flex-shrink-0"
             ></v-select>
 
             <!-- Cabang Filter -->
@@ -226,16 +227,29 @@ watch([selectedDimension, selectedCabang], () => {
               clearable
               style="min-width: 200px"
               rounded="lg"
+              class="flex-shrink-0"
             ></v-select>
 
-            <!-- Metric Switcher -->
-            <v-btn-toggle v-model="selectedMetric" mandatory rounded="lg" density="compact" class="border">
-              <v-btn value="os" size="small" class="px-4">O/S (Rp)</v-btn>
-              <v-btn value="noa" size="small" class="px-4">NOA</v-btn>
-            </v-btn-toggle>
+            <!-- Metric Switcher (Dropdown) -->
+            <v-select
+              v-model="selectedMetric"
+              :items="[
+                { title: 'Outstanding (Rp)', value: 'os' },
+                { title: 'Jumlah Nasabah (NOA)', value: 'noa' }
+              ]"
+              item-title="title"
+              item-value="value"
+              prepend-inner-icon="ri-funds-line"
+              variant="outlined"
+              density="compact"
+              hide-details
+              style="min-width: 200px"
+              rounded="lg"
+              class="flex-shrink-0"
+            ></v-select>
             
             <!-- View Toggle -->
-            <v-btn-toggle v-model="viewMode" mandatory rounded="lg" density="compact" class="border">
+            <v-btn-toggle v-model="viewMode" mandatory rounded="lg" density="compact" class="border flex-shrink-0">
               <v-btn value="grid" size="small" icon="ri-table-line"></v-btn>
               <v-btn value="chart" size="small" icon="ri-bar-chart-box-line"></v-btn>
             </v-btn-toggle>
@@ -256,7 +270,7 @@ watch([selectedDimension, selectedCabang], () => {
               </v-avatar>
             </div>
             <div class="text-h4 font-weight-bold mb-1">{{ formatNumber(totals.noa) }}</div>
-            <div class="text-caption text-medium-emphasis mt-auto">Nasabah aktif</div>
+            <div class="text-caption text-medium-emphasis mt-auto">Rekening aktif pembiayaan</div>
           </v-card-text>
         </v-card>
       </v-col>
@@ -265,28 +279,13 @@ watch([selectedDimension, selectedCabang], () => {
         <v-card class="elevation-1 rounded-xl overflow-hidden h-100">
           <v-card-text class="d-flex flex-column h-100">
             <div class="d-flex justify-space-between align-center mb-4">
-              <div class="text-overline text-medium-emphasis">TOTAL O/S</div>
+              <div class="text-overline text-medium-emphasis">TOTAL O/S POKOK</div>
               <v-avatar size="32" color="emerald-lighten-4" rounded>
                 <v-icon color="emerald-darken-2" icon="ri-money-dollar-circle-line" size="small"></v-icon>
               </v-avatar>
             </div>
             <div class="text-h5 font-weight-bold mb-1">{{ formatRp(totals.total_os) }}</div>
-            <div class="text-caption text-medium-emphasis mt-auto">Outstanding Pokok</div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="elevation-1 rounded-xl overflow-hidden h-100" :style="getNpfCellStyle(totals.npf_ratio)">
-          <v-card-text class="d-flex flex-column h-100">
-            <div class="d-flex justify-space-between align-center mb-4">
-              <div class="text-overline" style="opacity: 0.8">NPF RATIO</div>
-              <v-avatar size="32" color="white" style="opacity: 0.8" rounded>
-                <v-icon :color="totals.npf_ratio > 5 ? 'red' : 'green'" icon="ri-alert-line" size="small"></v-icon>
-              </v-avatar>
-            </div>
-            <div class="text-h4 font-weight-bold mb-1">{{ totals.npf_ratio }}%</div>
-            <div class="text-caption mt-auto" style="opacity: 0.8">Batas wajar &lt; 5%</div>
+            <div class="text-caption text-medium-emphasis mt-auto">Portofolio pembiayaan aktif</div>
           </v-card-text>
         </v-card>
       </v-col>
@@ -295,13 +294,28 @@ watch([selectedDimension, selectedCabang], () => {
         <v-card class="elevation-1 rounded-xl overflow-hidden h-100">
           <v-card-text class="d-flex flex-column h-100">
             <div class="d-flex justify-space-between align-center mb-4">
-              <div class="text-overline text-medium-emphasis">TOTAL PPAP</div>
-              <v-avatar size="32" color="amber-lighten-4" rounded>
-                <v-icon color="amber-darken-2" icon="ri-shield-check-line" size="small"></v-icon>
+              <div class="text-overline text-medium-emphasis">O/S KOL 1 (LANCAR)</div>
+              <v-avatar size="32" color="green-lighten-4" rounded>
+                <v-icon color="green-darken-2" icon="ri-checkbox-circle-line" size="small"></v-icon>
               </v-avatar>
             </div>
-            <div class="text-h5 font-weight-bold mb-1">{{ formatRp(totals.total_ppap) }}</div>
-            <div class="text-caption text-medium-emphasis mt-auto">Penyisihan Penghapusan Aktiva</div>
+            <div class="text-h5 font-weight-bold mb-1">{{ formatRp(totals.kol1_os || 0) }}</div>
+            <div class="text-caption text-medium-emphasis mt-auto">Portofolio kolektibilitas lancar</div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" sm="6" md="3">
+        <v-card class="elevation-1 rounded-xl overflow-hidden h-100" style="border-left: 4px solid #ef4444">
+          <v-card-text class="d-flex flex-column h-100">
+            <div class="d-flex justify-space-between align-center mb-4">
+              <div class="text-overline text-medium-emphasis">NOA NPF (KOL 3-5)</div>
+              <v-avatar size="32" color="red-lighten-4" rounded>
+                <v-icon color="red-darken-2" icon="ri-error-warning-line" size="small"></v-icon>
+              </v-avatar>
+            </div>
+            <div class="text-h4 font-weight-bold text-error mb-1">{{ formatNumber((totals.kol3_noa || 0) + (totals.kol4_noa || 0) + (totals.kol5_noa || 0)) }}</div>
+            <div class="text-caption text-medium-emphasis mt-auto">Rekening Kol 3+4+5 &mdash; <a href="/financing/quality" class="text-primary">detail risiko &rsaquo;</a></div>
           </v-card-text>
         </v-card>
       </v-col>
@@ -385,19 +399,22 @@ watch([selectedDimension, selectedCabang], () => {
         <!-- CHART MODE -->
         <div v-else-if="viewMode === 'chart'" class="pa-6">
           <v-row>
-            <v-col cols="12" md="8">
-              <v-card variant="outlined" class="rounded-lg h-100 border">
+            <v-col cols="12">
+              <v-card variant="outlined" class="rounded-lg border">
+                <v-card-title class="text-subtitle-1 font-weight-bold pa-4 pb-0">Distribusi Outstanding (Miliar) per {{ dimensionOptions.find(d => d.value === selectedDimension)?.label }}</v-card-title>
                 <v-card-text>
-                  <VueApexCharts type="treemap" height="400" :options="treeMapOpts" :series="treeMapSeries" />
+                  <VueApexCharts type="treemap" height="500" :options="treeMapOpts" :series="treeMapSeries" />
                 </v-card-text>
               </v-card>
             </v-col>
-            <v-col cols="12" md="4">
-              <v-card variant="outlined" class="rounded-lg h-100 border">
-                <v-card-text class="d-flex align-center justify-center h-100">
-                  <VueApexCharts type="donut" height="350" :options="donutOpts" :series="donutSeries" />
-                </v-card-text>
-              </v-card>
+          </v-row>
+          <v-row class="mt-0">
+            <v-col cols="12">
+              <v-alert type="info" variant="tonal" density="compact" rounded="lg" class="text-caption">
+                <v-icon start size="small">ri-information-line</v-icon>
+                Untuk analisis <strong>rasio NPF, coverage ratio, dan aging bucket</strong>, buka halaman
+                <a href="/financing/quality" class="font-weight-bold">Quality & Risk Console</a>.
+              </v-alert>
             </v-col>
           </v-row>
         </div>

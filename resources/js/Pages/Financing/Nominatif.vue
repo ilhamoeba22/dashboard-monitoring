@@ -5,6 +5,7 @@ import DefaultLayout from '@/layouts/default.vue'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import '@/assets/css/financing-shared.css'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -362,18 +363,24 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <Head title="Nominatif Pembiayaan" />
+  <div class="fin-page px-4 pt-0">
+    <Head title="Nominatif Keseluruhan" />
 
-    <!-- Page Header -->
-    <div class="mb-6">
-      <div class="d-flex align-center gap-4 mb-2">
-        <div class="header-icon" style="width: 48px; height: 48px; border-radius: 12px; background: rgba(var(--v-theme-primary), 0.1); display: flex; align-items: center; justify-content: center;">
-          <v-icon icon="ri-list-unordered" color="primary" size="24" />
-        </div>
-        <div>
-          <h1 class="text-h4 font-weight-bold mb-0" style="font-family: 'Plus Jakarta Sans', sans-serif;">Nominatif Pembiayaan</h1>
-          <p class="text-body-2 text-medium-emphasis mb-0">Daftar rincian seluruh nasabah pembiayaan aktif</p>
+    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+    <div class="fin-hero mb-6">
+      <div class="fin-hero__deco"></div>
+      <div class="fin-hero__inner">
+        <div class="fin-hero__top">
+          <div class="fin-hero__icon">
+            <v-icon icon="ri-file-list-3-line" size="26" color="white" />
+          </div>
+          <div class="fin-hero__meta">
+            <h1 class="fin-hero__title">Nominatif Keseluruhan</h1>
+            <p class="fin-hero__subtitle">Daftar rincian seluruh nasabah pembiayaan aktif</p>
+            <div class="fin-hero__badges">
+              <span class="fin-badge fin-badge--teal">👥 Data Nasabah</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -440,7 +447,7 @@ onMounted(() => {
           :items-length="totalItems"
           :loading="loading"
           @update:options="loadItems"
-          class="custom-table border rounded-lg"
+          class="custom-table fin-vtable border rounded-lg"
           density="compact"
           hover
           fixed-header

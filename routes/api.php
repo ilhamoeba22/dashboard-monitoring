@@ -8,6 +8,9 @@ use App\Http\Controllers\Api\v1\DepositController;
 use App\Http\Controllers\Api\v1\FinancingController;
 use App\Http\Controllers\Api\v1\FinancingGrowthController;
 use App\Http\Controllers\Api\v1\FinancingOverviewController;
+use App\Http\Controllers\Api\v1\FinancingPerformanceController;
+use App\Http\Controllers\Api\v1\FinancingPenyelesaianController;
+use App\Http\Controllers\Api\v1\FinancingRestrukturisasiController;
 use App\Http\Controllers\Api\v1\FinancingTunggakanController;
 use App\Http\Controllers\Api\v1\ReportingController;
 use App\Http\Controllers\Api\v1\SavingController;
@@ -28,6 +31,14 @@ use Illuminate\Support\Facades\Route;
 
 // === API v1 PREFIX ===
 Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
+
+    // ==========================================
+    // SYSTEM SETTINGS API
+    // ==========================================
+    Route::prefix('admin/settings')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\v1\SystemSettingController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\Api\v1\SystemSettingController::class, 'update']);
+    });
 
     // ==========================================
     // CIF MODULE API
@@ -89,14 +100,37 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
         Route::get('/rekapitulasi', [FinancingController::class, 'rekapitulasi']);
         Route::get('/rekap-master', [FinancingController::class, 'rekapMaster']); // G4 Master Rekap Console
         Route::get('/quality-analytics', [FinancingController::class, 'qualityAnalytics']); // G4 Quality & Risk Console
+        Route::get('/quality-diagnostic', [FinancingController::class, 'qualityDiagnostic']); // TEMP: diagnostic
         Route::get('/aos', [FinancingController::class, 'aos']);
         Route::get('/cabangs', [FinancingController::class, 'cabangs']);
+        Route::get('/jatuh-tempo', [FinancingController::class, 'jatuhTempo']);
         Route::get('/{nokontrak}/angsuran', [FinancingController::class, 'angsuran']);
         
         // Modul Tunggakan (G5)
         Route::prefix('tunggakan')->group(function () {
             Route::get('/jatuh-tempo', [FinancingTunggakanController::class, 'jatuhTempo']);
             Route::get('/coll-monitoring', [FinancingTunggakanController::class, 'collMonitoring']);
+        });
+
+        // Modul Restrukturisasi (G6)
+        Route::prefix('restrukturisasi')->group(function () {
+            Route::get('/', [FinancingRestrukturisasiController::class, 'restrukturisasi']);
+            Route::get('/top-up', [FinancingRestrukturisasiController::class, 'topUp']);
+        });
+
+        // Modul Penyelesaian (G7)
+        Route::prefix('penyelesaian')->group(function () {
+            Route::get('/ppka', [FinancingPenyelesaianController::class, 'ppka']);
+            Route::post('/ppka-adjustment', [FinancingPenyelesaianController::class, 'savePpkaAdjustment']);
+            Route::get('/settlement', [FinancingPenyelesaianController::class, 'settlement']);
+            Route::get('/write-off', [FinancingPenyelesaianController::class, 'writeOff']);
+            Route::get('/yield', [FinancingPenyelesaianController::class, 'yield']);
+        });
+
+        // Modul Performance (G8)
+        Route::prefix('performance')->group(function () {
+            Route::get('/repayment-rate', [FinancingPerformanceController::class, 'repaymentRate']);
+            Route::get('/repayment-rate-new', [FinancingPerformanceController::class, 'repaymentRateNew']);
         });
     });
 

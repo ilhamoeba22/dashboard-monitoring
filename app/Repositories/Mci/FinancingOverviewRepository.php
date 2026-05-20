@@ -56,27 +56,28 @@ class FinancingOverviewRepository
      */
     public function queryTopNpf(?string $kdloc = null): array
     {
-        $where = "WHERE stsrec = 'A' AND stsacc <> 'W' AND colbarU IN ('3','4','5')";
-        $params = [];
-        
+        $this->mciService->getConnection();
+
+        $query = DB::connection($this->connection)
+            ->table('TOFLMB')
+            ->select([
+                'nokontrak',
+                'nama',
+                DB::raw('CAST(osmdlc AS DECIMAL(18,2)) as osmdlc'),
+                DB::raw('CAST(tgkmdl AS DECIMAL(18,2)) as tgkmdl'),
+                'colbarU'
+            ])
+            ->where('stsrec', 'A')
+            ->where('stsacc', '<>', 'W')
+            ->whereIn('colbarU', ['3', '4', '5']);
+
         if ($kdloc && $kdloc !== 'Semua Cabang') {
-            $where .= " AND kdloc = ?";
-            $params[] = $kdloc;
+            $query->where('kdloc', $kdloc);
         }
 
-        $result = $this->executeRaw("
-            SELECT TOP 5
-                nokontrak,
-                nama,
-                CAST(osmdlc AS DECIMAL(18,2)) as osmdlc,
-                CAST(tgkmdl AS DECIMAL(18,2)) as tgkmdl,
-                colbarU
-            FROM TOFLMB 
-            $where
-            ORDER BY osmdlc DESC
-        ", $params);
+        $result = $query->orderByDesc('osmdlc')->limit(5)->get();
 
-        return collect($result)->map(function ($row) {
+        return $result->map(function ($row) {
             return [
                 'nokontrak' => trim($row->nokontrak),
                 'nama' => $row->nama,
@@ -141,44 +142,48 @@ class FinancingOverviewRepository
      */
     private function queryOverall(?string $kdloc = null): array
     {
-        $where = "WHERE stsrec = 'A' AND stsacc <> 'W'";
-        $params = [];
+        $this->mciService->getConnection();
         
+        $query = DB::connection($this->connection)
+            ->table('TOFLMB')
+            ->select([
+                DB::raw('COUNT(*) as total_noa'),
+                DB::raw('SUM(CAST(osmdlc AS DECIMAL(18,2))) as total_osmdlc'),
+                DB::raw('SUM(CAST(osmgnc AS DECIMAL(18,2))) as total_osmgnc'),
+                DB::raw('SUM(CAST(mdlawal AS DECIMAL(18,2))) as total_mdlawal'),
+                DB::raw('AVG(CAST(colbarU AS FLOAT)) as avg_kolek'),
+                DB::raw('SUM(ISNULL(CAST(ppap AS DECIMAL(18,2)), 0)) as total_ppap')
+            ])
+            ->where('stsrec', 'A')
+            ->where('stsacc', '<>', 'W');
+
         if ($kdloc && $kdloc !== 'Semua Cabang') {
-            $where .= " AND kdloc = ?";
-            $params[] = $kdloc;
+            $query->where('kdloc', $kdloc);
         }
 
-        $result = $this->executeRaw("
-            SELECT 
-                COUNT(*) as total_noa,
-                SUM(CAST(osmdlc AS DECIMAL(18,2))) as total_osmdlc,
-                SUM(CAST(osmgnc AS DECIMAL(18,2))) as total_osmgnc,
-                SUM(CAST(mdlawal AS DECIMAL(18,2))) as total_mdlawal,
-                AVG(CAST(colbarU AS FLOAT)) as avg_kolek,
-                SUM(ISNULL(CAST(ppap AS DECIMAL(18,2)), 0)) as total_ppap
-            FROM TOFLMB 
-            $where
-        ", $params);
-
-        $row = $result[0] ?? null;
+        $row = $query->first();
+        
         $totalOsmdlc = (float) ($row->total_osmdlc ?? 0);
         $totalOsmgnc = (float) ($row->total_osmgnc ?? 0);
-        
-        // Total O/S HANYA dari osmdlc (Pokok)
         $totalOs = $totalOsmdlc;
 
-        // NPF calculation (Kol 3, 4, 5)
-        $npfWhere = $where . " AND colbarU IN ('3','4','5')";
-        $npfResult = $this->executeRaw("
-            SELECT 
-                COUNT(*) as npf_noa,
-                SUM(CAST(osmdlc AS DECIMAL(18,2))) as npf_osmdlc
-            FROM TOFLMB 
-            $npfWhere
-        ", $params);
+        // NPF calculation
+        $npfQuery = DB::connection($this->connection)
+            ->table('TOFLMB')
+            ->select([
+                DB::raw('COUNT(*) as npf_noa'),
+                DB::raw('SUM(CAST(osmdlc AS DECIMAL(18,2))) as npf_osmdlc')
+            ])
+            ->where('stsrec', 'A')
+            ->where('stsacc', '<>', 'W')
+            ->whereIn('colbarU', ['3', '4', '5']);
+
+        if ($kdloc && $kdloc !== 'Semua Cabang') {
+            $npfQuery->where('kdloc', $kdloc);
+        }
+
+        $npfRow = $npfQuery->first();
         
-        $npfRow = $npfResult[0] ?? null;
         $npfOsmdlc = (float) ($npfRow->npf_osmdlc ?? 0);
         $npfPersen = $totalOsmdlc > 0 ? round(($npfOsmdlc / $totalOsmdlc) * 100, 2) : 0;
 
@@ -201,26 +206,24 @@ class FinancingOverviewRepository
      */
     private function queryByKolektibilitas(?string $kdloc = null): array
     {
-        $where = "WHERE stsrec = 'A' AND stsacc <> 'W'";
-        $params = [];
-        
+        $this->mciService->getConnection();
+        $query = DB::connection($this->connection)
+            ->table('TOFLMB')
+            ->select([
+                'colbarU',
+                DB::raw('COUNT(*) as noa'),
+                DB::raw('SUM(CAST(osmdlc AS DECIMAL(18,2))) as osmdlc'),
+                DB::raw('SUM(CAST(osmgnc AS DECIMAL(18,2))) as osmgnc'),
+                DB::raw('AVG(CAST(colbarU AS FLOAT)) as avg_kolek')
+            ])
+            ->where('stsrec', 'A')
+            ->where('stsacc', '<>', 'W');
+
         if ($kdloc && $kdloc !== 'Semua Cabang') {
-            $where .= " AND kdloc = ?";
-            $params[] = $kdloc;
+            $query->where('kdloc', $kdloc);
         }
 
-        $result = $this->executeRaw("
-            SELECT 
-                colbarU,
-                COUNT(*) as noa,
-                SUM(CAST(osmdlc AS DECIMAL(18,2))) as osmdlc,
-                SUM(CAST(osmgnc AS DECIMAL(18,2))) as osmgnc,
-                AVG(CAST(colbarU AS FLOAT)) as avg_kolek
-            FROM TOFLMB 
-            $where
-            GROUP BY colbarU
-            ORDER BY colbarU
-        ", $params);
+        $result = $query->groupBy('colbarU')->orderBy('colbarU')->get();
 
         $kolLabels = [
             '1' => 'Lancar',
@@ -230,7 +233,7 @@ class FinancingOverviewRepository
             '5' => 'Macet',
         ];
 
-        return collect($result)->map(function ($row) use ($kolLabels) {
+        return $result->map(function ($row) use ($kolLabels) {
             $kol = (string) $row->colbarU;
             $osmdlc = (float) $row->osmdlc;
             $osmgnc = (float) $row->osmgnc;
@@ -252,29 +255,27 @@ class FinancingOverviewRepository
      */
     private function queryBySegmen(?string $kdloc = null): array
     {
-        $where = "WHERE f.stsrec = 'A' AND f.stsacc <> 'W'";
-        $params = [];
-        
+        $this->mciService->getConnection();
+        $query = DB::connection($this->connection)
+            ->table('TOFLMB as f')
+            ->leftJoin('SEGMEN as s', 'f.segmen', '=', 's.kdseg')
+            ->select([
+                DB::raw("ISNULL(s.kdseg, 'UNKNOWN') as kdseg"),
+                DB::raw("ISNULL(s.ket, 'Tidak Diketahui') as nmseg"),
+                DB::raw('COUNT(*) as noa'),
+                DB::raw('SUM(CAST(f.osmdlc AS DECIMAL(18,2))) as osmdlc'),
+                DB::raw("SUM(CASE WHEN f.colbarU IN ('3','4','5') THEN CAST(f.osmdlc AS DECIMAL(18,2)) ELSE 0 END) as npf_os")
+            ])
+            ->where('f.stsrec', 'A')
+            ->where('f.stsacc', '<>', 'W');
+
         if ($kdloc && $kdloc !== 'Semua Cabang') {
-            $where .= " AND f.kdloc = ?";
-            $params[] = $kdloc;
+            $query->where('f.kdloc', $kdloc);
         }
 
-        $result = $this->executeRaw("
-            SELECT 
-                ISNULL(s.kdseg, 'UNKNOWN') as kdseg,
-                ISNULL(s.ket, 'Tidak Diketahui') as nmseg,
-                COUNT(*) as noa,
-                SUM(CAST(f.osmdlc AS DECIMAL(18,2))) as osmdlc,
-                SUM(CASE WHEN f.colbarU IN ('3','4','5') THEN CAST(f.osmdlc AS DECIMAL(18,2)) ELSE 0 END) as npf_os
-            FROM TOFLMB f
-            LEFT JOIN SEGMEN s ON f.segmen = s.kdseg
-            $where
-            GROUP BY s.kdseg, s.ket
-            ORDER BY osmdlc DESC
-        ", $params);
+        $result = $query->groupBy('s.kdseg', 's.ket')->orderByDesc('osmdlc')->get();
 
-        return collect($result)->map(function ($row) {
+        return $result->map(function ($row) {
             $osmdlc = (float) $row->osmdlc;
             $npfOs = (float) $row->npf_os;
             return [
@@ -293,29 +294,27 @@ class FinancingOverviewRepository
      */
     private function queryByAo(?string $kdloc = null): array
     {
-        $where = "WHERE f.stsrec = 'A' AND f.stsacc <> 'W'";
-        $params = [];
-        
+        $this->mciService->getConnection();
+        $query = DB::connection($this->connection)
+            ->table('TOFLMB as f')
+            ->leftJoin('AO as a', 'f.kdaoh', '=', 'a.kdao')
+            ->select([
+                DB::raw("ISNULL(a.kdao, 'UNKNOWN') as kdao"),
+                DB::raw("ISNULL(a.nmao, 'Tidak Diketahui') as nmao"),
+                DB::raw('COUNT(*) as noa'),
+                DB::raw('SUM(CAST(f.osmdlc AS DECIMAL(18,2))) as osmdlc'),
+                DB::raw("SUM(CASE WHEN f.colbarU IN ('3','4','5') THEN CAST(f.osmdlc AS DECIMAL(18,2)) ELSE 0 END) as npf_os")
+            ])
+            ->where('f.stsrec', 'A')
+            ->where('f.stsacc', '<>', 'W');
+
         if ($kdloc && $kdloc !== 'Semua Cabang') {
-            $where .= " AND f.kdloc = ?";
-            $params[] = $kdloc;
+            $query->where('f.kdloc', $kdloc);
         }
 
-        $result = $this->executeRaw("
-            SELECT TOP 8
-                ISNULL(a.kdao, 'UNKNOWN') as kdao,
-                ISNULL(a.nmao, 'Tidak Diketahui') as nmao,
-                COUNT(*) as noa,
-                SUM(CAST(f.osmdlc AS DECIMAL(18,2))) as osmdlc,
-                SUM(CASE WHEN f.colbarU IN ('3','4','5') THEN CAST(f.osmdlc AS DECIMAL(18,2)) ELSE 0 END) as npf_os
-            FROM TOFLMB f
-            LEFT JOIN AO a ON f.kdaoh = a.kdao
-            $where
-            GROUP BY a.kdao, a.nmao
-            ORDER BY osmdlc DESC
-        ", $params);
+        $result = $query->groupBy('a.kdao', 'a.nmao')->orderByDesc('osmdlc')->limit(8)->get();
 
-        return collect($result)->map(function ($row) {
+        return $result->map(function ($row) {
             $osmdlc = (float) $row->osmdlc;
             $npfOs = (float) $row->npf_os;
             return [
@@ -334,29 +333,27 @@ class FinancingOverviewRepository
      */
     private function queryByProduk(?string $kdloc = null): array
     {
-        $where = "WHERE f.stsrec = 'A' AND f.stsacc <> 'W'";
-        $params = [];
-        
+        $this->mciService->getConnection();
+        $query = DB::connection($this->connection)
+            ->table('TOFLMB as f')
+            ->leftJoin('SETUPLOAN as s', 'f.kdprd', '=', 's.kdprd')
+            ->select([
+                DB::raw("ISNULL(f.kdprd, 'UNKNOWN') as kdprd"),
+                DB::raw("ISNULL(s.ket, 'Produk Tidak Dikenal') as nmproduk"),
+                DB::raw('COUNT(*) as noa'),
+                DB::raw('SUM(CAST(f.osmdlc AS DECIMAL(18,2))) as osmdlc'),
+                DB::raw("SUM(CASE WHEN f.colbarU IN ('3','4','5') THEN CAST(f.osmdlc AS DECIMAL(18,2)) ELSE 0 END) as npf_os")
+            ])
+            ->where('f.stsrec', 'A')
+            ->where('f.stsacc', '<>', 'W');
+
         if ($kdloc && $kdloc !== 'Semua Cabang') {
-            $where .= " AND f.kdloc = ?";
-            $params[] = $kdloc;
+            $query->where('f.kdloc', $kdloc);
         }
 
-        $result = $this->executeRaw("
-            SELECT TOP 8
-                ISNULL(f.kdprd, 'UNKNOWN') as kdprd,
-                ISNULL(s.ket, 'Produk Tidak Dikenal') as nmproduk,
-                COUNT(*) as noa,
-                SUM(CAST(f.osmdlc AS DECIMAL(18,2))) as osmdlc,
-                SUM(CASE WHEN f.stsrec = 'A' AND f.colbarU IN ('3','4','5') THEN CAST(f.osmdlc AS DECIMAL(18,2)) ELSE 0 END) as npf_os
-            FROM TOFLMB f
-            LEFT JOIN SETUPLOAN s ON f.kdprd = s.kdprd
-            $where
-            GROUP BY f.kdprd, s.ket
-            ORDER BY osmdlc DESC
-        ", $params);
+        $result = $query->groupBy('f.kdprd', 's.ket')->orderByDesc('osmdlc')->limit(8)->get();
 
-        return collect($result)->map(function ($row) {
+        return $result->map(function ($row) {
             $osmdlc = (float) $row->osmdlc;
             $npfOs = (float) $row->npf_os;
             return [

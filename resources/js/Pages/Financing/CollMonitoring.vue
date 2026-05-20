@@ -5,6 +5,7 @@ import DefaultLayout from '@/layouts/default.vue'
 import { useTunggakanStore } from '@/stores/tunggakanStore'
 import { storeToRefs } from 'pinia'
 import VueApexCharts from 'vue3-apexcharts'
+import '@/assets/css/financing-shared.css'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -153,89 +154,102 @@ watch(selectedCabang, () => store.fetchCollMonitoring())
 </script>
 
 <template>
-  <div class="pb-10">
+  <div class="fin-page px-4 pt-0">
     <Head title="Coll Monitoring EOM" />
 
-    <!-- 1. Header & Filter Bar -->
-    <div class="d-flex flex-column flex-md-row justify-space-between align-md-center mb-6 gap-4">
-      <div>
-        <h1 class="text-h4 font-weight-black mb-1">Coll Monitoring <span class="text-primary">EOM</span></h1>
-        <p class="text-subtitle-1 text-medium-emphasis">Intelligence Control Center: Proyeksi pergerakan kolektibilitas akhir bulan.</p>
-      </div>
-      
-      <div class="d-flex align-center gap-3 w-100 w-md-auto">
-        <v-select
-          v-model="selectedCabang"
-          :items="['Semua Cabang', ...cabangs.map(c => c.nama)]"
-          label="Operational Unit"
-          variant="outlined"
-          density="comfortable"
-          hide-details
-          rounded="lg"
-          style="min-width: 260px"
-          bg-color="white"
-          prepend-inner-icon="ri-bank-line"
-        ></v-select>
-        
-        <v-btn 
-          color="primary" 
-          variant="flat" 
-          height="48"
-          rounded="lg"
-          @click="store.fetchCollMonitoring" 
-          :loading="loadingCollMonitoring"
-          prepend-icon="ri-refresh-line"
-          class="px-6 font-weight-bold"
-        >
-          Refresh Analitik
-        </v-btn>
+    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+    <div class="fin-hero mb-6">
+      <div class="fin-hero__deco"></div>
+      <div class="fin-hero__inner">
+        <div class="d-flex flex-column flex-md-row justify-space-between align-start align-md-center gap-4">
+          <div class="d-flex align-center gap-4">
+            <div class="fin-hero__icon fin-icon-purple">
+              <v-icon icon="ri-radar-line" size="26" color="white" />
+            </div>
+            <div class="fin-hero__meta">
+              <h1 class="fin-hero__title">Coll Monitoring <span class="text-white">EOM</span></h1>
+              <p class="fin-hero__subtitle">Intelligence Control Center: Proyeksi pergerakan kolektibilitas akhir bulan.</p>
+              <div class="fin-hero__badges">
+                <span class="fin-badge fin-badge--warning">🎯 Proyeksi Akhir Bulan</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="fin-filter-bar">
+            <v-select
+              v-model="selectedCabang"
+              :items="['Semua Cabang', ...cabangs.map(c => c.nama)]"
+              label="Operational Unit"
+              variant="plain"
+              density="compact"
+              hide-details
+              style="width: 220px"
+              prepend-inner-icon="ri-bank-line"
+            ></v-select>
+            
+            <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2);" class="mx-1"></div>
+            
+            <v-btn 
+              variant="text" 
+              density="comfortable"
+              @click="store.fetchCollMonitoring" 
+              :loading="loadingCollMonitoring"
+              icon="ri-refresh-line"
+              color="white"
+            ></v-btn>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- 2. Intelligence Scorecards -->
-    <v-row class="mb-4">
-      <v-col cols="12" md="4">
-        <v-card elevation="0" class="rounded-xl border shadow-sm pa-5 h-100" style="border-bottom: 6px solid #1E40AF !important">
-          <div class="d-flex align-center justify-space-between mb-2">
-            <div class="text-overline font-weight-black text-medium-emphasis">Akun Dipantau</div>
-            <v-avatar color="primary-lighten-5" rounded="lg" size="40">
-              <v-icon icon="ri-radar-line" color="primary"></v-icon>
-            </v-avatar>
+    <div class="kpi-cards-grid mb-6">
+      <div class="kpi-card">
+        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #1e40af, #3b82f6)"></div>
+        <div class="kpi-card__inner">
+          <div class="kpi-card__header">
+            <span class="kpi-card__label">Akun Dipantau</span>
+            <div class="kpi-card__icon fin-icon-blue">
+              <v-icon icon="ri-radar-line" size="18" />
+            </div>
           </div>
-          <div class="text-h3 font-weight-black mb-1">{{ filteredData.length }}</div>
-          <div class="text-caption text-medium-emphasis font-weight-medium">Fasilitas aktif dalam kriteria filter saat ini</div>
-        </v-card>
-      </v-col>
+          <div class="kpi-card__value mt-2">{{ filteredData.length }}</div>
+          <div class="kpi-card__sub">Fasilitas aktif dalam kriteria filter saat ini</div>
+        </div>
+      </div>
 
-      <v-col cols="12" md="4">
-        <v-card elevation="0" class="rounded-xl border shadow-sm pa-5 h-100" style="border-bottom: 6px solid #EF4444 !important">
-          <div class="d-flex align-center justify-space-between mb-2">
-            <div class="text-overline font-weight-black text-medium-emphasis">O/S Proyeksi NPF (Kol ≥ 3)</div>
-            <v-avatar color="error-lighten-5" rounded="lg" size="40">
-              <v-icon icon="ri-alarm-warning-line" color="error"></v-icon>
-            </v-avatar>
+      <div class="kpi-card kpi-card--danger">
+        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #e11d48, #fb7185)"></div>
+        <div class="kpi-card__inner">
+          <div class="kpi-card__header">
+            <span class="kpi-card__label text-rose-600">O/S Proyeksi NPF (Kol ≥ 3)</span>
+            <div class="kpi-card__icon fin-icon-red">
+              <v-icon icon="ri-alarm-warning-line" size="18" />
+            </div>
           </div>
-          <div class="text-h3 font-weight-black text-error mb-1">
+          <div class="kpi-card__value mt-2 text-rose-600">
             {{ store.formatShortRp(filteredData.filter(i => parseInt(i.colbaru_final_eom) >= 3).reduce((a, b) => a + parseFloat(b.osmdlc || 0), 0)) }}
           </div>
-          <div class="text-caption text-error font-weight-bold">Estimasi potensi PPKA dari data terfilter</div>
-        </v-card>
-      </v-col>
+          <div class="kpi-card__sub text-rose-600 font-weight-bold">Estimasi potensi PPKA dari data terfilter</div>
+        </div>
+      </div>
 
-      <v-col cols="12" md="4">
-        <v-card elevation="0" class="rounded-xl border shadow-sm pa-5 h-100" style="border-bottom: 6px solid #F59E0B !important">
-          <div class="text-overline font-weight-black text-medium-emphasis mb-1">Distribusi Downgrade</div>
-          <div v-if="downgradeStats.total === 0" class="d-flex flex-column align-center justify-center py-4">
-            <v-icon icon="ri-checkbox-circle-fill" color="success" size="32" class="mb-1"></v-icon>
+      <div class="kpi-card">
+        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #d97706, #fbbf24)"></div>
+        <div class="kpi-card__inner">
+          <div class="kpi-card__header">
+            <span class="kpi-card__label">Distribusi Downgrade</span>
+          </div>
+          <div v-if="downgradeStats.total === 0" class="d-flex flex-column align-center justify-center py-2">
+            <v-icon icon="ri-checkbox-circle-fill" color="success" size="24" class="mb-1"></v-icon>
             <div class="text-caption text-success font-weight-bold text-uppercase">Data Sangat Aman</div>
-            <div class="text-caption text-disabled text-center leading-tight">Tidak terdeteksi indikasi penurunan kolektibilitas</div>
           </div>
-          <div v-else class="d-flex align-center h-100 mt-n2">
-            <VueApexCharts type="donut" width="100%" height="140" :options="downgradeStats.chartOptions" :series="downgradeStats.series" />
+          <div v-else class="d-flex align-center mt-2">
+            <VueApexCharts type="donut" width="100%" height="80" :options="downgradeStats.chartOptions" :series="downgradeStats.series" />
           </div>
-        </v-card>
-      </v-col>
-    </v-row>
+        </div>
+      </div>
+    </div>
 
     <!-- 2.5 Advanced Filter Bar -->
     <v-card elevation="0" class="mb-6 rounded-xl border bg-white overflow-hidden shadow-sm">
@@ -293,28 +307,31 @@ watch(selectedCabang, () => store.fetchCollMonitoring())
     </v-card>
 
     <!-- 3. Main Data Grid -->
-    <v-card elevation="0" class="rounded-xl border shadow-sm bg-white overflow-hidden">
-      <v-card-title class="bg-slate-50 pa-4 text-subtitle-1 font-weight-bold d-flex align-center">
-        <v-icon icon="ri-line-chart-line" class="mr-2 text-primary"></v-icon>
-        Proyeksi Kolektibilitas End of Month
-        <v-spacer></v-spacer>
-        <v-chip size="x-small" color="primary" variant="flat" class="font-weight-black">REALTIME SNAPSHOT</v-chip>
-      </v-card-title>
-      
-      <v-divider></v-divider>
+    <div class="content-card">
+      <div class="content-card__header">
+        <div>
+          <div class="content-card__title">Proyeksi Kolektibilitas End of Month</div>
+          <div class="content-card__subtitle">Rincian pergerakan fasilitas per akun</div>
+        </div>
+        <div class="d-flex align-center gap-2">
+          <v-chip size="x-small" color="primary" variant="flat" class="font-weight-black">REALTIME SNAPSHOT</v-chip>
+        </div>
+      </div>
 
-      <v-table hover class="enterprise-table">
-        <thead>
-          <tr class="bg-slate-50">
-            <th class="text-center font-weight-black text-caption" style="width: 60px">NO</th>
-            <th class="text-left font-weight-black text-caption">NASABAH & KONTRAK</th>
-            <th class="text-right font-weight-black text-caption">O/S POKOK</th>
-            <th class="text-center font-weight-black text-caption">EST. HARI TGK</th>
-            <th class="text-center font-weight-black text-caption">ROLL-RATE (TODAY ➔ EOM)</th>
-            <th class="text-left font-weight-black text-caption">ACTION INTELLIGENCE</th>
-            <th class="text-left font-weight-black text-caption">OFFICER</th>
-          </tr>
-        </thead>
+      <div class="content-card__body pa-0">
+        <div class="overflow-x-auto">
+          <table class="fin-table fin-vtable enterprise-table">
+            <thead>
+              <tr>
+                <th class="text-center font-weight-black text-caption" style="width: 60px">NO</th>
+                <th class="text-left font-weight-black text-caption">NASABAH & KONTRAK</th>
+                <th class="text-right font-weight-black text-caption">O/S POKOK</th>
+                <th class="text-center font-weight-black text-caption">EST. HARI TGK</th>
+                <th class="text-center font-weight-black text-caption">ROLL-RATE (TODAY ➔ EOM)</th>
+                <th class="text-left font-weight-black text-caption">ACTION INTELLIGENCE</th>
+                <th class="text-left font-weight-black text-caption">OFFICER</th>
+              </tr>
+            </thead>
 
         <tbody v-if="!loadingCollMonitoring">
           <tr v-for="(item, index) in paginatedCollMonitoring" :key="item.nokontrak">
@@ -371,11 +388,12 @@ watch(selectedCabang, () => store.fetchCollMonitoring())
             </td>
           </tr>
         </tbody>
-      </v-table>
+      </table>
+      </div>
 
       <!-- Loading State -->
-      <div v-if="loadingCollMonitoring" class="pa-6">
-        <v-skeleton-loader type="table-row-divider@6"></v-skeleton-loader>
+      <div v-if="loadingCollMonitoring" class="fin-loading">
+        <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
       </div>
 
       <div v-else-if="filteredData.length === 0" class="text-center pa-16">
@@ -401,7 +419,8 @@ watch(selectedCabang, () => store.fetchCollMonitoring())
           active-color="primary"
         ></v-pagination>
       </div>
-    </v-card>
+    </div>
+  </div>
   </div>
 </template>
 

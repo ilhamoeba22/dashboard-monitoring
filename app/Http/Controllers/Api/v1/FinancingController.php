@@ -212,8 +212,11 @@ class FinancingController extends Controller
         try {
             $groupBy = (string) $request->query('group_by', 'cabang');
             $cabang  = (string) $request->query('cabang', '');
+            $tahun   = (int) $request->query('tahun', date('Y'));
+            $bulan   = (int) $request->query('bulan', date('m'));
+            $segmen  = (string) $request->query('segmen', '');
 
-            $data = $this->repository->getQualityAnalytics($groupBy, $cabang);
+            $data = $this->repository->getQualityAnalytics($groupBy, $cabang, $tahun, $bulan, $segmen);
 
             return response()->json([
                 'success' => true,
@@ -224,6 +227,54 @@ class FinancingController extends Controller
                 'success' => false,
                 'message' => 'Gagal memuat Asset Quality Analytics',
                 'debug' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * GET /api/v1/financing/quality-diagnostic
+     * Diagnostic endpoint: cek data TOFLMBEOM langsung dari DB
+     */
+    public function qualityDiagnostic(Request $request): JsonResponse
+    {
+        try {
+            $tahun = (string) $request->query('tahun', date('Y'));
+            $conn  = 'dashboard_data';
+
+            // 1. Semua periode yang ada di TOFLMBEOM
+            $allPeriodes = \Illuminate\Support\Facades\DB::connection($conn)->select("
+                SELECT periode, COUNT(*) as total_rows, MIN(stsrec) as sample_stsrec
+                FROM TOFLMBEOM
+                GROUP BY periode
+                ORDER BY periode DESC
+            ");
+
+            // 2. Periode untuk tahun yang diminta
+            $forYear = \Illuminate\Support\Facades\DB::connection($conn)->select("
+                SELECT periode, stsrec, COUNT(*) as rows
+                FROM TOFLMBEOM
+                WHERE LEFT(periode, 4) = ?
+                GROUP BY periode, stsrec
+                ORDER BY periode ASC
+            ", [$tahun]);
+
+            // 3. Cek apakah kolom segmen ada
+            $colCheck = \Illuminate\Support\Facades\DB::connection($conn)->select("
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_NAME = 'TOFLMBEOM' AND COLUMN_NAME IN ('segmen','stsrec','stsacc','periode','osmdlc','colbaru','ppap')
+            ");
+
+            return response()->json([
+                'success'     => true,
+                'tahun_query' => $tahun,
+                'all_periodes' => array_slice($allPeriodes, 0, 20),
+                'for_year'    => $forYear,
+                'columns_exist' => $colCheck,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'debug'   => $e->getMessage(),
             ], 500);
         }
     }

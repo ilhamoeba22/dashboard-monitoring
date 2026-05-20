@@ -4,6 +4,7 @@ import { Head, Link } from '@inertiajs/vue3'
 import DefaultLayout from '@/layouts/default.vue'
 import VueApexCharts from 'vue3-apexcharts'
 import axios from 'axios'
+import '@/assets/css/financing-shared.css'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -111,109 +112,129 @@ const badgeColor = (kol) => {
 </script>
 
 <template>
-  <div class="financing-overview">
+  <div class="fin-page px-4 pt-0">
     <Head title="Financing Overview" />
 
-    <!-- HERO HEADER -->
-    <div class="d-flex flex-column flex-md-row justify-space-between align-center mb-6 gap-4">
-      <div>
-        <div class="d-flex align-center gap-3">
-          <v-avatar color="primary" variant="tonal" rounded="lg" size="48">
-            <v-icon icon="ri-dashboard-2-line" size="28" />
-          </v-avatar>
-          <h1 class="text-h4 font-weight-black text-slate-800">Executive Overview</h1>
+    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+    <div class="fin-hero mb-6">
+      <div class="fin-hero__deco"></div>
+      <div class="fin-hero__inner">
+        <div class="d-flex flex-column flex-md-row justify-space-between align-start align-md-center gap-4">
+          <div class="d-flex align-center gap-4">
+            <div class="fin-hero__icon fin-icon-blue">
+              <v-icon icon="ri-dashboard-2-line" size="26" color="white" />
+            </div>
+            <div class="fin-hero__meta">
+              <h1 class="fin-hero__title">Executive Overview</h1>
+              <p class="fin-hero__subtitle">Ringkasan performa dan kesehatan portofolio pembiayaan secara realtime.</p>
+              <div class="fin-hero__badges">
+                <span class="fin-badge fin-badge--primary">🏢 Home</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="fin-filter-bar d-flex align-center gap-3">
+            <v-select
+              v-model="selectedCabang"
+              :items="cabangs"
+              item-title="nama"
+              item-value="kdloc"
+              prepend-inner-icon="ri-store-2-line"
+              variant="solo"
+              density="compact"
+              flat hide-details
+              rounded="lg"
+              bg-color="white"
+              style="min-width: 250px;"
+              @update:model-value="fetchOverview"
+            ></v-select>
+          </div>
         </div>
-        <p class="text-subtitle-2 text-medium-emphasis mb-0 mt-1 ms-14">Ringkasan performa dan kesehatan portofolio pembiayaan secara realtime.</p>
-      </div>
-
-      <div class="d-flex align-center bg-white pa-2 rounded-xl border shadow-sm" style="min-width: 250px;">
-        <v-select
-          v-model="selectedCabang"
-          :items="cabangs"
-          item-title="nama"
-          item-value="kdloc"
-          prepend-inner-icon="ri-store-2-line"
-          variant="solo"
-          density="compact"
-          flat hide-details
-          rounded="lg"
-          @update:model-value="fetchOverview"
-        ></v-select>
       </div>
     </div>
 
     <!-- QUICK ACTIONS -->
-    <div class="mb-6">
-      <v-row>
-        <v-col cols="12" sm="6" md="3" v-for="(link, i) in quickLinks" :key="i">
-          <Link :href="link.route" style="text-decoration: none;">
-            <v-card hover class="h-100 rounded-xl border transition-swing">
-              <v-card-text class="d-flex align-start gap-3">
-                <v-avatar :color="link.color + '-lighten-4'" rounded="lg">
-                  <v-icon :color="link.color" :icon="link.icon"></v-icon>
-                </v-avatar>
-                <div>
-                  <div class="font-weight-bold text-slate-800">{{ link.title }}</div>
-                  <div class="text-caption text-medium-emphasis mt-1 lh-sm">{{ link.desc }}</div>
-                </div>
-              </v-card-text>
-            </v-card>
-          </Link>
-        </v-col>
-      </v-row>
+    <div class="kpi-cards-grid mb-6">
+      <Link v-for="(link, i) in quickLinks" :key="i" :href="link.route" style="text-decoration: none;">
+        <div class="kpi-card hover:shadow-md transition-swing">
+          <div class="kpi-card__accent" :style="`background: var(--fin-color-${link.color}); opacity: 0.8;`"></div>
+          <div class="kpi-card__inner d-flex align-start gap-3 pa-4">
+            <div :class="`fin-hero__icon fin-icon-${link.color === 'error' ? 'red' : link.color === 'success' ? 'green' : link.color === 'warning' ? 'amber' : 'blue'}`">
+              <v-icon :icon="link.icon" size="24" />
+            </div>
+            <div>
+              <div class="font-weight-bold text-slate-800">{{ link.title }}</div>
+              <div class="text-caption text-medium-emphasis mt-1 lh-sm">{{ link.desc }}</div>
+            </div>
+          </div>
+        </div>
+      </Link>
     </div>
 
     <v-divider class="mb-6"></v-divider>
 
     <!-- KEY PERFORMANCE INDICATORS -->
-    <v-row class="mb-6">
-      <v-col cols="12" md="3">
-        <v-card class="rounded-xl border shadow-sm bg-gradient-primary text-white h-100">
-          <v-card-text>
-            <div class="text-overline" style="opacity: 0.8">TOTAL PORTOFOLIO</div>
-            <div class="text-h4 font-weight-black mb-1">{{ formatRp(overviewData.summary.total_os) }}</div>
-            <div class="d-flex align-center gap-2 mt-4">
-              <v-icon icon="ri-group-line" size="small"></v-icon>
-              <span class="text-caption">{{ formatNum(overviewData.summary.total_noa) }} Rekening Aktif</span>
+    <div class="kpi-cards-grid mb-6">
+      <div class="kpi-card">
+        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #1e3a8a, #3b82f6)"></div>
+        <div class="kpi-card__inner">
+          <div class="kpi-card__header">
+            <span class="kpi-card__label">TOTAL PORTOFOLIO</span>
+            <div class="kpi-card__icon fin-icon-blue">
+              <v-icon icon="ri-wallet-3-line" size="18" />
             </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
+          </div>
+          <div class="kpi-card__value mt-2">{{ formatRp(overviewData.summary.total_os) }}</div>
+          <div class="kpi-card__sub text-blue-600 font-weight-bold d-flex align-center gap-1 mt-2">
+            <v-icon icon="ri-group-line" size="14"></v-icon>
+            {{ formatNum(overviewData.summary.total_noa) }} Rekening Aktif
+          </div>
+        </div>
+      </div>
 
-      <v-col cols="12" md="3">
-        <v-card class="rounded-xl border shadow-sm h-100">
-          <v-card-text>
-            <div class="text-overline text-medium-emphasis">TOTAL TUNGGAKAN</div>
-            <div class="text-h4 font-weight-black mb-1 text-warning-darken-2">{{ formatRp(overviewData.summary.total_tunggakan || 0) }}</div>
-            <div class="text-caption text-medium-emphasis mt-4">Tunggakan pokok berjalan</div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" md="3">
-        <v-card class="rounded-xl border shadow-sm h-100">
-          <v-card-text>
-            <div class="text-overline text-medium-emphasis">EXPOSURE NPF</div>
-            <div class="text-h4 font-weight-black mb-1 text-error">{{ formatRp(overviewData.summary.npf_os) }}</div>
-            <div class="d-flex align-center gap-2 mt-4">
-              <v-icon icon="ri-error-warning-line" size="small" color="error"></v-icon>
-              <span class="text-caption font-weight-medium text-error">{{ formatNum(overviewData.summary.npf_noa) }} Rekening Macet</span>
+      <div class="kpi-card kpi-card--warning">
+        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #d97706, #fbbf24)"></div>
+        <div class="kpi-card__inner">
+          <div class="kpi-card__header">
+            <span class="kpi-card__label text-amber-600">TOTAL TUNGGAKAN</span>
+            <div class="kpi-card__icon fin-icon-amber">
+              <v-icon icon="ri-error-warning-line" size="18" />
             </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
+          </div>
+          <div class="kpi-card__value mt-2">{{ formatRp(overviewData.summary.total_tunggakan || 0) }}</div>
+          <div class="kpi-card__sub text-amber-600 font-weight-bold mt-2">Tunggakan pokok berjalan</div>
+        </div>
+      </div>
 
-      <v-col cols="12" md="3">
-        <v-card class="rounded-xl border shadow-sm h-100" :style="overviewData.summary.npf_ratio > 5 ? 'border-left: 4px solid #ef4444 !important' : 'border-left: 4px solid #22c55e !important'">
-          <v-card-text class="d-flex flex-column h-100 justify-center align-center text-center">
-            <div class="text-overline text-medium-emphasis mb-2">NPF RATIO</div>
-            <div class="text-h2 font-weight-black" :class="overviewData.summary.npf_ratio > 5 ? 'text-error' : 'text-success'">
-              {{ Number(overviewData.summary.npf_ratio || 0).toFixed(2) }}%
+      <div class="kpi-card kpi-card--danger">
+        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #e11d48, #fb7185)"></div>
+        <div class="kpi-card__inner">
+          <div class="kpi-card__header">
+            <span class="kpi-card__label text-rose-600">EXPOSURE NPF</span>
+            <div class="kpi-card__icon fin-icon-red">
+              <v-icon icon="ri-alarm-warning-fill" size="18" />
             </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+          </div>
+          <div class="kpi-card__value mt-2">{{ formatRp(overviewData.summary.npf_os) }}</div>
+          <div class="kpi-card__sub text-rose-600 font-weight-bold d-flex align-center gap-1 mt-2">
+            <v-icon icon="ri-close-circle-line" size="14"></v-icon>
+            {{ formatNum(overviewData.summary.npf_noa) }} Rekening Macet
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-card" :class="overviewData.summary.npf_ratio > 5 ? 'kpi-card--danger' : 'kpi-card--success'">
+        <div class="kpi-card__accent" :style="overviewData.summary.npf_ratio > 5 ? 'background: linear-gradient(90deg, #e11d48, #fb7185)' : 'background: linear-gradient(90deg, #10b981, #34d399)'"></div>
+        <div class="kpi-card__inner d-flex flex-column justify-center align-center h-100">
+          <div class="kpi-card__header mb-2 justify-center w-100">
+            <span class="kpi-card__label text-center" :class="overviewData.summary.npf_ratio > 5 ? 'text-rose-600' : 'text-emerald-600'">NPF RATIO</span>
+          </div>
+          <div class="text-h2 font-weight-black" :class="overviewData.summary.npf_ratio > 5 ? 'text-rose-600' : 'text-emerald-600'">
+            {{ Number(overviewData.summary.npf_ratio || 0).toFixed(2) }}%
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- CHARTS & TABLES -->
     <v-row>
@@ -244,49 +265,46 @@ const badgeColor = (kol) => {
     </v-row>
 
     <!-- TOP RISKS ALERT -->
-    <v-row class="mt-4">
-      <v-col cols="12">
-        <v-card class="rounded-xl border shadow-sm overflow-hidden">
-          <v-card-title class="bg-error-lighten-5 py-3 px-4 d-flex align-center gap-2">
-            <v-icon icon="ri-alarm-warning-fill" color="error"></v-icon>
-            <span class="text-subtitle-1 font-weight-bold text-error">Top High-Risk Alerts (NPF)</span>
-          </v-card-title>
-          <v-divider></v-divider>
-          
-          <v-table density="comfortable" hover>
-            <thead>
-              <tr>
-                <th class="text-caption font-weight-bold">NASABAH</th>
-                <th class="text-right text-caption font-weight-bold">O/S POKOK</th>
-                <th class="text-right text-caption font-weight-bold">TUNGGAKAN</th>
-                <th class="text-center text-caption font-weight-bold">KOL</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="isLoading">
-                <td colspan="4" class="text-center py-4"><v-progress-circular indeterminate size="24"></v-progress-circular></td>
-              </tr>
-              <tr v-else-if="overviewData.top_npf.length === 0">
-                <td colspan="4" class="text-center py-4 text-medium-emphasis">Tidak ada peringatan NPF tinggi</td>
-              </tr>
-              <tr v-for="item in overviewData.top_npf" :key="item.nokontrak" v-else>
-                <td>
-                  <div class="font-weight-bold text-body-2">{{ item.nama }}</div>
-                  <div class="text-caption text-medium-emphasis font-mono">{{ item.nokontrak }}</div>
-                </td>
-                <td class="text-right font-weight-medium">{{ formatRp(item.osmdlc) }}</td>
-                <td class="text-right text-error font-weight-bold">{{ formatRp(item.tgkmdl) }}</td>
-                <td class="text-center">
-                  <v-chip size="x-small" :color="badgeColor(item.colbaru)" variant="flat" class="font-weight-bold">
-                    {{ item.colbaru }}
-                  </v-chip>
-                </td>
-              </tr>
-            </tbody>
-          </v-table>
-        </v-card>
-      </v-col>
-    </v-row>
+    <div class="content-card mt-4">
+      <div class="pa-4 border-b border-slate-100 d-flex align-center gap-2 bg-error-lighten-5">
+        <v-icon icon="ri-alarm-warning-fill" color="error"></v-icon>
+        <span class="text-subtitle-1 font-weight-bold text-error">Top High-Risk Alerts (NPF)</span>
+      </div>
+      
+      <div class="content-card__body pa-0">
+        <v-table density="comfortable" hover class="fin-table fin-vtable">
+          <thead>
+            <tr>
+              <th class="text-caption font-weight-bold">NASABAH</th>
+              <th class="text-right text-caption font-weight-bold">O/S POKOK</th>
+              <th class="text-right text-caption font-weight-bold">TUNGGAKAN</th>
+              <th class="text-center text-caption font-weight-bold">KOL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="isLoading">
+              <td colspan="4" class="text-center py-4"><v-progress-circular indeterminate size="24"></v-progress-circular></td>
+            </tr>
+            <tr v-else-if="overviewData.top_npf.length === 0">
+              <td colspan="4" class="text-center py-4 text-medium-emphasis">Tidak ada peringatan NPF tinggi</td>
+            </tr>
+            <tr v-for="item in overviewData.top_npf" :key="item.nokontrak" v-else>
+              <td>
+                <div class="font-weight-bold text-body-2">{{ item.nama }}</div>
+                <div class="text-caption text-medium-emphasis font-mono">{{ item.nokontrak }}</div>
+              </td>
+              <td class="text-right font-weight-medium">{{ formatRp(item.osmdlc) }}</td>
+              <td class="text-right text-error font-weight-bold">{{ formatRp(item.tgkmdl) }}</td>
+              <td class="text-center">
+                <v-chip size="x-small" :color="badgeColor(item.colbaru)" variant="flat" class="font-weight-bold">
+                  {{ item.colbaru }}
+                </v-chip>
+              </td>
+            </tr>
+          </tbody>
+        </v-table>
+      </div>
+    </div>
 
   </div>
 </template>

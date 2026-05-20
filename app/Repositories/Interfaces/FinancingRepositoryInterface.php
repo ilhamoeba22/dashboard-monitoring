@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repositories\Interfaces;
 
+use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Support\Collection;
 
@@ -15,7 +16,7 @@ interface FinancingRepositoryInterface
      *
      * @param  array<string, mixed>  $filters
      */
-    public function getNominative(array $filters = [], int $perPage = 50): Paginator;
+    public function getNominative(array $filters = [], int $perPage = 50): Paginator|CursorPaginator;
 
     /**
      * Dapatkan daftar nama AO yang unik.
@@ -60,12 +61,12 @@ interface FinancingRepositoryInterface
      * @param  string  $cabang   Filter kode cabang (opsional)
      * @return array<string, mixed>
      */
-    public function getQualityAnalytics(string $groupBy = 'cabang', string $cabang = ''): array;
+    public function getQualityAnalytics(string $groupBy = 'cabang', string $cabang = '', int $tahun = 0, int $bulan = 0, string $segmen = ''): array;
 
     /**
      * Dapatkan daftar pembiayaan yang sudah atau akan jatuh tempo.
      *
      * @param  array<string, mixed>  $filters
      */
-    public function getJatuhTempo(array $filters = [], int $perPage = 50): Paginator;
+    public function getJatuhTempo(array $filters = [], int $perPage = 50): Paginator|CursorPaginator;
 }

@@ -189,6 +189,9 @@ class TargetManagementService
             ];
         }
 
+        // Calculate TRUE Annual Target for Scorecard 1
+        $trueAnnualTargetTotal = (float) $annuals->sum('total_nominal');
+
         $isWeeklyMode = $drilldownMonth !== null;
         $realizations = collect();
         $mciService = new \App\Services\Mci\MciConnectionService();
@@ -280,7 +283,6 @@ class TargetManagementService
         $aoNames = collect(DB::connection('dashboard_data')->table('AO')->get())->keyBy('kdao');
 
         // 3. Initialize Variables
-        $isWeeklyMode = $drilldownMonth !== null;
         $numPeriods = $isWeeklyMode ? 5 : 12;
         $periodNames = $isWeeklyMode 
             ? ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'] 
@@ -289,7 +291,6 @@ class TargetManagementService
         $chartTarget = array_fill(1, $numPeriods, 0.0);
         $chartRealisasi = array_fill(1, $numPeriods, 0.0);
         
-        $totalTarget = 0.0;
         $totalRealisasi = 0.0;
         
         $currentYear = (int) date('Y');
@@ -330,7 +331,6 @@ class TargetManagementService
             $aoRealMonths = array_fill(1, $numPeriods, 0.0);
 
             // Mapping Target
-            $aoTotalTarget = 0.0;
             $aoTargetYtd = 0.0;
             
             foreach ($annual->monthlyTargets as $mt) {
@@ -343,7 +343,6 @@ class TargetManagementService
                         for ($w = 1; $w <= 5; $w++) {
                             $aoTargetMonths[$w] += $weeklyVal;
                             $chartTarget[$w] += $weeklyVal;
-                            $aoTotalTarget += $weeklyVal;
                             
                             if ($w <= $currentPeriod) {
                                 $aoTargetYtd += $weeklyVal;
@@ -353,7 +352,6 @@ class TargetManagementService
                 } else {
                     $aoTargetMonths[$month] += $val;
                     $chartTarget[$month] += $val;
-                    $aoTotalTarget += $val;
                     
                     if ($month <= $currentPeriod) {
                         $aoTargetYtd += $val;
@@ -375,8 +373,7 @@ class TargetManagementService
                 }
             }
 
-            // Accumulate Globals
-            $totalTarget += $aoTotalTarget;
+            // Accumulate Global Realization
             $totalRealisasi += $aoTotalRealisasi;
 
             // Calculate Metrics
@@ -408,7 +405,7 @@ class TargetManagementService
             $leaderboard[] = [
                 'kdao'       => $kdao,
                 'name'       => $name,
-                'target_annual' => $aoTotalTarget,
+                'target_annual' => (float) $annual->total_nominal,
                 'target_ytd'   => $aoTargetYtd,
                 'realisasi'    => $aoTotalRealisasi,
                 'pct'          => $pct,
@@ -453,7 +450,7 @@ class TargetManagementService
             'has_data' => true,
             'year'     => $year,
             'scorecards' => [
-                'total_target_annual' => round($totalTarget / 1e9, 3),
+                'total_target_annual' => round($trueAnnualTargetTotal / 1e9, 3),
                 'total_realisasi'     => round($totalRealisasi / 1e9, 3),
                 'total_target_ytd'    => round($targetYtdTotal / 1e9, 3),
                 'pacing_pct'          => $pacingPct,

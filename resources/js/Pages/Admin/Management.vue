@@ -78,15 +78,65 @@ const fetchHistory = async () => {
   }
 }
 
+// --- Configuration State ---
+const configLoading = ref(false)
+const savingConfig = ref(false)
+const appSettings = ref({
+  ppka_manual_enabled: false,
+  ppka_manual_roles: []
+})
+
+const rolesOptions = ['Direktur', 'Manajer Risiko', 'Admin', 'Supervisor']
+
+const fetchSettings = async () => {
+  configLoading.value = true
+  try {
+    const response = await axios.get('/api/v1/admin/settings')
+    if (response.data.success && response.data.data) {
+      if (response.data.data.ppka_manual_enabled !== undefined) {
+        appSettings.value.ppka_manual_enabled = response.data.data.ppka_manual_enabled === 'true' || response.data.data.ppka_manual_enabled === true
+      }
+      if (response.data.data.ppka_manual_roles) {
+        appSettings.value.ppka_manual_roles = typeof response.data.data.ppka_manual_roles === 'string' ? JSON.parse(response.data.data.ppka_manual_roles) : response.data.data.ppka_manual_roles
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch settings:', error)
+  } finally {
+    configLoading.value = false
+  }
+}
+
+const saveSettings = async () => {
+  savingConfig.value = true
+  try {
+    const payload = {
+      settings: {
+        ppka_manual_enabled: appSettings.value.ppka_manual_enabled,
+        ppka_manual_roles: JSON.stringify(appSettings.value.ppka_manual_roles)
+      }
+    }
+    const response = await axios.post('/api/v1/admin/settings', payload)
+    if (response.data.success) {
+      showNotify('Pengaturan berhasil disimpan', 'success')
+    }
+  } catch (error) {
+    showNotify('Gagal menyimpan pengaturan', 'error')
+  } finally {
+    savingConfig.value = false
+  }
+}
+
 onMounted(() => {
   fetchHistory()
+  fetchSettings()
 })
 
 // --- Tabs Configuration ---
 const tabs = [
   { value: 'target-rbb', title: 'Target RBB', icon: 'ri-focus-2-line', color: 'primary' },
+  { value: 'security-access', title: 'Keamanan & Hak Akses', icon: 'ri-shield-keyhole-line', color: 'error' },
   { value: 'placeholder-1', title: 'Master Data', icon: 'ri-database-2-line', color: 'info', disabled: true },
-  { value: 'placeholder-2', title: 'Konfigurasi', icon: 'ri-settings-4-line', color: 'warning', disabled: true },
 ]
 </script>
 
@@ -305,7 +355,79 @@ const tabs = [
           </div>
         </v-tabs-window-item>
 
-        <!-- ========== TAB 2: MASTER DATA (Placeholder) ========== -->
+        <!-- ========== TAB 2: SECURITY & ACCESS ========== -->
+        <v-tabs-window-item value="security-access">
+          <div class="pa-6">
+            <v-row>
+              <v-col cols="12" md="8">
+                <v-card variant="outlined" rounded="xl" class="border-slate-200">
+                  <v-card-text class="pa-6">
+                    <div class="d-flex align-center gap-3 mb-6">
+                      <div class="section-icon" style="background: rgba(var(--v-theme-error), 0.1);">
+                        <v-icon icon="ri-shield-keyhole-line" size="24" color="error" />
+                      </div>
+                      <div>
+                        <div class="text-h6 font-weight-black text-slate-800" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                          Konfigurasi Hak Akses Sistem
+                        </div>
+                        <div class="text-caption text-slate-500 font-weight-medium">
+                          Kelola izin dan keamanan fitur krusial untuk mencegah penyalahgunaan.
+                        </div>
+                      </div>
+                    </div>
+
+                    <v-divider class="mb-6"></v-divider>
+
+                    <div class="d-flex align-start gap-4 mb-6">
+                      <v-switch
+                        v-model="appSettings.ppka_manual_enabled"
+                        color="success"
+                        hide-details
+                        inset
+                      ></v-switch>
+                      <div>
+                        <div class="text-body-1 font-weight-bold text-slate-800">Izinkan Penyesuaian PPKA Manual</div>
+                        <div class="text-caption text-slate-500 mb-3">
+                          Jika diaktifkan, pengguna dengan role yang ditentukan dapat mengubah nilai pencadangan (PPKA/CKPN) secara manual untuk menimpa kalkulasi otomatis dari Core Banking.
+                        </div>
+                        <v-select
+                          v-if="appSettings.ppka_manual_enabled"
+                          v-model="appSettings.ppka_manual_roles"
+                          :items="rolesOptions"
+                          label="Pilih Role yang Diizinkan"
+                          variant="outlined"
+                          density="comfortable"
+                          multiple
+                          chips
+                          closable-chips
+                          rounded="lg"
+                          bg-color="slate-50"
+                          class="font-weight-bold"
+                          hide-details
+                        ></v-select>
+                      </div>
+                    </div>
+                  </v-card-text>
+                  <v-card-actions class="pa-6 bg-slate-50 border-t border-slate-100">
+                    <v-spacer></v-spacer>
+                    <v-btn
+                      color="primary"
+                      variant="flat"
+                      rounded="lg"
+                      class="px-6 font-weight-bold"
+                      :loading="savingConfig"
+                      @click="saveSettings"
+                    >
+                      Simpan Pengaturan
+                    </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-col>
+            </v-row>
+          </div>
+        </v-tabs-window-item>
+
+        <!-- ========== TAB 3: MASTER DATA (Placeholder) ========== -->
         <v-tabs-window-item value="placeholder-1">
           <div class="pa-6 text-center py-16">
             <v-icon icon="ri-database-2-line" size="64" color="grey-lighten-1" class="mb-4" />

@@ -3,6 +3,7 @@ import { ref, watch, onMounted, computed } from 'vue'
 import { Head, usePage } from '@inertiajs/vue3'
 import DefaultLayout from '@/layouts/default.vue'
 import GrowthMixedChart from '@/components/Financing/GrowthMixedChart.vue'
+import '@/assets/css/financing-shared.css'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -100,47 +101,48 @@ onMounted(fetchGrowthData)
 </script>
 
 <template>
-  <div class="perkembangan-page">
+  <div class="fin-page px-4 pt-0">
     <Head title="Perkembangan & Pertumbuhan" />
 
-    <!-- Enterprise Header -->
-    <div class="mb-6">
-      <div class="d-flex flex-column flex-md-row justify-space-between align-start align-md-center gap-4 mb-4">
-        <div class="d-flex align-center gap-4">
-          <div class="header-icon shadow-sm" style="width: 52px; height: 52px; border-radius: 14px; background: white; border: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: center;">
-            <v-icon icon="ri-line-chart-fill" color="primary" size="26" />
+    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+    <div class="fin-hero mb-6">
+      <div class="fin-hero__deco"></div>
+      <div class="fin-hero__inner">
+        <div class="d-flex flex-column flex-md-row justify-space-between align-start align-md-center gap-4">
+          <div class="d-flex align-center gap-4">
+            <div class="fin-hero__icon fin-icon-blue">
+              <v-icon icon="ri-line-chart-fill" size="26" color="white" />
+            </div>
+            <div class="fin-hero__meta">
+              <h1 class="fin-hero__title">Perkembangan Pembiayaan</h1>
+              <p class="fin-hero__subtitle">Analisis Pertumbuhan Portofolio | Periode Aktif: <span class="font-weight-bold text-white">{{ activePeriodLabel }}</span></p>
+            </div>
           </div>
-          <div>
-            <h1 class="text-h4 font-weight-black mb-0 text-slate-800" style="font-family: 'Plus Jakarta Sans', sans-serif;">Perkembangan Pembiayaan</h1>
-            <p class="text-body-2 text-medium-emphasis mb-0 font-weight-medium">
-              Analisis Pertumbuhan Portofolio | Periode Aktif: <span class="text-primary font-weight-bold">{{ activePeriodLabel }}</span>
-            </p>
+
+          <!-- Segmented Navigation (Enterprise Pills) -->
+          <div class="pa-1 rounded-pill d-inline-flex" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); min-width: 600px; border: 1px solid rgba(255,255,255,0.1);">
+            <v-tabs
+              v-model="activeTab"
+              color="primary"
+              density="compact"
+              hide-slider
+              grow
+              :show-arrows="false"
+              selected-class="bg-white elevation-2 text-primary font-weight-black rounded-pill"
+              class="dimension-tabs w-100"
+            >
+              <v-tab
+                v-for="opt in tabOptions"
+                :key="opt.value"
+                :value="opt.value"
+                class="text-none font-weight-bold text-white rounded-pill transition-all px-4"
+              >
+                <v-icon :icon="opt.icon" start size="16" />
+                {{ opt.title }}
+              </v-tab>
+            </v-tabs>
           </div>
         </div>
-
-        <!-- Segmented Navigation (Enterprise Pills) -->
-        <v-card elevation="0" class="bg-slate-100 pa-1 rounded-pill border-0 shadow-none d-inline-flex" style="min-width: 700px;">
-          <v-tabs
-            v-model="activeTab"
-            color="primary"
-            density="compact"
-            hide-slider
-            grow
-            :show-arrows="false"
-            selected-class="bg-white elevation-1 text-primary font-weight-black rounded-pill"
-            class="dimension-tabs w-100"
-          >
-            <v-tab
-              v-for="opt in tabOptions"
-              :key="opt.value"
-              :value="opt.value"
-              class="text-none font-weight-medium text-slate-600 rounded-pill transition-all px-6"
-            >
-              <v-icon :icon="opt.icon" start size="18" />
-              {{ opt.title }}
-            </v-tab>
-          </v-tabs>
-        </v-card>
       </div>
     </div>
 
@@ -175,7 +177,7 @@ onMounted(fetchGrowthData)
             :items="growthData"
             :loading="loading"
             density="compact"
-            class="growth-table"
+            class="custom-table fin-vtable growth-table border rounded-lg"
             hover
           >
             <!-- Category Cell -->

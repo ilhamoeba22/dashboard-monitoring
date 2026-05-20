@@ -4,6 +4,7 @@ import { Head } from '@inertiajs/vue3'
 import DefaultLayout from '@/layouts/default.vue'
 import axios from 'axios'
 import VueApexCharts from 'vue3-apexcharts'
+import '@/assets/css/financing-shared.css'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -184,52 +185,56 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
 </script>
 
 <template>
-  <div class="target-page pb-10">
+  <div class="fin-page px-4 pt-0">
     <Head title="Monitoring Target vs Realisasi (RBB)" />
 
-    <!-- 1. ZONA HEADER & GLOBAL FILTER -->
-    <div class="d-flex flex-column flex-md-row justify-space-between align-start align-md-center mb-6">
-      <div class="d-flex align-center gap-4">
-        <div class="bg-primary-lighten-5 rounded-lg pa-3 d-flex align-center justify-center" style="width: 52px; height: 52px;">
-          <v-icon icon="ri-focus-3-line" size="28" color="primary" />
-        </div>
-        <div>
-          <h1 class="text-h5 font-weight-black text-slate-800 mb-1" style="letter-spacing: -0.5px;">Monitoring Target vs Realisasi (RBB)</h1>
-          <p class="text-body-2 text-slate-500 mb-0 d-flex align-center gap-2">
-            Analisis pergerakan pembiayaan terhadap Rencana Bisnis Bank.
-            <span class="d-inline-flex align-center gap-1 bg-emerald-50 text-emerald-600 px-2 py-1 rounded-xl text-caption font-weight-bold">
-              <span class="pulse-dot"></span> Real-time Sync
-            </span>
-          </p>
-        </div>
-      </div>
+    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+    <div class="fin-hero mb-6">
+      <div class="fin-hero__deco"></div>
+      <div class="fin-hero__inner">
+        <div class="d-flex flex-column flex-md-row justify-space-between align-start align-md-center gap-4">
+          <div class="d-flex align-center gap-4">
+            <div class="fin-hero__icon fin-icon-blue">
+              <v-icon icon="ri-focus-3-line" size="26" color="white" />
+            </div>
+            <div class="fin-hero__meta">
+              <h1 class="fin-hero__title">Monitoring Target vs Realisasi (RBB)</h1>
+              <p class="fin-hero__subtitle">
+                Analisis pergerakan pembiayaan terhadap Rencana Bisnis Bank.
+              </p>
+              <div class="fin-hero__badges">
+                <span class="fin-badge fin-badge--success">
+                  <span class="pulse-dot mr-1"></span> Real-time Sync
+                </span>
+              </div>
+            </div>
+          </div>
 
-      <div class="mt-4 mt-md-0 d-flex gap-3">
-        <v-select
-          v-model="selectedMonth"
-          :items="monthOptions"
-          item-title="title"
-          item-value="value"
-          variant="outlined"
-          density="comfortable"
-          hide-details
-          rounded="lg"
-          prepend-inner-icon="ri-filter-3-line"
-          class="bg-white font-weight-bold"
-          style="width: 160px;"
-          placeholder="Pilih Bulan"
-        />
-        <v-select
-          v-model="selectedYear"
-          :items="[2024, 2025, 2026, 2027]"
-          variant="outlined"
-          density="comfortable"
-          hide-details
-          rounded="lg"
-          prepend-inner-icon="ri-calendar-2-line"
-          class="bg-white font-weight-bold"
-          style="width: 140px;"
-        />
+          <div class="fin-filter-bar">
+            <v-select
+              v-model="selectedMonth"
+              :items="monthOptions"
+              item-title="title"
+              item-value="value"
+              variant="plain"
+              density="compact"
+              hide-details
+              prepend-inner-icon="ri-filter-3-line"
+              style="width: 140px;"
+              placeholder="Pilih Bulan"
+            />
+            <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2);" class="mx-1"></div>
+            <v-select
+              v-model="selectedYear"
+              :items="[2024, 2025, 2026, 2027]"
+              variant="plain"
+              density="compact"
+              hide-details
+              prepend-inner-icon="ri-calendar-2-line"
+              style="width: 100px;"
+            />
+          </div>
+        </div>
       </div>
     </div>
 
@@ -265,67 +270,71 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
     <!-- MAIN CONTENT -->
     <template v-else>
       <!-- 2. EXECUTIVE SCORECARDS -->
-      <v-row class="mb-5">
+      <div class="kpi-cards-grid mb-5">
         <!-- Target -->
-        <v-col cols="12" sm="6" lg="3">
-          <v-card elevation="0" rounded="xl" class="kpi-card pa-5">
-            <div class="d-flex justify-space-between align-start mb-2">
-              <span class="text-subtitle-2 text-slate-500 font-weight-bold text-uppercase text-truncate">Total Target RBB</span>
-              <div class="icon-box bg-slate-100">
+        <div class="kpi-card">
+          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #64748b, #94a3b8)"></div>
+          <div class="kpi-card__inner">
+            <div class="kpi-card__header">
+              <span class="kpi-card__label">Total Target RBB</span>
+              <div class="kpi-card__icon bg-slate-100">
                 <v-icon icon="ri-flag-2-line" size="18" color="grey-darken-1" />
               </div>
             </div>
-            <div class="text-h4 font-weight-black text-slate-800 mb-1">{{ formatM(scorecards.total_target_annual) }}</div>
-            <div class="text-caption text-slate-500 font-weight-medium">Akumulasi Target {{ selectedYear }}</div>
-          </v-card>
-        </v-col>
+            <div class="kpi-card__value">{{ formatM(scorecards.total_target_annual) }}</div>
+            <div class="kpi-card__sub">Akumulasi Target {{ selectedYear }}</div>
+          </div>
+        </div>
 
         <!-- Pencairan -->
-        <v-col cols="12" sm="6" lg="3">
-          <v-card elevation="0" rounded="xl" class="kpi-card pa-5 border-blue-100" style="background: linear-gradient(145deg, #ffffff, #f0f9ff);">
-            <div class="d-flex justify-space-between align-start mb-2">
-              <span class="text-subtitle-2 text-blue-600 font-weight-bold text-uppercase text-truncate">Total Pencairan Baru</span>
-              <div class="icon-box bg-blue-100">
-                <v-icon icon="ri-bank-card-line" size="18" color="blue-darken-2" />
+        <div class="kpi-card kpi-card--info">
+          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #3b82f6, #0ea5e9)"></div>
+          <div class="kpi-card__inner">
+            <div class="kpi-card__header">
+              <span class="kpi-card__label text-blue-600">Total Pencairan Baru</span>
+              <div class="kpi-card__icon fin-icon-blue">
+                <v-icon icon="ri-bank-card-line" size="18" />
               </div>
             </div>
-            <div class="text-h4 font-weight-black text-blue-900 mb-1">{{ formatM(scorecards.total_realisasi) }}</div>
-            <div class="text-caption text-blue-600 font-weight-medium">Volume pencairan YTD</div>
-          </v-card>
-        </v-col>
+            <div class="kpi-card__value">{{ formatM(scorecards.total_realisasi) }}</div>
+            <div class="kpi-card__sub">Volume pencairan YTD</div>
+          </div>
+        </div>
 
         <!-- Pacing % -->
-        <v-col cols="12" sm="6" lg="3">
-          <v-card elevation="0" rounded="xl" class="kpi-card pa-5">
-            <div class="d-flex justify-space-between align-start mb-2">
-              <span class="text-subtitle-2 font-weight-bold text-uppercase text-truncate" :style="{ color: pacingColor }">Pacing Achievement</span>
-              <div class="icon-box" :style="{ background: pacingColor + '1a' }">
-                <v-icon icon="ri-percent-line" size="18" :style="{ color: pacingColor }" />
+        <div class="kpi-card">
+          <div class="kpi-card__accent" :style="{ background: pacingColor }"></div>
+          <div class="kpi-card__inner">
+            <div class="kpi-card__header">
+              <span class="kpi-card__label" :style="{ color: pacingColor }">Pacing Achievement</span>
+              <div class="kpi-card__icon" :style="{ background: pacingColor + '20', color: pacingColor }">
+                <v-icon icon="ri-percent-line" size="18" />
               </div>
             </div>
-            <div class="text-h4 font-weight-black mb-1" :style="{ color: pacingColor }">{{ scorecards.pacing_pct }}<span class="text-h6">%</span></div>
-            <div class="text-caption text-slate-500 font-weight-medium">vs Target s/d Bulan {{ scorecards.current_month }}</div>
-          </v-card>
-        </v-col>
+            <div class="kpi-card__value" :style="{ color: pacingColor }">{{ scorecards.pacing_pct }}<span class="text-h6">%</span></div>
+            <div class="kpi-card__sub">vs Target s/d Bulan {{ scorecards.current_month }}</div>
+          </div>
+        </div>
 
         <!-- Gap -->
-        <v-col cols="12" sm="6" lg="3">
-          <v-card elevation="0" rounded="xl" class="kpi-card pa-5 border" :style="scorecards.gap_miliar > 0 ? 'background: linear-gradient(145deg, #ffffff, #ecfdf5); border-color: #d1fae5;' : 'background: linear-gradient(145deg, #ffffff, #fff1f2); border-color: #ffe4e6;'">
-            <div class="d-flex justify-space-between align-start mb-2">
-              <span class="text-subtitle-2 font-weight-bold text-uppercase text-truncate" :class="scorecards.gap_miliar > 0 ? 'text-emerald-600' : 'text-rose-600'">Selisih / Gap RBB</span>
-              <div class="icon-box" :class="scorecards.gap_miliar > 0 ? 'bg-emerald-100' : 'bg-rose-100'">
-                <v-icon :icon="scorecards.gap_miliar > 0 ? 'ri-arrow-up-circle-line' : 'ri-arrow-down-circle-line'" size="18" :color="scorecards.gap_miliar > 0 ? 'emerald-darken-2' : 'rose-darken-2'" />
+        <div class="kpi-card" :class="scorecards.gap_miliar > 0 ? 'kpi-card--success' : 'kpi-card--danger'">
+          <div class="kpi-card__accent" :style="scorecards.gap_miliar > 0 ? 'background: linear-gradient(90deg, #10b981, #34d399)' : 'background: linear-gradient(90deg, #e11d48, #fb7185)'"></div>
+          <div class="kpi-card__inner">
+            <div class="kpi-card__header">
+              <span class="kpi-card__label" :class="scorecards.gap_miliar > 0 ? 'text-emerald-600' : 'text-rose-600'">Selisih / Gap RBB</span>
+              <div class="kpi-card__icon" :class="scorecards.gap_miliar > 0 ? 'fin-icon-green' : 'fin-icon-red'">
+                <v-icon :icon="scorecards.gap_miliar > 0 ? 'ri-arrow-up-circle-line' : 'ri-arrow-down-circle-line'" size="18" />
               </div>
             </div>
-            <div class="text-h4 font-weight-black mb-1" :class="scorecards.gap_miliar > 0 ? 'text-emerald-700' : 'text-rose-700'">
+            <div class="kpi-card__value">
               {{ scorecards.gap_miliar > 0 ? '+' : (scorecards.gap_miliar < 0 ? '-' : '') }} {{ formatM(Math.abs(scorecards.gap_miliar)) }}
             </div>
-            <div class="text-caption font-weight-medium" :class="scorecards.gap_miliar > 0 ? 'text-emerald-600' : 'text-rose-500'">
+            <div class="kpi-card__sub">
               {{ scorecards.gap_miliar > 0 ? 'Surplus pencairan' : 'Kekurangan pencairan' }}
             </div>
-          </v-card>
-        </v-col>
-      </v-row>
+          </div>
+        </div>
+      </div>
 
       <!-- 3. DUAL-LINE PACING CHART -->
       <v-row class="mb-5">
@@ -343,14 +352,19 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
       <!-- 4. LEADERBOARD KINERJA AO -->
       <v-row>
         <v-col cols="12">
-          <v-card elevation="0" border rounded="xl">
-            <v-card-title class="pa-6 d-flex align-center gap-2">
-              <v-icon icon="ri-trophy-line" color="warning" />
-              <span class="font-weight-black">Leaderboard Kinerja AO</span>
-            </v-card-title>
+          <div class="content-card">
+            <div class="content-card__header">
+              <div>
+                <div class="content-card__title">Leaderboard Kinerja AO</div>
+                <div class="content-card__subtitle">Peringkat pencapaian target pencairan tahunan per Account Officer</div>
+              </div>
+              <div class="content-card__icon fin-icon-amber">
+                <v-icon icon="ri-trophy-line" size="20" />
+              </div>
+            </div>
 
             <div class="overflow-x-auto pb-4">
-              <v-table hover class="leaderboard-table px-4">
+              <table class="fin-table fin-vtable leaderboard-table">
                 <thead>
                   <tr>
                     <th class="text-center font-weight-bold text-slate-400 text-uppercase" style="width: 80px">Rank</th>
@@ -403,9 +417,9 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
                     </td>
                   </tr>
                 </tbody>
-              </v-table>
+              </table>
             </div>
-          </v-card>
+          </div>
         </v-col>
       </v-row>
     </template>

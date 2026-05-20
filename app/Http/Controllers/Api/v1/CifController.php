@@ -52,13 +52,12 @@ class CifController extends Controller
                 'success' => true,
                 'data' => $data,
                 'meta' => [
-                    'total' => $data->total(),
                     'per_page' => $data->perPage(),
-                    'current' => $data->currentPage(),
                     'count' => count($data->items()),
                     'has_more' => $data->hasMorePages(),
                     'next_cursor' => method_exists($data, 'nextCursor') ? ($data->nextCursor()?->encode() ?? null) : null,
                     'prev_cursor' => method_exists($data, 'previousCursor') ? ($data->previousCursor()?->encode() ?? null) : null,
+                    'generated_at' => now()->toIso8601String(),
                 ],
             ]);
         } catch (\Throwable $e) {

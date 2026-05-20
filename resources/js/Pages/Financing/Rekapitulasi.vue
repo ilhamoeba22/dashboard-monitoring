@@ -4,6 +4,7 @@ import { Head } from '@inertiajs/vue3'
 import DefaultLayout from '@/layouts/default.vue'
 import axios from 'axios'
 import VueApexCharts from 'vue3-apexcharts'
+import '@/assets/css/financing-shared.css'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -180,24 +181,30 @@ watch([selectedDimension, selectedCabang], () => {
 </script>
 
 <template>
-  <div class="rekap-master-console">
+  <div class="fin-page px-4 pt-0">
     <Head title="Master Rekap Console - Pembiayaan" />
 
-    <!-- HEADER & FILTERS -->
-    <v-card class="mb-6 elevation-1 rounded-xl">
-      <v-card-text>
-        <div class="d-flex flex-column flex-md-row justify-space-between align-center gap-4">
-          <div class="d-flex align-center">
-            <v-avatar color="primary-lighten-4" class="mr-3" rounded="lg">
-              <v-icon color="primary" icon="ri-dashboard-3-line"></v-icon>
-            </v-avatar>
-            <div>
-              <h2 class="text-h5 font-weight-bold mb-0">Master Rekap Console</h2>
-              <div class="text-caption text-medium-emphasis">Volume & distribusi bisnis pembiayaan per dimensi — Analisis risiko di <a href="/financing/quality" class="text-primary font-weight-medium">Quality Console</a></div>
+    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+    <div class="fin-hero mb-6">
+      <div class="fin-hero__deco"></div>
+      <div class="fin-hero__inner">
+        <div class="d-flex flex-column flex-md-row justify-space-between align-start align-md-center gap-4">
+          <div class="d-flex align-center gap-4">
+            <div class="fin-hero__icon">
+              <v-icon icon="ri-dashboard-3-line" size="26" color="white" />
+            </div>
+            <div class="fin-hero__meta">
+              <h1 class="fin-hero__title">Master Rekap Console</h1>
+              <p class="fin-hero__subtitle">
+                Volume & distribusi bisnis pembiayaan per dimensi — Analisis risiko di <a href="/financing/quality" class="text-teal-accent-2 font-weight-bold" style="color: #5eead4; text-decoration: underline;">Quality Console</a>
+              </p>
+              <div class="fin-hero__badges">
+                <span class="fin-badge fin-badge--glass">📊 Analytics Module</span>
+              </div>
             </div>
           </div>
 
-          <div class="d-flex flex-wrap align-center ga-3">
+          <div class="fin-filter-bar">
             <!-- Dimensi Toggle -->
             <v-select
               v-model="selectedDimension"
@@ -205,13 +212,13 @@ watch([selectedDimension, selectedCabang], () => {
               item-title="label"
               item-value="value"
               prepend-inner-icon="ri-layout-grid-line"
-              variant="outlined"
+              variant="plain"
               density="compact"
               hide-details
-              style="min-width: 200px"
-              rounded="lg"
-              class="flex-shrink-0"
+              style="width: 140px;"
             ></v-select>
+
+            <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2);" class="mx-1"></div>
 
             <!-- Cabang Filter -->
             <v-select
@@ -221,147 +228,142 @@ watch([selectedDimension, selectedCabang], () => {
               item-value="kdloc"
               label="Semua Cabang"
               prepend-inner-icon="ri-store-2-line"
-              variant="outlined"
+              variant="plain"
               density="compact"
               hide-details
               clearable
-              style="min-width: 200px"
-              rounded="lg"
-              class="flex-shrink-0"
+              style="width: 150px;"
             ></v-select>
 
-            <!-- Metric Switcher (Dropdown) -->
+            <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2);" class="mx-1"></div>
+
+            <!-- Metric Switcher -->
             <v-select
               v-model="selectedMetric"
               :items="[
                 { title: 'Outstanding (Rp)', value: 'os' },
-                { title: 'Jumlah Nasabah (NOA)', value: 'noa' }
+                { title: 'Nasabah (NOA)', value: 'noa' }
               ]"
               item-title="title"
               item-value="value"
               prepend-inner-icon="ri-funds-line"
-              variant="outlined"
+              variant="plain"
               density="compact"
               hide-details
-              style="min-width: 200px"
-              rounded="lg"
-              class="flex-shrink-0"
+              style="width: 140px;"
             ></v-select>
             
+            <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2);" class="mx-1"></div>
+
             <!-- View Toggle -->
-            <v-btn-toggle v-model="viewMode" mandatory rounded="lg" density="compact" class="border flex-shrink-0">
-              <v-btn value="grid" size="small" icon="ri-table-line"></v-btn>
-              <v-btn value="chart" size="small" icon="ri-bar-chart-box-line"></v-btn>
+            <v-btn-toggle v-model="viewMode" mandatory rounded density="compact" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
+              <v-btn value="grid" size="small" icon="ri-table-line" color="white"></v-btn>
+              <v-btn value="chart" size="small" icon="ri-bar-chart-box-line" color="white"></v-btn>
             </v-btn-toggle>
           </div>
         </div>
-      </v-card-text>
-    </v-card>
+      </div>
+    </div>
 
     <!-- SCORECARDS -->
-    <v-row class="mb-6">
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="elevation-1 rounded-xl overflow-hidden h-100">
-          <v-card-text class="d-flex flex-column h-100">
-            <div class="d-flex justify-space-between align-center mb-4">
-              <div class="text-overline text-medium-emphasis">TOTAL NOA</div>
-              <v-avatar size="32" color="blue-lighten-4" rounded>
-                <v-icon color="blue-darken-2" icon="ri-group-line" size="small"></v-icon>
-              </v-avatar>
+    <div class="kpi-cards-grid mb-6">
+      <div class="kpi-card kpi-card--info">
+        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #3b82f6, #0ea5e9)"></div>
+        <div class="kpi-card__inner">
+          <div class="kpi-card__header">
+            <span class="kpi-card__label text-blue-600">TOTAL NOA</span>
+            <div class="kpi-card__icon fin-icon-blue">
+              <v-icon icon="ri-group-line" size="18" />
             </div>
-            <div class="text-h4 font-weight-bold mb-1">{{ formatNumber(totals.noa) }}</div>
-            <div class="text-caption text-medium-emphasis mt-auto">Rekening aktif pembiayaan</div>
-          </v-card-text>
-        </v-card>
-      </v-col>
+          </div>
+          <div class="kpi-card__value">{{ formatNumber(totals.noa) }}</div>
+          <div class="kpi-card__sub">Rekening aktif pembiayaan</div>
+        </div>
+      </div>
 
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="elevation-1 rounded-xl overflow-hidden h-100">
-          <v-card-text class="d-flex flex-column h-100">
-            <div class="d-flex justify-space-between align-center mb-4">
-              <div class="text-overline text-medium-emphasis">TOTAL O/S POKOK</div>
-              <v-avatar size="32" color="emerald-lighten-4" rounded>
-                <v-icon color="emerald-darken-2" icon="ri-money-dollar-circle-line" size="small"></v-icon>
-              </v-avatar>
+      <div class="kpi-card kpi-card--success">
+        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #10b981, #34d399)"></div>
+        <div class="kpi-card__inner">
+          <div class="kpi-card__header">
+            <span class="kpi-card__label text-emerald-600">TOTAL O/S POKOK</span>
+            <div class="kpi-card__icon fin-icon-green">
+              <v-icon icon="ri-money-dollar-circle-line" size="18" />
             </div>
-            <div class="text-h5 font-weight-bold mb-1">{{ formatRp(totals.total_os) }}</div>
-            <div class="text-caption text-medium-emphasis mt-auto">Portofolio pembiayaan aktif</div>
-          </v-card-text>
-        </v-card>
-      </v-col>
+          </div>
+          <div class="kpi-card__value" style="font-size: 20px;">{{ formatRp(totals.total_os) }}</div>
+          <div class="kpi-card__sub">Portofolio pembiayaan aktif</div>
+        </div>
+      </div>
 
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="elevation-1 rounded-xl overflow-hidden h-100">
-          <v-card-text class="d-flex flex-column h-100">
-            <div class="d-flex justify-space-between align-center mb-4">
-              <div class="text-overline text-medium-emphasis">O/S KOL 1 (LANCAR)</div>
-              <v-avatar size="32" color="green-lighten-4" rounded>
-                <v-icon color="green-darken-2" icon="ri-checkbox-circle-line" size="small"></v-icon>
-              </v-avatar>
+      <div class="kpi-card">
+        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #64748b, #94a3b8)"></div>
+        <div class="kpi-card__inner">
+          <div class="kpi-card__header">
+            <span class="kpi-card__label">O/S KOL 1 (LANCAR)</span>
+            <div class="kpi-card__icon bg-slate-100">
+              <v-icon icon="ri-checkbox-circle-line" size="18" color="grey-darken-1" />
             </div>
-            <div class="text-h5 font-weight-bold mb-1">{{ formatRp(totals.kol1_os || 0) }}</div>
-            <div class="text-caption text-medium-emphasis mt-auto">Portofolio kolektibilitas lancar</div>
-          </v-card-text>
-        </v-card>
-      </v-col>
+          </div>
+          <div class="kpi-card__value" style="font-size: 20px;">{{ formatRp(totals.kol1_os || 0) }}</div>
+          <div class="kpi-card__sub">Portofolio kolektibilitas lancar</div>
+        </div>
+      </div>
 
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="elevation-1 rounded-xl overflow-hidden h-100" style="border-left: 4px solid #ef4444">
-          <v-card-text class="d-flex flex-column h-100">
-            <div class="d-flex justify-space-between align-center mb-4">
-              <div class="text-overline text-medium-emphasis">NOA NPF (KOL 3-5)</div>
-              <v-avatar size="32" color="red-lighten-4" rounded>
-                <v-icon color="red-darken-2" icon="ri-error-warning-line" size="small"></v-icon>
-              </v-avatar>
+      <div class="kpi-card kpi-card--danger">
+        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #e11d48, #fb7185)"></div>
+        <div class="kpi-card__inner">
+          <div class="kpi-card__header">
+            <span class="kpi-card__label text-rose-600">NOA NPF (KOL 3-5)</span>
+            <div class="kpi-card__icon fin-icon-red">
+              <v-icon icon="ri-error-warning-line" size="18" />
             </div>
-            <div class="text-h4 font-weight-bold text-error mb-1">{{ formatNumber((totals.kol3_noa || 0) + (totals.kol4_noa || 0) + (totals.kol5_noa || 0)) }}</div>
-            <div class="text-caption text-medium-emphasis mt-auto">Rekening Kol 3+4+5 &mdash; <a href="/financing/quality" class="text-primary">detail risiko &rsaquo;</a></div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+          </div>
+          <div class="kpi-card__value">{{ formatNumber((totals.kol3_noa || 0) + (totals.kol4_noa || 0) + (totals.kol5_noa || 0)) }}</div>
+          <div class="kpi-card__sub">Rekening Kol 3-5 &mdash; <a href="/financing/quality" style="color: #0284c7;">detail risiko &rsaquo;</a></div>
+        </div>
+      </div>
+    </div>
 
     <!-- MAIN CONTENT -->
-    <v-card class="elevation-1 rounded-xl">
-      <v-card-text class="pa-0">
-        <!-- TOOLBAR -->
-        <v-toolbar color="transparent" density="compact" class="px-4 pt-2">
-          <v-toolbar-title class="text-subtitle-1 font-weight-bold">
-            Detail {{ dimensionOptions.find(d => d.value === selectedDimension)?.label || 'Dimensi' }}
-          </v-toolbar-title>
-          <v-spacer></v-spacer>
+    <div class="content-card">
+      <div class="content-card__header">
+        <div>
+          <div class="content-card__title">Detail {{ dimensionOptions.find(d => d.value === selectedDimension)?.label || 'Dimensi' }}</div>
+          <div class="content-card__subtitle">Rincian agregasi portofolio</div>
+        </div>
+        <div class="d-flex align-center gap-2">
           <v-checkbox
             v-if="viewMode === 'grid'"
             v-model="hideEmptyRows"
-            label="Sembunyikan baris kosong"
+            label="Sembunyikan kosong"
             density="compact"
             hide-details
-            class="mr-4 text-caption"
+            class="text-xs"
             color="primary"
           ></v-checkbox>
-        </v-toolbar>
+        </div>
+      </div>
 
-        <v-divider></v-divider>
-
+      <div class="content-card__body pa-0">
         <!-- LOADER -->
-        <div v-if="isLoading" class="d-flex justify-center align-center py-12">
+        <div v-if="isLoading" class="fin-loading">
           <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
         </div>
 
         <!-- GRID MODE -->
         <div v-else-if="viewMode === 'grid'" class="overflow-x-auto">
-          <v-table class="rekap-table" density="comfortable" hover>
+          <table class="fin-table fin-vtable">
             <thead>
               <tr>
-                <th class="text-left font-weight-bold text-uppercase bg-grey-lighten-4">Label</th>
-                <th class="text-right font-weight-bold text-uppercase bg-grey-lighten-4">NOA</th>
-                <th class="text-right font-weight-bold text-uppercase bg-grey-lighten-4">Total O/S</th>
-                <th class="text-right font-weight-bold text-uppercase bg-grey-lighten-4">Kol 1 (Lancar)</th>
-                <th class="text-right font-weight-bold text-uppercase bg-grey-lighten-4">Kol 2 (DPK)</th>
-                <th class="text-right font-weight-bold text-uppercase bg-grey-lighten-4">Kol 3 (KL)</th>
-                <th class="text-right font-weight-bold text-uppercase bg-grey-lighten-4">Kol 4 (D)</th>
-                <th class="text-right font-weight-bold text-uppercase bg-grey-lighten-4">Kol 5 (M)</th>
-                <th class="text-center font-weight-bold text-uppercase bg-grey-lighten-4">NPF %</th>
+                <th>Label</th>
+                <th style="text-align:right;">NOA</th>
+                <th style="text-align:right;">Total O/S</th>
+                <th style="text-align:right;">Kol 1 (Lancar)</th>
+                <th style="text-align:right;">Kol 2 (DPK)</th>
+                <th style="text-align:right;">Kol 3 (KL)</th>
+                <th style="text-align:right;">Kol 4 (D)</th>
+                <th style="text-align:right;">Kol 5 (M)</th>
+                <th style="text-align:center;">NPF %</th>
               </tr>
             </thead>
             <tbody>
@@ -369,31 +371,35 @@ watch([selectedDimension, selectedCabang], () => {
                 <td colspan="9" class="text-center py-8 text-medium-emphasis">Tidak ada data untuk ditampilkan</td>
               </tr>
               <tr v-for="(row, idx) in filteredRows" :key="idx">
-                <td class="font-weight-medium">{{ row.label }}</td>
-                <td class="text-right">{{ formatNumber(row.noa) }}</td>
-                <td class="text-right">{{ formatRp(row.total_os) }}</td>
-                <td class="text-right">{{ formatMetric(row.kol1_os, row.kol1_noa) }}</td>
-                <td class="text-right">{{ formatMetric(row.kol2_os, row.kol2_noa) }}</td>
-                <td class="text-right">{{ formatMetric(row.kol3_os, row.kol3_noa) }}</td>
-                <td class="text-right">{{ formatMetric(row.kol4_os, row.kol4_noa) }}</td>
-                <td class="text-right">{{ formatMetric(row.kol5_os, row.kol5_noa) }}</td>
-                <td class="text-center" :style="getNpfCellStyle(row.npf_ratio)">
-                  {{ row.npf_ratio }}%
+                <td class="font-weight-bold" style="color: #1e293b;">{{ row.label }}</td>
+                <td style="text-align:right; font-weight: 500;">{{ formatNumber(row.noa) }}</td>
+                <td style="text-align:right; font-weight: 700;">{{ formatRp(row.total_os) }}</td>
+                <td style="text-align:right;">{{ formatMetric(row.kol1_os, row.kol1_noa) }}</td>
+                <td style="text-align:right;">{{ formatMetric(row.kol2_os, row.kol2_noa) }}</td>
+                <td style="text-align:right;">{{ formatMetric(row.kol3_os, row.kol3_noa) }}</td>
+                <td style="text-align:right;">{{ formatMetric(row.kol4_os, row.kol4_noa) }}</td>
+                <td style="text-align:right;">{{ formatMetric(row.kol5_os, row.kol5_noa) }}</td>
+                <td style="text-align:center;">
+                  <span class="fin-pill" :style="getNpfCellStyle(row.npf_ratio)">
+                    {{ row.npf_ratio }}%
+                  </span>
                 </td>
               </tr>
             </tbody>
-            <tfoot class="bg-grey-lighten-4">
+            <tfoot>
               <tr>
-                <td class="font-weight-bold">TOTAL KESELURUHAN</td>
-                <td class="text-right font-weight-bold">{{ formatNumber(totals.noa) }}</td>
-                <td class="text-right font-weight-bold">{{ formatRp(totals.total_os) }}</td>
+                <td>TOTAL KESELURUHAN</td>
+                <td style="text-align:right;">{{ formatNumber(totals.noa) }}</td>
+                <td style="text-align:right;">{{ formatRp(totals.total_os) }}</td>
                 <td colspan="5"></td>
-                <td class="text-center font-weight-bold" :style="getNpfCellStyle(totals.npf_ratio)">
-                  {{ totals.npf_ratio }}%
+                <td style="text-align:center;">
+                  <span class="fin-pill" :style="getNpfCellStyle(totals.npf_ratio)">
+                    {{ totals.npf_ratio }}%
+                  </span>
                 </td>
               </tr>
             </tfoot>
-          </v-table>
+          </table>
         </div>
 
         <!-- CHART MODE -->
@@ -418,27 +424,11 @@ watch([selectedDimension, selectedCabang], () => {
             </v-col>
           </v-row>
         </div>
-      </v-card-text>
-    </v-card>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.gap-3 { gap: 12px; }
-.gap-4 { gap: 16px; }
-
-.rekap-table {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-.rekap-table th {
-  font-size: 0.75rem !important;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-}
-
-.rekap-table td {
-  font-size: 0.875rem !important;
-  white-space: nowrap;
-}
+/* No extra scoped styles needed, using shared design system */
 </style>

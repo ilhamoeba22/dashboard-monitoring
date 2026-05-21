@@ -13,6 +13,7 @@ const activeTab = ref(0)
 const selectedCabang = ref(null)
 
 const cabangs = ref([])
+const segmens = ref(['Semua Segmen', 'Retail', 'Korporasi', 'Mikro'])
 const qualityData = ref({
   kolektibilitas: [],
   akad_risk: [],
@@ -133,7 +134,7 @@ const radarChartSeries = computed(() => {
   }]
 })
 const radarChartOpts = computed(() => ({
-  chart: { type: 'radar', toolbar: { show: false }, fontFamily: 'Inter, sans-serif', background: 'transparent' },
+  chart: { type: 'radar', toolbar: { show: false }, fontFamily: "'Plus Jakarta Sans', sans-serif", background: 'transparent' },
   labels: ['Risiko Pembiayaan', 'Risiko Likuiditas', 'Risiko Operasional', 'Risiko Kepatuhan', 'Risiko Reputasi'],
   colors: ['#0d9488'],
   stroke: { width: 2.5, colors: ['#0d9488'] },
@@ -157,9 +158,9 @@ const trendChartSeries = computed(() => {
   ]
 })
 const trendChartOpts = computed(() => ({
-  chart: { type: 'area', toolbar: { show: false }, fontFamily: 'Inter, sans-serif', dropShadow: { enabled: true, top: 4, left: 0, blur: 8, opacity: 0.06 } },
+  chart: { type: 'area', toolbar: { show: false }, fontFamily: "'Plus Jakarta Sans', sans-serif", dropShadow: { enabled: true, top: 4, left: 0, blur: 8, opacity: 0.06 } },
   colors: ['#e11d48', '#059669'],
-  stroke: { curve: 'smooth', width: 2.5 },
+  stroke: { curve: 'smooth', width: 4 },
   fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.02, stops: [0, 90, 100] } },
   markers: { size: 4, strokeWidth: 2.5, hover: { size: 7 } },
   xaxis: { categories: (qualityData.value.trend || []).map(r => r.bulan), labels: { style: { colors: '#94a3b8', fontWeight: 500, fontSize: '12px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
@@ -181,7 +182,7 @@ const kolChartSeries = computed(() => {
   return [mapKol['1'], mapKol['2'], mapKol['3'], mapKol['4'], mapKol['5']]
 })
 const kolChartOpts = computed(() => ({
-  chart: { type: 'donut', fontFamily: 'Inter, sans-serif' },
+  chart: { type: 'donut', fontFamily: "'Plus Jakarta Sans', sans-serif" },
   labels: ['Kol 1 (Lancar)', 'Kol 2 (DPK)', 'Kol 3 (Kurang Lancar)', 'Kol 4 (Diragukan)', 'Kol 5 (Macet)'],
   colors: ['#10b981', '#f59e0b', '#f97316', '#ef4444', '#991b1b'],
   plotOptions: { pie: { donut: { size: '72%', labels: { show: true, name: { show: true, fontSize: '13px' }, value: { formatter: (v) => formatRpSingkat(v), fontSize: '15px', fontWeight: '700' }, total: { show: true, showAlways: true, label: 'Total Portofolio', fontSize: '12px', fontWeight: '600', formatter: function (w) { return formatRpSingkat(w.globals.seriesTotals.reduce((a, b) => a + b, 0)) } } } } } },
@@ -202,7 +203,7 @@ const sectorChartSeries = computed(() => {
   ]
 })
 const sectorChartOpts = computed(() => ({
-  chart: { type: 'bar', stacked: false, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
+  chart: { type: 'bar', stacked: false, toolbar: { show: false }, fontFamily: "'Plus Jakarta Sans', sans-serif" },
   plotOptions: { bar: { horizontal: true, borderRadius: 5, barHeight: '55%', dataLabels: { position: 'top' } } },
   colors: ['#0284c7', '#e11d48'],
   xaxis: { categories: (qualityData.value.sector_data || []).slice(0, 10).map(r => r.sektor), labels: { formatter: (v) => formatRpSingkat(v), style: { fontSize: '11px', colors: '#94a3b8' } } },
@@ -219,12 +220,18 @@ const productChartSeries = computed(() => {
   return data.map(r => parseFloat(r.total_os) || 0)
 })
 const productChartOpts = computed(() => ({
-  chart: { type: 'donut', fontFamily: 'Inter, sans-serif' },
+  chart: { type: 'donut', fontFamily: "'Plus Jakarta Sans', sans-serif" },
   labels: (qualityData.value.product_data || []).map(r => r.produk),
   colors: ['#4f46e5', '#8b5cf6', '#d946ef', '#0ea5e9', '#14b8a6', '#f59e0b', '#64748b'],
   plotOptions: { pie: { donut: { size: '65%' } } },
   dataLabels: { enabled: false },
-  legend: { position: 'right', offsetY: 0, height: 230, fontSize: '12px' },
+  legend: { 
+    position: 'bottom', 
+    offsetY: 0, 
+    fontSize: '12px',
+    markers: { width: 8, height: 8, radius: 4 },
+    itemMargin: { horizontal: 5, vertical: 2 }
+  },
   stroke: { show: true, colors: ['#ffffff'], width: 3 },
   tooltip: { y: { formatter: (val) => formatRp(val) } }
 }))
@@ -252,6 +259,15 @@ const fetchCabangs = async () => {
   } catch (e) { console.error(e) }
 }
 
+const fetchSegmens = async () => {
+  try {
+    const res = await axios.get('/api/v1/financing/segmens')
+    if (res.data.success) {
+      segmens.value = ['Semua Segmen', ...res.data.data.map(item => item.ket)]
+    }
+  } catch (e) { console.error(e) }
+}
+
 const fetchQualityData = async () => {
   isLoading.value = true
   try {
@@ -270,7 +286,7 @@ const fetchQualityData = async () => {
   finally { isLoading.value = false }
 }
 
-onMounted(() => { fetchCabangs(); fetchQualityData(); })
+onMounted(() => { fetchCabangs(); fetchSegmens(); fetchQualityData(); })
 watch([selectedCabang, filters], fetchQualityData, { deep: true })
 </script>
 
@@ -387,7 +403,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
             </div>
             <v-select
               v-model="filters.segmen"
-              :items="['Semua Segmen', 'Retail', 'Korporasi', 'Mikro']"
+              :items="segmens"
               label="Segmen"
               density="compact"
               variant="solo"
@@ -396,12 +412,6 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
               class="filter-select"
               style="min-width: 150px"
             ></v-select>
-          </div>
-
-          <div class="filter-apply-btn" @click="fetchQualityData" :class="{ 'loading': isLoading }">
-            <v-icon icon="ri-filter-3-line" size="16" class="mr-2" color="white"></v-icon>
-            <span>Terapkan Filter</span>
-            <v-progress-circular v-if="isLoading" indeterminate size="14" width="2" color="white" class="ml-2"></v-progress-circular>
           </div>
         </div>
 
@@ -441,85 +451,78 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 
           <!-- KPI Cards -->
           <v-row class="mb-6">
-            <!-- Total Pembiayaan -->
-            <v-col cols="12" sm="6" md="3">
-              <div class="kpi-card">
-                <div class="kpi-card__accent" style="background: linear-gradient(135deg, #10b981, #059669);"></div>
-                <div class="kpi-card__inner">
-                  <div class="kpi-card__header">
-                    <span class="kpi-card__label">Total Pembiayaan</span>
-                    <div class="kpi-card__icon" style="background: #ecfdf5; color: #059669;">
-                      <v-icon icon="ri-wallet-3-line" size="18"></v-icon>
+            <v-col cols="12" sm="6" lg="3">
+              <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+                  <v-icon icon="ri-wallet-3-line" size="120" color="#059669" />
+                </div>
+                <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+                  <div class="d-flex justify-space-between align-start">
+                    <div>
+                      <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL PEMBIAYAAN</p>
+                      <h2 class="text-h4 font-weight-bold mb-2" style="color: #059669; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
+                        {{ formatRpSingkat(summary.total_os) }}
+                      </h2>
+                      <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Porsi Bagi Hasil: <strong>{{ summary.porsi_bagi_hasil || 0 }}%</strong></p>
                     </div>
                   </div>
-                  <div class="kpi-card__value">{{ formatRpSingkat(summary.total_os) }}</div>
-                  <div class="kpi-card__sub">
-                    <v-icon icon="ri-percent-line" size="12" class="mr-1" style="color: #059669;"></v-icon>
-                    Porsi Bagi Hasil: <strong style="color: #059669;">{{ summary.porsi_bagi_hasil || 0 }}%</strong>
-                  </div>
-                </div>
-              </div>
+                </v-card-text>
+              </v-card>
             </v-col>
 
-            <!-- NPF Gross -->
-            <v-col cols="12" sm="6" md="3">
-              <div class="kpi-card" :class="(summary.npf_gross || 0) > 5 ? 'kpi-card--danger' : ''">
-                <div class="kpi-card__accent" :style="(summary.npf_gross || 0) > 5 ? 'background: linear-gradient(135deg, #f43f5e, #e11d48);' : 'background: linear-gradient(135deg, #10b981, #059669);'"></div>
-                <div class="kpi-card__inner">
-                  <div class="kpi-card__header">
-                    <span class="kpi-card__label">NPF Gross</span>
-                    <div class="kpi-card__icon" :style="(summary.npf_gross || 0) > 5 ? 'background: #fff1f2; color: #e11d48;' : 'background: #ecfdf5; color: #059669;'">
-                      <v-icon icon="ri-error-warning-line" size="18"></v-icon>
+            <v-col cols="12" sm="6" lg="3">
+              <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+                  <v-icon icon="ri-error-warning-line" size="120" :color="(summary.npf_gross || 0) > 5 ? '#e11d48' : '#059669'" />
+                </div>
+                <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+                  <div class="d-flex justify-space-between align-start">
+                    <div>
+                      <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">NPF GROSS</p>
+                      <h2 class="text-h4 font-weight-bold mb-2" :style="{ color: (summary.npf_gross || 0) > 5 ? '#e11d48' : '#059669', fontFamily: 'Plus Jakarta Sans, sans-serif', lineHeight: 1.2 }">
+                        {{ summary.npf_gross || 0 }}%
+                      </h2>
+                      <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">NPF Net: <strong>{{ summary.npf_net || 0 }}%</strong></p>
                     </div>
                   </div>
-                  <div class="kpi-card__value" :style="(summary.npf_gross || 0) > 5 ? 'color: #e11d48;' : ''">
-                    {{ summary.npf_gross || 0 }}%
-                  </div>
-                  <div class="kpi-card__badge" :class="(summary.npf_gross || 0) > 5 ? 'kpi-badge--danger' : 'kpi-badge--success'">
-                    <v-icon :icon="(summary.npf_gross || 0) > 5 ? 'ri-arrow-up-line' : 'ri-check-line'" size="12" class="mr-1"></v-icon>
-                    {{ (summary.npf_gross || 0) > 5 ? 'Melebihi' : 'Di bawah' }} Batas OJK 5%
-                  </div>
-                </div>
-              </div>
+                </v-card-text>
+              </v-card>
             </v-col>
 
-            <!-- CKPN Coverage -->
-            <v-col cols="12" sm="6" md="3">
-              <div class="kpi-card">
-                <div class="kpi-card__accent" :style="(summary.coverage_ratio || 0) < 100 ? 'background: linear-gradient(135deg, #f59e0b, #d97706);' : 'background: linear-gradient(135deg, #0ea5e9, #0284c7);'"></div>
-                <div class="kpi-card__inner">
-                  <div class="kpi-card__header">
-                    <span class="kpi-card__label">CKPN Coverage</span>
-                    <div class="kpi-card__icon" :style="(summary.coverage_ratio || 0) < 100 ? 'background: #fffbeb; color: #d97706;' : 'background: #f0f9ff; color: #0284c7;'">
-                      <v-icon icon="ri-shield-keyhole-line" size="18"></v-icon>
+            <v-col cols="12" sm="6" lg="3">
+              <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+                  <v-icon icon="ri-shield-keyhole-line" size="120" :color="(summary.coverage_ratio || 0) < 100 ? '#d97706' : '#0284c7'" />
+                </div>
+                <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+                  <div class="d-flex justify-space-between align-start">
+                    <div>
+                      <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">CKPN COVERAGE</p>
+                      <h2 class="text-h4 font-weight-bold mb-2" :style="{ color: (summary.coverage_ratio || 0) < 100 ? '#d97706' : '#0284c7', fontFamily: 'Plus Jakarta Sans, sans-serif', lineHeight: 1.2 }">
+                        {{ summary.coverage_ratio || 0 }}%
+                      </h2>
+                      <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Coverage Ratio</p>
                     </div>
                   </div>
-                  <div class="kpi-card__value">{{ summary.coverage_ratio || 0 }}%</div>
-                  <div class="kpi-card__sub">
-                    NPF Net: <strong style="color: #334155;">{{ summary.npf_net || 0 }}%</strong>
-                  </div>
-                </div>
-              </div>
+                </v-card-text>
+              </v-card>
             </v-col>
 
-            <!-- FDR Likuiditas -->
-            <v-col cols="12" sm="6" md="3">
-              <div class="kpi-card">
-                <div class="kpi-card__accent" style="background: linear-gradient(135deg, #6366f1, #4f46e5);"></div>
-                <div class="kpi-card__inner">
-                  <div class="kpi-card__header">
-                    <span class="kpi-card__label">FDR (Likuiditas)</span>
-                    <div class="kpi-card__icon" style="background: #eef2ff; color: #4f46e5;">
-                      <v-icon icon="ri-water-flash-line" size="18"></v-icon>
+            <v-col cols="12" sm="6" lg="3">
+              <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+                  <v-icon icon="ri-water-flash-line" size="120" color="#4f46e5" />
+                </div>
+                <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+                  <div class="d-flex justify-space-between align-start">
+                    <div>
+                      <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">FDR (LIKUIDITAS)</p>
+                      <h2 class="text-h4 font-weight-bold mb-2" style="color: #4f46e5; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ summary.fdr || 0 }}%</h2>
+                      <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Target: 75% – 85%</p>
                     </div>
                   </div>
-                  <div class="kpi-card__value">{{ summary.fdr || 0 }}%</div>
-                  <div class="kpi-card__sub">
-                    <v-icon icon="ri-information-line" size="12" class="mr-1"></v-icon>
-                    Target Sehat: 75% – 85%
-                  </div>
-                </div>
-              </div>
+                </v-card-text>
+              </v-card>
             </v-col>
           </v-row>
 
@@ -899,64 +902,58 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 
           <!-- Restru Metrics -->
           <v-row class="mb-6">
-            <!-- Total O/S Restru -->
             <v-col cols="12" md="4">
-              <div class="kpi-card">
-                <div class="kpi-card__accent" style="background: linear-gradient(135deg, #f59e0b, #d97706);"></div>
-                <div class="kpi-card__inner">
-                  <div class="kpi-card__header">
-                    <span class="kpi-card__label">Total O/S Restrukturisasi</span>
-                    <div class="kpi-card__icon" style="background: #fffbeb; color: #d97706;">
-                      <v-icon icon="ri-file-damage-line" size="18"></v-icon>
+              <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+                  <v-icon icon="ri-file-damage-line" size="120" color="#d97706" />
+                </div>
+                <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+                  <div class="d-flex justify-space-between align-start">
+                    <div>
+                      <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL O/S RESTRUKTURISASI</p>
+                      <h2 class="text-h4 font-weight-bold mb-2" style="color: #d97706; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRpSingkat(restruGuard.total_os_restru) }}</h2>
+                      <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;"><strong style="color: #334155;">{{ restruGuard.total_kontrak_restru }} kontrak</strong> direstrukturisasi</p>
                     </div>
                   </div>
-                  <div class="kpi-card__value">{{ formatRpSingkat(restruGuard.total_os_restru) }}</div>
-                  <div class="kpi-card__sub">
-                    Terdapat <strong style="color: #334155;">{{ restruGuard.total_kontrak_restru }} kontrak</strong> direstrukturisasi.
-                  </div>
-                </div>
-              </div>
+                </v-card-text>
+              </v-card>
             </v-col>
 
-            <!-- Restru-to-Total Ratio -->
             <v-col cols="12" md="4">
-              <div class="kpi-card">
-                <div class="kpi-card__accent" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);"></div>
-                <div class="kpi-card__inner">
-                  <div class="kpi-card__header">
-                    <span class="kpi-card__label">Restru-to-Total Ratio</span>
-                    <div class="kpi-card__icon" style="background: #f0f9ff; color: #0284c7;">
-                      <v-icon icon="ri-pie-chart-line" size="18"></v-icon>
+              <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+                  <v-icon icon="ri-pie-chart-line" size="120" color="#0284c7" />
+                </div>
+                <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+                  <div class="d-flex justify-space-between align-start">
+                    <div>
+                      <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">RESTRU-TO-TOTAL RATIO</p>
+                      <h2 class="text-h4 font-weight-bold mb-2" style="color: #0284c7; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ restruGuard.restru_to_total_ratio || 0 }}%</h2>
+                      <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Porsi fasilitas restrukturisasi</p>
                     </div>
                   </div>
-                  <div class="kpi-card__value">{{ restruGuard.restru_to_total_ratio || 0 }}%</div>
-                  <div class="kpi-card__sub">
-                    Porsi fasilitas restrukturisasi terhadap total portofolio.
-                  </div>
-                </div>
-              </div>
+                </v-card-text>
+              </v-card>
             </v-col>
 
-            <!-- Vintage Failure Rate -->
             <v-col cols="12" md="4">
-              <div class="kpi-card" :class="(restruGuard.vintage_failure_rate || 0) > 10 ? 'kpi-card--danger' : ''">
-                <div class="kpi-card__accent" :style="(restruGuard.vintage_failure_rate || 0) > 10 ? 'background: linear-gradient(135deg, #f43f5e, #e11d48);' : 'background: linear-gradient(135deg, #10b981, #059669);'"></div>
-                <div class="kpi-card__inner">
-                  <div class="kpi-card__header">
-                    <span class="kpi-card__label">Vintage Failure Rate</span>
-                    <div class="kpi-card__icon" :style="(restruGuard.vintage_failure_rate || 0) > 10 ? 'background: #fff1f2; color: #e11d48;' : 'background: #ecfdf5; color: #059669;'">
-                      <v-icon icon="ri-pulse-line" size="18"></v-icon>
+              <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+                  <v-icon icon="ri-pulse-line" size="120" :color="(restruGuard.vintage_failure_rate || 0) > 10 ? '#e11d48' : '#059669'" />
+                </div>
+                <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+                  <div class="d-flex justify-space-between align-start">
+                    <div>
+                      <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">VINTAGE FAILURE RATE</p>
+                      <h2 class="text-h4 font-weight-bold mb-2"
+                          :style="{ color: (restruGuard.vintage_failure_rate || 0) > 10 ? '#e11d48' : '#059669', fontFamily: 'Plus Jakarta Sans, sans-serif', lineHeight: 1.2 }">
+                        {{ restruGuard.vintage_failure_rate || 0 }}%
+                      </h2>
+                      <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">{{ (restruGuard.vintage_failure_rate || 0) > 10 ? 'Indikasi Evergreening' : 'Kualitas Sehat' }}</p>
                     </div>
                   </div>
-                  <div class="kpi-card__value" :style="(restruGuard.vintage_failure_rate || 0) > 10 ? 'color: #e11d48;' : ''">
-                    {{ restruGuard.vintage_failure_rate || 0 }}%
-                  </div>
-                  <div class="kpi-card__badge" :class="(restruGuard.vintage_failure_rate || 0) > 10 ? 'kpi-badge--danger' : 'kpi-badge--success'">
-                    <v-icon :icon="(restruGuard.vintage_failure_rate || 0) > 10 ? 'ri-alarm-warning-fill' : 'ri-check-line'" size="12" class="mr-1"></v-icon>
-                    {{ (restruGuard.vintage_failure_rate || 0) > 10 ? 'Indikasi Evergreening (Waspada)' : 'Sehat (Di bawah 10%)' }}
-                  </div>
-                </div>
-              </div>
+                </v-card-text>
+              </v-card>
             </v-col>
           </v-row>
 
@@ -1186,10 +1183,11 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   padding-top: 8px !important;
 }
 .filter-select :deep(.v-label) {
-  color: #64748b !important;
+  color: rgba(255,255,255,0.5) !important;
   font-size: 12px !important;
 }
-.filter-select :deep(.v-icon) { color: #64748b !important; }
+.filter-select :deep(.v-icon) { color: rgba(255,255,255,0.5) !important; }
+.filter-icon-wrap .v-icon { color: rgba(255,255,255,0.6) !important; }
 .filter-apply-btn {
   display: flex;
   align-items: center;

@@ -211,75 +211,85 @@ watch([selectedAo, selectedAnalisa, searchQuery], resetPage)
     </div>
 
     <!-- Executive Scorecards (Pro Max) -->
-    <div class="kpi-cards-grid mb-6">
-      <div class="kpi-card kpi-card--success">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #10b981, #34d399)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-emerald-600">Total Transaksi</span>
-            <div class="kpi-card__icon fin-icon-green">
-              <v-icon icon="ri-file-add-line" size="18" />
+    <v-row class="mb-6">
+      <v-col cols="12" md="4">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-file-add-line" size="120" color="#10b981" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL TRANSAKSI</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #10b981; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
+                  <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="emerald"></v-progress-circular>
+                  <template v-else>{{ summary.total_kontrak }}</template>
+                </h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #10b981; font-weight: 600;">Bulan Berjalan CBS</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2">
-            <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="emerald"></v-progress-circular>
-            <template v-else>{{ summary.total_kontrak }}</template>
-          </div>
-          <div class="kpi-card__sub text-emerald-600 font-weight-bold">Bulan Berjalan CBS</div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #1e40af, #3b82f6)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label">Total Volume Plafon Baru</span>
-            <div class="kpi-card__icon fin-icon-blue">
-              <v-icon icon="ri-money-dollar-circle-line" size="18" />
+      <v-col cols="12" md="4">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-money-dollar-circle-line" size="120" color="#3b82f6" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL VOLUME PLAFON BARU</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
+                  <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="blue"></v-progress-circular>
+                  <template v-else>{{ formatRp(summary.total_volume) }}</template>
+                </h2>
+                <div class="d-flex align-center gap-2 mt-1">
+                  <span class="text-xs font-bold text-emerald-600"><v-icon icon="ri-arrow-up-line" size="small"></v-icon> Naik: {{ summary.count_naik }}</span>
+                  <span class="text-xs font-bold text-rose-500"><v-icon icon="ri-arrow-down-line" size="small"></v-icon> Turun: {{ summary.count_turun }}</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2 text-truncate">
-            <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="blue"></v-progress-circular>
-            <template v-else>{{ formatRp(summary.total_volume) }}</template>
-          </div>
-          <div class="d-flex align-center gap-2 mt-1">
-            <span class="text-xs font-bold text-emerald-600"><v-icon icon="ri-arrow-up-line" size="small"></v-icon> Naik: {{ summary.count_naik }}</span>
-            <span class="text-xs font-bold text-rose-500"><v-icon icon="ri-arrow-down-line" size="small"></v-icon> Turun: {{ summary.count_turun }}</span>
-          </div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #d97706, #fbbf24)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label">Tipe Nasabah</span>
+      <v-col cols="12" md="4">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-pie-chart-2-line" size="120" color="#d97706" />
           </div>
-          <div class="d-flex align-center justify-space-between mt-2">
-            <div class="d-flex flex-column gap-1">
-              <div class="d-flex align-center gap-2">
-                <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
-                <span class="text-xs font-bold text-slate-700">Top Up ({{ summary.count_topup }})</span>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TIPE NASABAH</p>
+                <div class="d-flex flex-column gap-1 mt-2">
+                  <div class="d-flex align-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                    <span class="text-xs font-bold text-slate-700">Top Up ({{ summary.count_topup }})</span>
+                  </div>
+                  <div class="d-flex align-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                    <span class="text-xs font-bold text-slate-700">Ulangan ({{ summary.count_ulangan }})</span>
+                  </div>
+                  <div class="d-flex align-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                    <span class="text-xs font-bold text-slate-700">Retention ({{ summary.count_retention }})</span>
+                  </div>
+                </div>
               </div>
-              <div class="d-flex align-center gap-2">
-                <div class="w-3 h-3 rounded-full bg-amber-500"></div>
-                <span class="text-xs font-bold text-slate-700">Ulangan ({{ summary.count_ulangan }})</span>
-              </div>
-              <div class="d-flex align-center gap-2">
-                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
-                <span class="text-xs font-bold text-slate-700">Retention ({{ summary.count_retention }})</span>
+              <div style="width: 70px; height: 70px;" class="relative">
+                <VueApexCharts v-if="!loading" type="donut" width="100%" height="100%" :options="chartOptions" :series="chartSeries"></VueApexCharts>
+                <div v-else class="absolute inset-0 flex items-center justify-center">
+                  <v-progress-circular indeterminate color="indigo" size="20"></v-progress-circular>
+                </div>
               </div>
             </div>
-            <div style="width: 70px; height: 70px;" class="relative">
-              <VueApexCharts v-if="!loading" type="donut" width="100%" height="100%" :options="chartOptions" :series="chartSeries"></VueApexCharts>
-              <div v-else class="absolute inset-0 flex items-center justify-center">
-                <v-progress-circular indeterminate color="indigo" size="20"></v-progress-circular>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
     <!-- Independent Filter Bar (Pro Max) -->
     <v-card class="d-flex flex-wrap align-center ga-3 pa-4 bg-white rounded-xl border shadow-sm mb-6" elevation="0">
@@ -332,9 +342,9 @@ watch([selectedAo, selectedAnalisa, searchQuery], resetPage)
           <table class="fin-table fin-vtable text-sm">
             <thead>
               <tr>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase sticky left-0 z-10 bg-slate-50 whitespace-nowrap">Transisi Fasilitas</th>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase whitespace-nowrap">Analisa Nasabah</th>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase text-right whitespace-nowrap">Plafon Lama → Baru</th>
+                <th class="sticky left-0 z-10 whitespace-nowrap">Transisi Fasilitas</th>
+                <th class="whitespace-nowrap">Analisa Nasabah</th>
+                <th class="text-right whitespace-nowrap">Plafon Lama → Baru</th>
               </tr>
             </thead>
             <tbody>

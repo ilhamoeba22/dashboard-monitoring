@@ -25,63 +25,75 @@
       </div>
 
       <!-- KPI Cards -->
-      <div class="kpi-cards-grid mb-6">
-        <div class="kpi-card">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #d97706, #fbbf24)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label">Avg Yield Tagihan</span>
-              <div class="kpi-card__icon fin-icon-amber">
-                <v-icon icon="ri-funds-box-line" size="18" />
-              </div>
+      <v-row class="mb-6">
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-funds-box-line" size="120" color="#d97706" />
             </div>
-            <div class="kpi-card__value mt-2">{{ safePct(summary.avg_yield_tag).toFixed(2) }}%</div>
-            <div class="kpi-card__sub">Target Yield</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">AVG YIELD TAGIHAN</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #d97706; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ safePct(summary.avg_yield_tag).toFixed(2) }}%</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Target Yield</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <div class="kpi-card kpi-card--success">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #10b981, #34d399)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label text-emerald-600">Avg Yield Bayar</span>
-              <div class="kpi-card__icon fin-icon-green">
-                <v-icon icon="ri-hand-coin-line" size="18" />
-              </div>
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-hand-coin-line" size="120" color="#10b981" />
             </div>
-            <div class="kpi-card__value mt-2">{{ safePct(summary.avg_yield_byr).toFixed(2) }}%</div>
-            <div class="kpi-card__sub text-emerald-600 font-weight-bold">Actual Yield</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">AVG YIELD BAYAR</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #059669; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ safePct(summary.avg_yield_byr).toFixed(2) }}%</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #059669; font-weight: 600;">Actual Yield</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <div class="kpi-card">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #1e40af, #3b82f6)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label">Best Performer</span>
-              <div class="kpi-card__icon fin-icon-blue">
-                <v-icon icon="ri-trophy-line" size="18" />
-              </div>
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-trophy-line" size="120" color="#3b82f6" />
             </div>
-            <div class="kpi-card__value mt-2 text-truncate" style="max-width: 160px; font-size: 20px;">{{ summary.best_performer || 'N/A' }}</div>
-            <div class="kpi-card__sub text-blue-600 font-weight-bold">{{ safePct(summary.best_performer_yield).toFixed(2) }}%</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">BEST PERFORMER</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ summary.best_performer || 'N/A' }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">{{ safePct(summary.best_performer_yield).toFixed(2) }}%</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <div class="kpi-card">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #9333ea, #c084fc)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label text-purple-600">Performance Rate</span>
-              <div class="kpi-card__icon fin-icon-purple">
-                <v-icon icon="ri-percent-line" size="18" />
-              </div>
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-percent-line" size="120" color="#9333ea" />
             </div>
-            <div class="kpi-card__value mt-2">{{ safePct(summary.avg_performance).toFixed(2) }}%</div>
-            <div class="kpi-card__sub text-purple-600 font-weight-bold">Bayar/Tagihan</div>
-          </div>
-        </div>
-      </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">PERFORMANCE RATE</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #9333ea; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ safePct(summary.avg_performance).toFixed(2) }}%</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #9333ea; font-weight: 600;">Bayar/Tagihan</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
 
       <!-- Dimension Tabs -->
       <v-tabs
@@ -89,7 +101,7 @@
         bg-color="grey-lighten-4"
         color="primary"
         rounded="lg"
-        class="border mb-6"
+        class="fin-content-tabs border mb-6"
         @update:model-value="fetchData"
       >
         <v-tab value="ao" class="font-weight-bold">Account Officer</v-tab>
@@ -603,11 +615,12 @@ onMounted(() => {
 }
 
 :deep(.v-tab:not(.v-tab--selected)) {
-  color: rgba(0, 0, 0, 0.6) !important;
+  color: #64748b !important;
 }
 
 :deep(.v-tab.v-tab--selected) {
-  font-weight: 700 !important;
+  font-weight: 800 !important;
+  color: #1e293b !important;
 }
 
 /* Data Table Enterprise Styling */

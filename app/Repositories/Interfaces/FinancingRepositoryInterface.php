@@ -26,7 +26,7 @@ interface FinancingRepositoryInterface
     /**
      * Dapatkan daftar cabang yang unik.
      */
-    public function getUniqueCabangs(): Collection;
+    public function getUniqueCabangs(): Collection; public function getUniqueSegmens(): Collection;
 
     /**
      * Dapatkan detail jadwal angsuran berdasarkan nomor kontrak.

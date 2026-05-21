@@ -25,63 +25,75 @@
       </div>
 
       <!-- KPI Cards -->
-      <div class="kpi-cards-grid mb-6">
-        <div class="kpi-card kpi-card--info">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #1e40af, #3b82f6)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label text-blue-600">Overall RR</span>
-              <div class="kpi-card__icon fin-icon-blue">
-                <v-icon icon="ri-percent-line" size="18" />
-              </div>
+      <v-row class="mb-6">
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-percent-line" size="120" color="#3b82f6" />
             </div>
-            <div class="kpi-card__value mt-2">{{ safePct(summary.overall_rate).toFixed(2) }}%</div>
-            <div class="kpi-card__sub text-blue-600 font-weight-bold">Rata-rata</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">OVERALL RR</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ safePct(summary.overall_rate).toFixed(2) }}%</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Rata-rata</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <div class="kpi-card">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #4338ca, #6366f1)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label text-indigo-600">Total Nasabah</span>
-              <div class="kpi-card__icon fin-icon-indigo">
-                <v-icon icon="ri-group-line" size="18" />
-              </div>
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-group-line" size="120" color="#6366f1" />
             </div>
-            <div class="kpi-card__value mt-2">{{ parseInt(summary.total_nasabah || 0) }}</div>
-            <div class="kpi-card__sub text-indigo-600 font-weight-bold">Aktif</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL NASABAH</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #6366f1; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ parseInt(summary.total_nasabah || 0) }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Aktif</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <div class="kpi-card kpi-card--success">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #10b981, #34d399)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label text-emerald-600">Lancar (100%)</span>
-              <div class="kpi-card__icon fin-icon-green">
-                <v-icon icon="ri-checkbox-circle-line" size="18" />
-              </div>
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-checkbox-circle-line" size="120" color="#10b981" />
             </div>
-            <div class="kpi-card__value mt-2">{{ parseInt(summary.nasabah_100_pct || 0) }}</div>
-            <div class="kpi-card__sub text-emerald-600 font-weight-bold">Nasabah</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">LANCAR (100%)</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #10b981; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ parseInt(summary.nasabah_100_pct || 0) }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #10b981; font-weight: 600;">Nasabah</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <div class="kpi-card kpi-card--warning">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #d97706, #fbbf24)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label text-amber-600">Warning (&lt;80%)</span>
-              <div class="kpi-card__icon fin-icon-amber">
-                <v-icon icon="ri-alert-line" size="18" />
-              </div>
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-alert-line" size="120" color="#d97706" />
             </div>
-            <div class="kpi-card__value mt-2">{{ parseInt(summary.nasabah_warning || 0) }}</div>
-            <div class="kpi-card__sub text-amber-600 font-weight-bold">Nasabah</div>
-          </div>
-        </div>
-      </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">WARNING (&lt;80%)</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #d97706; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ parseInt(summary.nasabah_warning || 0) }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Nasabah</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
 
       <!-- Filter Bar -->
       <v-card class="d-flex flex-wrap align-center ga-3 pa-4 bg-white rounded-xl border shadow-sm mb-6" elevation="0">

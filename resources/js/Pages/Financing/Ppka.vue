@@ -136,7 +136,7 @@ const chartOptions = computed(() => ({
           name: { show: true, fontSize: '12px', color: '#64748B', fontWeight: 600 },
           value: { 
             show: true, 
-            fontSize: '24px', 
+            fontSize: '28px', 
             fontWeight: 800, 
             color: '#1E293B',
             formatter: (val) => 'Rp ' + (val / 1e6).toFixed(1) + ' Jt' 
@@ -239,75 +239,87 @@ onMounted(() => {
     </div>
 
     <!-- Executive Scorecards (Pro Max) -->
-    <div class="kpi-cards-grid mb-6">
-      <div class="kpi-card">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #1e40af, #3b82f6)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label">Total PPAP</span>
-            <div class="kpi-card__icon fin-icon-blue">
-              <v-icon icon="ri-funds-line" size="18" />
+    <v-row class="mb-6">
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-funds-line" size="120" color="#3b82f6" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL PPAP</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
+                  <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="blue"></v-progress-circular>
+                  <template v-else>{{ formatRp(summary.total_ppap) }}</template>
+                </h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">{{ summary.total_kontrak }} Kontrak Aktif</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2 text-truncate">
-            <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="blue"></v-progress-circular>
-            <template v-else>{{ formatRp(summary.total_ppap) }}</template>
-          </div>
-          <div class="kpi-card__sub">{{ summary.total_kontrak }} Kontrak Aktif</div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card kpi-card--success">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #10b981, #34d399)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-emerald-600">Kol 1 & 2 (Safe)</span>
-            <div class="kpi-card__icon fin-icon-green">
-              <v-icon icon="ri-shield-star-line" size="18" />
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-shield-star-line" size="120" color="#059669" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">KOL 1 & 2 (SAFE)</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #059669; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
+                  <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="emerald"></v-progress-circular>
+                  <template v-else>{{ formatRp(summary.kol1_ppap + summary.kol2_ppap) }}</template>
+                </h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #059669; font-weight: 600;">Lancar & DPK (0.5% - 3%)</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2 text-truncate">
-            <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="emerald"></v-progress-circular>
-            <template v-else>{{ formatRp(summary.kol1_ppap + summary.kol2_ppap) }}</template>
-          </div>
-          <div class="kpi-card__sub text-emerald-600 font-weight-bold">Lancar & DPK (0.5% - 3%)</div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card kpi-card--warning">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #d97706, #fbbf24)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-amber-600">Kol 3 (Warning)</span>
-            <div class="kpi-card__icon fin-icon-amber">
-              <v-icon icon="ri-error-warning-line" size="18" />
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-error-warning-line" size="120" color="#d97706" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">KOL 3 (WARNING)</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #d97706; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
+                  <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="amber"></v-progress-circular>
+                  <template v-else>{{ formatRp(summary.kol3_ppap) }}</template>
+                </h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #d97706; font-weight: 600;">Kurang Lancar (10%)</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2 text-truncate">
-            <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="amber"></v-progress-circular>
-            <template v-else>{{ formatRp(summary.kol3_ppap) }}</template>
-          </div>
-          <div class="kpi-card__sub text-amber-600 font-weight-bold">Kurang Lancar (10%)</div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card kpi-card--danger">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #e11d48, #fb7185)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-rose-600">Kol 4 & 5 (Danger)</span>
-            <div class="kpi-card__icon fin-icon-red">
-              <v-icon icon="ri-alarm-warning-fill" class="animate-pulse" size="18" />
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-alarm-warning-fill" size="120" color="#e11d48" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">KOL 4 & 5 (DANGER)</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #e11d48; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
+                  <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="rose"></v-progress-circular>
+                  <template v-else>{{ formatRp(summary.kol4_ppap + summary.kol5_ppap) }}</template>
+                </h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #e11d48; font-weight: 600;">Diragukan & Macet (50-100%)</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2 text-truncate">
-            <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="rose"></v-progress-circular>
-            <template v-else>{{ formatRp(summary.kol4_ppap + summary.kol5_ppap) }}</template>
-          </div>
-          <div class="kpi-card__sub text-rose-600 font-weight-bold">Diragukan & Macet (50-100%)</div>
-        </div>
-      </div>
-    </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
     <!-- Visual Analytics -->
     <v-card class="rounded-xl border shadow-sm bg-white mb-6" elevation="0">
@@ -361,12 +373,12 @@ onMounted(() => {
           <table class="fin-table fin-vtable text-sm">
             <thead>
               <tr>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase sticky left-0 z-10 bg-slate-50 whitespace-nowrap">Nasabah / Kontrak</th>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase whitespace-nowrap">Jaminan (Agunan)</th>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase whitespace-nowrap text-center">Kol</th>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase text-right whitespace-nowrap">Outstanding</th>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase text-right whitespace-nowrap">PPAP Dihitung</th>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase text-center whitespace-nowrap">Aksi</th>
+                <th class="sticky left-0 z-10 whitespace-nowrap">Nasabah / Kontrak</th>
+                <th class="whitespace-nowrap">Jaminan (Agunan)</th>
+                <th class="whitespace-nowrap text-center">Kol</th>
+                <th class="text-right whitespace-nowrap">Outstanding</th>
+                <th class="text-right whitespace-nowrap">PPAP Dihitung</th>
+                <th class="text-center whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody>

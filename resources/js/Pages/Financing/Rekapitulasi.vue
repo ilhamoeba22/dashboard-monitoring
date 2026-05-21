@@ -111,7 +111,10 @@ const treeMapOpts = computed(() => ({
   },
   dataLabels: {
     enabled: true,
+    dropShadow: { enabled: false },
+    style: { fontSize: '11px', fontWeight: 600 },
     formatter: function (text, op) {
+      if (op.value < 10) return ''; // Hide label if value is too small (< 10M)
       return [text, op.value + ' M']
     }
   }
@@ -212,10 +215,13 @@ watch([selectedDimension, selectedCabang], () => {
               item-title="label"
               item-value="value"
               prepend-inner-icon="ri-layout-grid-line"
-              variant="plain"
+              variant="solo"
               density="compact"
+              flat
               hide-details
-              style="width: 140px;"
+              rounded="lg"
+              bg-color="white"
+              style="min-width: 140px; max-width: 180px;"
             ></v-select>
 
             <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2);" class="mx-1"></div>
@@ -228,11 +234,14 @@ watch([selectedDimension, selectedCabang], () => {
               item-value="kdloc"
               label="Semua Cabang"
               prepend-inner-icon="ri-store-2-line"
-              variant="plain"
+              variant="solo"
               density="compact"
+              flat
               hide-details
+              rounded="lg"
+              bg-color="white"
               clearable
-              style="width: 150px;"
+              style="min-width: 160px; max-width: 220px;"
             ></v-select>
 
             <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2);" class="mx-1"></div>
@@ -247,10 +256,13 @@ watch([selectedDimension, selectedCabang], () => {
               item-title="title"
               item-value="value"
               prepend-inner-icon="ri-funds-line"
-              variant="plain"
+              variant="solo"
               density="compact"
+              flat
               hide-details
-              style="width: 140px;"
+              rounded="lg"
+              bg-color="white"
+              style="min-width: 160px; max-width: 200px;"
             ></v-select>
             
             <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2);" class="mx-1"></div>
@@ -266,63 +278,80 @@ watch([selectedDimension, selectedCabang], () => {
     </div>
 
     <!-- SCORECARDS -->
-    <div class="kpi-cards-grid mb-6">
-      <div class="kpi-card kpi-card--info">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #3b82f6, #0ea5e9)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-blue-600">TOTAL NOA</span>
-            <div class="kpi-card__icon fin-icon-blue">
-              <v-icon icon="ri-group-line" size="18" />
-            </div>
+    <v-row class="mb-6">
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-wallet-3-line" size="120" color="#3b82f6" />
           </div>
-          <div class="kpi-card__value">{{ formatNumber(totals.noa) }}</div>
-          <div class="kpi-card__sub">Rekening aktif pembiayaan</div>
-        </div>
-      </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL OUTSTANDING</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(totals.total_os) }}</h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Volume portofolio</p>
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card kpi-card--success">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #10b981, #34d399)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-emerald-600">TOTAL O/S POKOK</span>
-            <div class="kpi-card__icon fin-icon-green">
-              <v-icon icon="ri-money-dollar-circle-line" size="18" />
-            </div>
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-file-list-3-line" size="120" color="#10b981" />
           </div>
-          <div class="kpi-card__value" style="font-size: 20px;">{{ formatRp(totals.total_os) }}</div>
-          <div class="kpi-card__sub">Portofolio pembiayaan aktif</div>
-        </div>
-      </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL NOA</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #10b981; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatNumber(totals.noa) }}</h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Akad aktif berjalan</p>
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #64748b, #94a3b8)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label">O/S KOL 1 (LANCAR)</span>
-            <div class="kpi-card__icon bg-slate-100">
-              <v-icon icon="ri-checkbox-circle-line" size="18" color="grey-darken-1" />
-            </div>
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-error-warning-line" size="120" :color="totals.npf_ratio > 5 ? '#ef4444' : (totals.npf_ratio > 3 ? '#f59e0b' : '#10b981')" />
           </div>
-          <div class="kpi-card__value" style="font-size: 20px;">{{ formatRp(totals.kol1_os || 0) }}</div>
-          <div class="kpi-card__sub">Portofolio kolektibilitas lancar</div>
-        </div>
-      </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">NPF RATIO</p>
+                <h2 class="text-h4 font-weight-bold mb-2"
+                    :style="{ color: totals.npf_ratio > 5 ? '#ef4444' : (totals.npf_ratio > 3 ? '#f59e0b' : '#10b981'), fontFamily: 'Plus Jakarta Sans, sans-serif', lineHeight: 1.2 }">
+                  {{ totals.npf_ratio }}%
+                </h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">
+                  <span class="font-weight-bold">{{ formatRp(totals.npf_os) }}</span> Macet
+                </p>
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card kpi-card--danger">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #e11d48, #fb7185)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-rose-600">NOA NPF (KOL 3-5)</span>
-            <div class="kpi-card__icon fin-icon-red">
-              <v-icon icon="ri-error-warning-line" size="18" />
-            </div>
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-safe-2-line" size="120" color="#8b5cf6" />
           </div>
-          <div class="kpi-card__value">{{ formatNumber((totals.kol3_noa || 0) + (totals.kol4_noa || 0) + (totals.kol5_noa || 0)) }}</div>
-          <div class="kpi-card__sub">Rekening Kol 3-5 &mdash; <a href="/financing/quality" style="color: #0284c7;">detail risiko &rsaquo;</a></div>
-        </div>
-      </div>
-    </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL PPAP</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #8b5cf6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(totals.total_ppap) }}</h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Cadangan kerugian</p>
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
     <!-- MAIN CONTENT -->
     <div class="content-card">

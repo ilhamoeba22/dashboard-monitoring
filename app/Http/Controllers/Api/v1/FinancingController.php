@@ -97,6 +97,26 @@ class FinancingController extends Controller
     }
 
     /**
+     * GET /api/v1/financing/segmens
+     */
+    public function segmens(): JsonResponse
+    {
+        try {
+            $data = $this->repository->getUniqueSegmens();
+
+            return response()->json([
+                'success' => true,
+                'data' => $data,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat data Segmen',
+            ], 500);
+        }
+    }
+
+    /**
      * GET /api/v1/financing/{nokontrak}/angsuran
      */
     public function angsuran(string $nokontrak): JsonResponse

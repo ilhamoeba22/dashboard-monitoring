@@ -180,11 +180,14 @@ watch(selectedCabang, () => store.fetchCollMonitoring())
               v-model="selectedCabang"
               :items="['Semua Cabang', ...cabangs.map(c => c.nama)]"
               label="Operational Unit"
-              variant="plain"
+              variant="solo"
               density="compact"
+              flat
               hide-details
-              style="width: 220px"
-              prepend-inner-icon="ri-bank-line"
+              rounded="lg"
+              bg-color="white"
+              prepend-inner-icon="ri-store-2-line"
+              style="min-width: 180px; max-width: 240px;"
             ></v-select>
             
             <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2);" class="mx-1"></div>
@@ -203,53 +206,62 @@ watch(selectedCabang, () => store.fetchCollMonitoring())
     </div>
 
     <!-- 2. Intelligence Scorecards -->
-    <div class="kpi-cards-grid mb-6">
-      <div class="kpi-card">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #1e40af, #3b82f6)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label">Akun Dipantau</span>
-            <div class="kpi-card__icon fin-icon-blue">
-              <v-icon icon="ri-radar-line" size="18" />
+    <v-row class="mb-6">
+      <v-col cols="12" sm="6" lg="4">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-radar-line" size="120" color="#3b82f6" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">AKUN DIPANTAU</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ filteredData.length }}</h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Fasilitas aktif dalam filter</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2">{{ filteredData.length }}</div>
-          <div class="kpi-card__sub">Fasilitas aktif dalam kriteria filter saat ini</div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card kpi-card--danger">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #e11d48, #fb7185)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-rose-600">O/S Proyeksi NPF (Kol ≥ 3)</span>
-            <div class="kpi-card__icon fin-icon-red">
-              <v-icon icon="ri-alarm-warning-line" size="18" />
+      <v-col cols="12" sm="6" lg="4">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-alarm-warning-line" size="120" color="#e11d48" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">O/S PROYEKSI NPF (KOL ≥ 3)</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #e11d48; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
+                  {{ store.formatShortRp(filteredData.filter(i => parseInt(i.colbaru_final_eom) >= 3).reduce((a, b) => a + parseFloat(b.osmdlc || 0), 0)) }}
+                </h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Estimasi potensi PPKA</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2 text-rose-600">
-            {{ store.formatShortRp(filteredData.filter(i => parseInt(i.colbaru_final_eom) >= 3).reduce((a, b) => a + parseFloat(b.osmdlc || 0), 0)) }}
-          </div>
-          <div class="kpi-card__sub text-rose-600 font-weight-bold">Estimasi potensi PPKA dari data terfilter</div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #d97706, #fbbf24)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label">Distribusi Downgrade</span>
+      <v-col cols="12" sm="6" lg="4">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-pie-chart-2-line" size="120" color="#059669" />
           </div>
-          <div v-if="downgradeStats.total === 0" class="d-flex flex-column align-center justify-center py-2">
-            <v-icon icon="ri-checkbox-circle-fill" color="success" size="24" class="mb-1"></v-icon>
-            <div class="text-caption text-success font-weight-bold text-uppercase">Data Sangat Aman</div>
-          </div>
-          <div v-else class="d-flex align-center mt-2">
-            <VueApexCharts type="donut" width="100%" height="80" :options="downgradeStats.chartOptions" :series="downgradeStats.series" />
-          </div>
-        </div>
-      </div>
-    </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">DISTRIBUSI DOWNGRADE</p>
+                <div class="d-flex align-center gap-2 mt-2">
+                  <VueApexCharts type="donut" width="60" height="60" :options="downgradeStats.chartOptions" :series="downgradeStats.series" />
+                  <div class="text-h5 font-weight-bold">{{ downgradeStats.total }}</div>
+                </div>
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
     <!-- 2.5 Advanced Filter Bar -->
     <v-card elevation="0" class="mb-6 rounded-xl border bg-white overflow-hidden shadow-sm">
@@ -323,13 +335,13 @@ watch(selectedCabang, () => store.fetchCollMonitoring())
           <table class="fin-table fin-vtable enterprise-table">
             <thead>
               <tr>
-                <th class="text-center font-weight-black text-caption" style="width: 60px">NO</th>
-                <th class="text-left font-weight-black text-caption">NASABAH & KONTRAK</th>
-                <th class="text-right font-weight-black text-caption">O/S POKOK</th>
-                <th class="text-center font-weight-black text-caption">EST. HARI TGK</th>
-                <th class="text-center font-weight-black text-caption">ROLL-RATE (TODAY ➔ EOM)</th>
-                <th class="text-left font-weight-black text-caption">ACTION INTELLIGENCE</th>
-                <th class="text-left font-weight-black text-caption">OFFICER</th>
+                <th class="text-center" style="width: 60px">NO</th>
+                <th class="text-left">NASABAH & KONTRAK</th>
+                <th class="text-right">O/S POKOK</th>
+                <th class="text-center">EST. HARI TGK</th>
+                <th class="text-center">ROLL-RATE (TODAY ➔ EOM)</th>
+                <th class="text-left">ACTION INTELLIGENCE</th>
+                <th class="text-left">OFFICER</th>
               </tr>
             </thead>
 
@@ -349,7 +361,12 @@ watch(selectedCabang, () => store.fetchCollMonitoring())
               <v-chip size="small" variant="tonal" class="font-weight-black">{{ item.Hari_TGK_EOM_Real }}</v-chip>
             </td>
             <td class="text-center">
-              <div class="d-flex align-center justify-center gap-3">
+              <div v-if="item.colbaru_final_curr === item.colbaru_final_eom" class="d-flex align-center justify-center">
+                <v-chip size="small" variant="tonal" class="font-weight-bold" :color="getColColor(item.colbaru_final_curr)">
+                  Maintain Kol {{ item.colbaru_final_curr }}
+                </v-chip>
+              </div>
+              <div v-else class="d-flex align-center justify-center gap-3">
                 <v-avatar :color="getColColor(item.colbaru_final_curr)" size="32" variant="tonal" class="font-weight-black">
                   {{ item.colbaru_final_curr }}
                 </v-avatar>
@@ -377,7 +394,11 @@ watch(selectedCabang, () => store.fetchCollMonitoring())
                     {{ getAlertConfig(item.Keterangan_EOM_Detail).label }}
                   </div>
                   <div class="text-caption font-weight-medium opacity-90 line-clamp-2" style="line-height: 1.2">
-                    {{ item.Keterangan_EOM_Detail?.split('|')[0] }}
+                    <v-tooltip :text="item.Keterangan_EOM_Detail?.split('|')[0] || ''" location="top" max-width="300">
+                      <template #activator="{ props }">
+                        <span v-bind="props" style="cursor: pointer;">{{ item.Keterangan_EOM_Detail?.split('|')[0] }}</span>
+                      </template>
+                    </v-tooltip>
                   </div>
                 </div>
               </div>

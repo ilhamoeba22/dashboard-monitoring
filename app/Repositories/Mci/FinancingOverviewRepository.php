@@ -511,8 +511,13 @@ class FinancingOverviewRepository
                 ->take($months)
                 ->reverse()
                 ->map(function($row) {
+                    $y = substr($row->periode, 0, 4);
+                    $m = substr($row->periode, 4, 2);
+                    $monthMap = ['01'=>'Jan','02'=>'Feb','03'=>'Mar','04'=>'Apr','05'=>'Mei',
+                                 '06'=>'Jun','07'=>'Jul','08'=>'Agt','09'=>'Sep','10'=>'Okt','11'=>'Nov','12'=>'Des'];
                     return [
                         'periode' => $row->periode,
+                        'month'   => ($monthMap[$m] ?? $m) . ' ' . substr($y, 2),
                         'total_os' => (float) $row->total_nominal,
                         'total_npf' => (float) $row->total_npf,
                         'total_noa' => (int) $row->total_noa

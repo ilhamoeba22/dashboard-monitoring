@@ -103,6 +103,7 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
         Route::get('/quality-diagnostic', [FinancingController::class, 'qualityDiagnostic']); // TEMP: diagnostic
         Route::get('/aos', [FinancingController::class, 'aos']);
         Route::get('/cabangs', [FinancingController::class, 'cabangs']);
+        Route::get('/segmens', [FinancingController::class, 'segmens']);
         Route::get('/jatuh-tempo', [FinancingController::class, 'jatuhTempo']);
         Route::get('/{nokontrak}/angsuran', [FinancingController::class, 'angsuran']);
         

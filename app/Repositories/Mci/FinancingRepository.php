@@ -158,6 +158,18 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
     }
 
     /**
+     * Dapatkan daftar unik Segmen untuk filter dropdown.
+     */
+    public function getUniqueSegmens(): Collection
+    {
+        return DB::connection($this->connection)->table('SEGMEN')
+            ->select('kdseg', 'ket')
+            ->whereNotNull('ket')
+            ->orderBy('ket')
+            ->get();
+    }
+
+    /**
      * Dapatkan rincian angsuran per kontrak.
      */
     public function getDetailAngsuran(string $nokontrak): array

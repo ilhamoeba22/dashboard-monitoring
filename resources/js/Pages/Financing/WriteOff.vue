@@ -25,63 +25,75 @@
       </div>
 
       <!-- KPI Cards -->
-      <div class="kpi-cards-grid mb-6">
-        <div class="kpi-card kpi-card--danger">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #e11d48, #fb7185)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label text-rose-600">Total Write-Off</span>
-              <div class="kpi-card__icon fin-icon-red">
-                <v-icon icon="ri-file-damage-line" size="18" />
-              </div>
+      <v-row class="mb-6">
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-file-damage-line" size="120" color="#e11d48" />
             </div>
-            <div class="kpi-card__value mt-2">{{ summary.total_writeoff_count || 0 }}</div>
-            <div class="kpi-card__sub text-rose-600 font-weight-bold">Kontrak Terhapus</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL WRITE-OFF</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #e11d48; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ summary.total_writeoff_count || 0 }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Kontrak Terhapus</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <div class="kpi-card">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #d97706, #fbbf24)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label">Volume Hapus Buku</span>
-              <div class="kpi-card__icon fin-icon-amber">
-                <v-icon icon="ri-money-dollar-circle-line" size="18" />
-              </div>
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-money-dollar-circle-line" size="120" color="#d97706" />
             </div>
-            <div class="kpi-card__value mt-2">{{ formatCurrency(summary.total_writeoff_volume) }}</div>
-            <div class="kpi-card__sub">Total Modal Awal</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">VOLUME HAPUS BUKU</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #d97706; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatCurrency(summary.total_writeoff_volume) }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Total Modal Awal</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <div class="kpi-card kpi-card--success">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #10b981, #34d399)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label text-emerald-600">Recovery Rate</span>
-              <div class="kpi-card__icon fin-icon-green">
-                <v-icon icon="ri-percent-line" size="18" />
-              </div>
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-percent-line" size="120" color="#059669" />
             </div>
-            <div class="kpi-card__value mt-2">{{ parseFloat(summary.avg_recovery_rate || 0).toFixed(2) }}%</div>
-            <div class="kpi-card__sub text-emerald-600 font-weight-bold">Rata-rata Koleksi</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">RECOVERY RATE</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #059669; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ parseFloat(summary.avg_recovery_rate || 0).toFixed(2) }}%</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #059669; font-weight: 600;">Rata-rata Koleksi</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <div class="kpi-card">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #1e40af, #3b82f6)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label">Top AO</span>
-              <div class="kpi-card__icon fin-icon-blue">
-                <v-icon icon="ri-medal-line" size="18" />
-              </div>
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-medal-line" size="120" color="#3b82f6" />
             </div>
-            <div class="kpi-card__value mt-2" style="font-size: 20px;">{{ summary.top_ao || 'N/A' }}</div>
-            <div class="kpi-card__sub">Performa Terbaik</div>
-          </div>
-        </div>
-      </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOP AO</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ summary.top_ao || 'N/A' }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Performa Terbaik</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
 
       <!-- Filter Bar -->
       <v-card class="d-flex flex-wrap align-center ga-3 pa-4 bg-white rounded-xl border shadow-sm mb-6" elevation="0">
@@ -303,11 +315,13 @@ const chartSeries = computed(() => {
 const chartOptions = computed(() => ({
   chart: {
     type: 'area',
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
     toolbar: { show: false },
     sparkline: { enabled: false },
   },
   dataLabels: { enabled: false },
-  stroke: { curve: 'smooth', width: 3 },
+  stroke: { curve: 'smooth', width: 4 },
+  colors: ['#059669'],
   fill: {
     type: 'gradient',
     gradient: {

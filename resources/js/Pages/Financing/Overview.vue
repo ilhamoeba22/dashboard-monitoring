@@ -93,12 +93,10 @@ const donutChartSeries = computed(() => {
 const areaChartOptions = computed(() => {
   const categories = []
   if (rtData.value.trend) {
-    const reversed = [...rtData.value.trend].reverse()
-    reversed.forEach(item => {
-      const year     = item.periode.toString().substring(2, 4)
-      const monthNum = item.periode.toString().substring(4, 6)
-      const names    = { '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'Mei', '06': 'Jun', '07': 'Jul', '08': 'Agt', '09': 'Sep', '10': 'Okt', '11': 'Nov', '12': 'Des' }
-      categories.push(`${names[monthNum]} '${year}`)
+    // No more .reverse()! Using the array exactly as it comes from the backend
+    rtData.value.trend.forEach(item => {
+      // Backend already supplies the 'month' key (e.g., "Apr 26") based on the repository fix
+      categories.push(item.month || item.periode)
     })
   }
   return {
@@ -120,8 +118,8 @@ const areaChartOptions = computed(() => {
 const areaChartSeries = computed(() => {
   const totalOs = [], totalNpf = []
   if (rtData.value.trend) {
-    const reversed = [...rtData.value.trend].reverse()
-    reversed.forEach(item => {
+    // No more .reverse()!
+    rtData.value.trend.forEach(item => {
       totalOs.push(parseFloat(item.total_os) || 0)
       totalNpf.push(parseFloat(item.total_npf) || 0)
     })

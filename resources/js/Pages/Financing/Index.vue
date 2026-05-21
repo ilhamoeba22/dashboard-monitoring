@@ -174,67 +174,75 @@ const badgeColor = (kol) => {
     <v-divider class="mb-6"></v-divider>
 
     <!-- KEY PERFORMANCE INDICATORS -->
-    <div class="kpi-cards-grid mb-6">
-      <div class="kpi-card">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #1e3a8a, #3b82f6)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label">TOTAL PORTOFOLIO</span>
-            <div class="kpi-card__icon fin-icon-blue">
-              <v-icon icon="ri-wallet-3-line" size="18" />
+    <v-row class="mb-6">
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-wallet-3-line" size="120" color="#3b82f6" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL PORTOFOLIO</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(overviewData.summary.total_os) }}</h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;"><v-icon icon="ri-group-line" size="14"></v-icon> {{ formatNum(overviewData.summary.total_noa) }} Rekening Aktif</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2">{{ formatRp(overviewData.summary.total_os) }}</div>
-          <div class="kpi-card__sub text-blue-600 font-weight-bold d-flex align-center gap-1 mt-2">
-            <v-icon icon="ri-group-line" size="14"></v-icon>
-            {{ formatNum(overviewData.summary.total_noa) }} Rekening Aktif
-          </div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card kpi-card--warning">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #d97706, #fbbf24)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-amber-600">TOTAL TUNGGAKAN</span>
-            <div class="kpi-card__icon fin-icon-amber">
-              <v-icon icon="ri-error-warning-line" size="18" />
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-error-warning-line" size="120" color="#d97706" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL TUNGGAKAN</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #d97706; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(overviewData.summary.total_tunggakan || 0) }}</h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Tunggakan pokok berjalan</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2">{{ formatRp(overviewData.summary.total_tunggakan || 0) }}</div>
-          <div class="kpi-card__sub text-amber-600 font-weight-bold mt-2">Tunggakan pokok berjalan</div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card kpi-card--danger">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #e11d48, #fb7185)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-rose-600">EXPOSURE NPF</span>
-            <div class="kpi-card__icon fin-icon-red">
-              <v-icon icon="ri-alarm-warning-fill" size="18" />
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-alarm-warning-fill" size="120" color="#e11d48" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">EXPOSURE NPF</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #e11d48; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(overviewData.summary.npf_os) }}</h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;"><v-icon icon="ri-close-circle-line" size="14"></v-icon> {{ formatNum(overviewData.summary.npf_noa) }} Rekening Macet</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2">{{ formatRp(overviewData.summary.npf_os) }}</div>
-          <div class="kpi-card__sub text-rose-600 font-weight-bold d-flex align-center gap-1 mt-2">
-            <v-icon icon="ri-close-circle-line" size="14"></v-icon>
-            {{ formatNum(overviewData.summary.npf_noa) }} Rekening Macet
-          </div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card" :class="overviewData.summary.npf_ratio > 5 ? 'kpi-card--danger' : 'kpi-card--success'">
-        <div class="kpi-card__accent" :style="overviewData.summary.npf_ratio > 5 ? 'background: linear-gradient(90deg, #e11d48, #fb7185)' : 'background: linear-gradient(90deg, #10b981, #34d399)'"></div>
-        <div class="kpi-card__inner d-flex flex-column justify-center align-center h-100">
-          <div class="kpi-card__header mb-2 justify-center w-100">
-            <span class="kpi-card__label text-center" :class="overviewData.summary.npf_ratio > 5 ? 'text-rose-600' : 'text-emerald-600'">NPF RATIO</span>
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-percent-line" size="120" :color="overviewData.summary.npf_ratio > 5 ? '#e11d48' : '#10b981'" />
           </div>
-          <div class="text-h2 font-weight-black" :class="overviewData.summary.npf_ratio > 5 ? 'text-rose-600' : 'text-emerald-600'">
-            {{ Number(overviewData.summary.npf_ratio || 0).toFixed(2) }}%
-          </div>
-        </div>
-      </div>
-    </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">NPF RATIO</p>
+                <h2 class="text-h4 font-weight-bold mb-2" :style="`color: ${overviewData.summary.npf_ratio > 5 ? '#e11d48' : '#10b981'}; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;`">{{ Number(overviewData.summary.npf_ratio || 0).toFixed(2) }}%</h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">{{ overviewData.summary.npf_ratio > 5 ? 'Perlu Perhatian' : 'Sehat' }}</p>
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
     <!-- CHARTS & TABLES -->
     <v-row>

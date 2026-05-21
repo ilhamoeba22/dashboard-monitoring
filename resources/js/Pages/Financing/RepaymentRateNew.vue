@@ -25,91 +25,129 @@
       </div>
 
       <!-- KPI Cards -->
-      <div class="kpi-cards-grid mb-6">
-        <div class="kpi-card kpi-card--success">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #10b981, #34d399)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label text-emerald-600">Total Cash In</span>
-              <div class="kpi-card__icon fin-icon-green">
-                <v-icon icon="ri-hand-coin-line" size="18" />
-              </div>
+      <v-row class="mb-6">
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-percent-line" size="120" color="#3b82f6" />
             </div>
-            <div class="kpi-card__value mt-2">{{ formatCurrency(parseFloat(summary.total_cash_in || 0)) }}</div>
-            <div class="kpi-card__sub text-emerald-600 font-weight-bold">Realisasi Pembayaran</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">OVERALL RR</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ safePct(summary.overall_rate || 0).toFixed(2) }}%</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Rata-rata Repayment Rate</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <div class="kpi-card">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #1e40af, #3b82f6)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label text-blue-600">Rate Analisis</span>
-              <div class="kpi-card__icon fin-icon-blue">
-                <v-icon icon="ri-percent-line" size="18" />
-              </div>
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-group-line" size="120" color="#6366f1" />
             </div>
-            <div class="kpi-card__value mt-2">{{ parseFloat(summary.overall_rr_pct || 0).toFixed(2) }}%</div>
-            <div class="kpi-card__sub text-blue-600 font-weight-bold">Bayar / Tagihan</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL NASABAH</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #6366f1; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ parseInt(summary.total_nasabah || 0) }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Nasabah Aktif</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <div class="kpi-card kpi-card--warning">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #d97706, #fbbf24)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label text-amber-600">Target Tagihan</span>
-              <div class="kpi-card__icon fin-icon-amber">
-                <v-icon icon="ri-calendar-event-line" size="18" />
-              </div>
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-checkbox-circle-line" size="120" color="#059669" />
             </div>
-            <div class="kpi-card__value mt-2">{{ formatCurrency(parseFloat(summary.total_tagihan || 0)) }}</div>
-            <div class="kpi-card__sub text-amber-600 font-weight-bold">Total Tagihan Aktif</div>
-          </div>
-        </div>
-      </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">LANCAR (100%)</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #059669; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ parseInt(summary.nasabah_100_pct || 0) }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Nasabah Lancar Sempurna</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-alert-line" size="120" color="#d97706" />
+            </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">WARNING (<80%)</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #d97706; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ parseInt(summary.nasabah_warning || 0) }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Nasabah perlu perhatian</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
 
       <!-- Risk Breakdown Cards -->
-      <div class="kpi-cards-grid mb-6">
-        <div class="kpi-card">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #10b981, #34d399)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label">Good (RR ≥ 90%)</span>
-              <div class="kpi-card__icon fin-icon-green">
-                <v-icon icon="ri-emotion-happy-line" size="18" />
-              </div>
+      <v-row class="mb-6">
+        <v-col cols="12" sm="6" lg="4">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-emotion-happy-line" size="120" color="#10b981" />
             </div>
-            <div class="kpi-card__value mt-2 text-success">{{ parseInt(summary.good_count || 0) }} nasabah</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">GOOD (RR ≥ 90%)</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #10b981; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ parseInt(summary.good_count || 0) }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #10b981; font-weight: 600;">Nasabah</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <div class="kpi-card">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #f59e0b, #fbbf24)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label">Warning (RR 70–90%)</span>
-              <div class="kpi-card__icon fin-icon-amber">
-                <v-icon icon="ri-emotion-normal-line" size="18" />
-              </div>
+        <v-col cols="12" sm="6" lg="4">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-emotion-normal-line" size="120" color="#f59e0b" />
             </div>
-            <div class="kpi-card__value mt-2 text-warning">{{ parseInt(summary.warning_count || 0) }} nasabah</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">WARNING (RR 70–90%)</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #f59e0b; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ parseInt(summary.warning_count || 0) }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Nasabah</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <div class="kpi-card">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #ef4444, #f87171)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label">At Risk (RR &lt; 70%)</span>
-              <div class="kpi-card__icon fin-icon-red">
-                <v-icon icon="ri-emotion-unhappy-line" size="18" />
-              </div>
+        <v-col cols="12" sm="6" lg="4">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-emotion-unhappy-line" size="120" color="#ef4444" />
             </div>
-            <div class="kpi-card__value mt-2 text-error">{{ parseInt(summary.at_risk_count || 0) }} nasabah</div>
-          </div>
-        </div>
-      </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">AT RISK (RR &lt; 70%)</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #ef4444; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ parseInt(summary.at_risk_count || 0) }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #ef4444; font-weight: 600;">Nasabah</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
 
       <!-- Filter Bar -->
       <v-card class="d-flex flex-wrap align-center ga-3 pa-4 bg-white rounded-xl border shadow-sm mb-6" elevation="0">
@@ -250,8 +288,10 @@
             </template>
 
             <template #item.tgleff="{ item }">
-              <div>{{ formatDate(item.tgleff) }}</div>
-              <div class="text-caption text-grey">{{ parseInt(item.days_since_onboarding || 0) }} hari</div>
+              <div class="font-weight-bold">{{ formatDate(item.tgleff) }}</div>
+              <v-chip size="x-small" color="primary" variant="tonal" class="mt-1 px-2 font-weight-bold">
+                {{ formatAge(item.days_since_onboarding) }}
+              </v-chip>
             </template>
 
             <template #item.rr_pct="{ item }">
@@ -421,7 +461,7 @@ const donutChartSeries = computed(() => {
 })
 
 const donutChartOptions = computed(() => ({
-  chart: { type: 'donut', toolbar: { show: false } },
+  chart: { type: 'donut', fontFamily: "'Plus Jakarta Sans', sans-serif", toolbar: { show: false } },
   labels: ['Good', 'Warning', 'At Risk'],
   colors: ['#059669', '#F59E0B', '#DC2626'],
   legend: { position: 'bottom' },
@@ -493,6 +533,8 @@ const barChartOptions = computed(() => {
 
   return {
     chart: { type: 'bar', toolbar: { show: false } },
+    plotOptions: { bar: { horizontal: true, borderRadius: 4 } },
+    legend: { position: 'bottom' },
     xaxis: { categories: cats },
     yaxis: {
       title: { text: 'Repayment Rate (%)' },
@@ -568,6 +610,16 @@ const formatCurrency = (value) => {
     currency: 'IDR',
     minimumFractionDigits: 0
   }).format(num)
+}
+
+const formatAge = (days) => {
+  const d = safeNum(days)
+  if (d === 0) return '0 Hr'
+  const months = Math.floor(d / 30)
+  const remainDays = Math.floor(d % 30)
+  if (months === 0) return `${remainDays} Hr`
+  if (remainDays === 0) return `${months} Bln`
+  return `${months} Bln ${remainDays} Hr`
 }
 
 const formatDate = (date) => {

@@ -71,17 +71,31 @@ const chartOpts = computed(() => ({
     fontFamily: "'Plus Jakarta Sans', sans-serif",
     toolbar: { show: false },
     zoom: { enabled: false },
-    animations: { enabled: true, easing: 'easeinout', speed: 600 }
+    animations: { enabled: true, easing: 'easeinout', speed: 600 },
+    dropShadow: {
+      enabled: true,
+      color: '#000',
+      top: 10,
+      left: 0,
+      blur: 8,
+      opacity: 0.05
+    }
   },
   plotOptions: {
     bar: { columnWidth: '50%', borderRadius: 6, borderRadiusApplication: 'end' }
   },
-  colors: ['#06B6D4', '#64748B'], // Cyan/Biru Korporat untuk Bar, Abu Gelap untuk Line
+  colors: ['#06B6D4', '#64748B'],
   dataLabels: { enabled: false },
   stroke: {
     curve: 'smooth',
-    width: [0, 3], // 0 untuk bar, 3 untuk line
-    dashArray: [0, 5] // Putus-putus untuk target line
+    width: [0, 4],
+    dashArray: [0, 5]
+  },
+  markers: {
+    size: [0, 5],
+    strokeColors: '#fff',
+    strokeWidth: 2,
+    hover: { size: 7 }
   },
   fill: {
     type: ['gradient', 'solid'],
@@ -216,22 +230,28 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
               :items="monthOptions"
               item-title="title"
               item-value="value"
-              variant="plain"
+              variant="solo"
               density="compact"
+              flat
               hide-details
-              prepend-inner-icon="ri-filter-3-line"
-              style="width: 140px;"
+              rounded="lg"
+              bg-color="white"
+              prepend-inner-icon="ri-calendar-todo-line"
+              style="min-width: 160px; max-width: 220px;"
               placeholder="Pilih Bulan"
             />
             <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2);" class="mx-1"></div>
             <v-select
               v-model="selectedYear"
               :items="[2024, 2025, 2026, 2027]"
-              variant="plain"
+              variant="solo"
               density="compact"
+              flat
               hide-details
-              prepend-inner-icon="ri-calendar-2-line"
-              style="width: 100px;"
+              rounded="lg"
+              bg-color="white"
+              prepend-inner-icon="ri-calendar-line"
+              style="min-width: 120px; max-width: 160px;"
             />
           </div>
         </div>
@@ -270,71 +290,78 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
     <!-- MAIN CONTENT -->
     <template v-else>
       <!-- 2. EXECUTIVE SCORECARDS -->
-      <div class="kpi-cards-grid mb-5">
-        <!-- Target -->
-        <div class="kpi-card">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #64748b, #94a3b8)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label">Total Target RBB</span>
-              <div class="kpi-card__icon bg-slate-100">
-                <v-icon icon="ri-flag-2-line" size="18" color="grey-darken-1" />
-              </div>
+      <v-row class="mb-6">
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-focus-3-line" size="120" color="#3b82f6" />
             </div>
-            <div class="kpi-card__value">{{ formatM(scorecards.total_target_annual) }}</div>
-            <div class="kpi-card__sub">Akumulasi Target {{ selectedYear }}</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TARGET ANNUAL (RBB)</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(scorecards.total_target_annual) }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Plafon penyaluran tahun ini</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <!-- Pencairan -->
-        <div class="kpi-card kpi-card--info">
-          <div class="kpi-card__accent" style="background: linear-gradient(90deg, #3b82f6, #0ea5e9)"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label text-blue-600">Total Pencairan Baru</span>
-              <div class="kpi-card__icon fin-icon-blue">
-                <v-icon icon="ri-bank-card-line" size="18" />
-              </div>
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-check-double-line" size="120" color="#10b981" />
             </div>
-            <div class="kpi-card__value">{{ formatM(scorecards.total_realisasi) }}</div>
-            <div class="kpi-card__sub">Volume pencairan YTD</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">REALISASI (YTD)</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #10b981; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(scorecards.total_realisasi) }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Total pencairan berjalan</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <!-- Pacing % -->
-        <div class="kpi-card">
-          <div class="kpi-card__accent" :style="{ background: pacingColor }"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label" :style="{ color: pacingColor }">Pacing Achievement</span>
-              <div class="kpi-card__icon" :style="{ background: pacingColor + '20', color: pacingColor }">
-                <v-icon icon="ri-percent-line" size="18" />
-              </div>
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-dashboard-3-line" size="120" :color="pacingColor" />
             </div>
-            <div class="kpi-card__value" :style="{ color: pacingColor }">{{ scorecards.pacing_pct }}<span class="text-h6">%</span></div>
-            <div class="kpi-card__sub">vs Target s/d Bulan {{ scorecards.current_month }}</div>
-          </div>
-        </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">PACING / PENCAPAIAN</p>
+                  <h2 class="text-h4 font-weight-bold mb-2"
+                      :style="{ color: pacingColor, fontFamily: 'Plus Jakarta Sans, sans-serif', lineHeight: 1.2 }">
+                    {{ scorecards.pacing_pct }}%
+                  </h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Status performa saat ini</p>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-        <!-- Gap -->
-        <div class="kpi-card" :class="scorecards.gap_miliar > 0 ? 'kpi-card--success' : 'kpi-card--danger'">
-          <div class="kpi-card__accent" :style="scorecards.gap_miliar > 0 ? 'background: linear-gradient(90deg, #10b981, #34d399)' : 'background: linear-gradient(90deg, #e11d48, #fb7185)'"></div>
-          <div class="kpi-card__inner">
-            <div class="kpi-card__header">
-              <span class="kpi-card__label" :class="scorecards.gap_miliar > 0 ? 'text-emerald-600' : 'text-rose-600'">Selisih / Gap RBB</span>
-              <div class="kpi-card__icon" :class="scorecards.gap_miliar > 0 ? 'fin-icon-green' : 'fin-icon-red'">
-                <v-icon :icon="scorecards.gap_miliar > 0 ? 'ri-arrow-up-circle-line' : 'ri-arrow-down-circle-line'" size="18" />
+        <v-col cols="12" sm="6" lg="3">
+          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+              <v-icon icon="ri-flag-2-line" size="120" color="#8b5cf6" />
+            </div>
+            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+              <div class="d-flex justify-space-between align-start">
+                <div>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">SISA TARGET</p>
+                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #8b5cf6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(scorecards.gap_miliar) }}</h2>
+                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Kekurangan pencairan</p>
+                </div>
               </div>
-            </div>
-            <div class="kpi-card__value">
-              {{ scorecards.gap_miliar > 0 ? '+' : (scorecards.gap_miliar < 0 ? '-' : '') }} {{ formatM(Math.abs(scorecards.gap_miliar)) }}
-            </div>
-            <div class="kpi-card__sub">
-              {{ scorecards.gap_miliar > 0 ? 'Surplus pencairan' : 'Kekurangan pencairan' }}
-            </div>
-          </div>
-        </div>
-      </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
 
       <!-- 3. DUAL-LINE PACING CHART -->
       <v-row class="mb-5">
@@ -378,9 +405,9 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
                 <tbody>
                   <tr v-for="(ao, idx) in leaderboard" :key="ao.kdao" @click="openAODetail(ao)" class="cursor-pointer">
                     <td class="text-center">
-                      <span v-if="idx === 0" class="text-h6 font-weight-black text-amber-500">🥇</span>
-                      <span v-else-if="idx === 1" class="text-h6 font-weight-black text-slate-400">🥈</span>
-                      <span v-else-if="idx === 2" class="text-h6 font-weight-black text-orange-400">🥉</span>
+                      <v-icon v-if="idx === 0" icon="ri-medal-fill" size="24" color="amber-darken-1" />
+                      <v-icon v-else-if="idx === 1" icon="ri-medal-fill" size="24" color="blue-grey-lighten-1" />
+                      <v-icon v-else-if="idx === 2" icon="ri-medal-fill" size="24" color="deep-orange-darken-1" />
                       <span v-else class="font-weight-bold text-slate-400">#{{ idx + 1 }}</span>
                     </td>
                     <td>
@@ -401,13 +428,24 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
                         <div class="d-flex justify-space-between mb-1">
                           <span class="text-caption font-weight-bold text-slate-700">{{ ao.pct }}%</span>
                         </div>
-                        <v-progress-linear
-                          :model-value="Math.min(ao.pct, 100)"
-                          :color="getProgressColor(ao.pct)"
-                          height="8"
-                          rounded
-                          bg-color="slate-100"
-                        />
+                        <div class="position-relative mt-1">
+                          <div style="background: #f1f5f9; border-radius: 4px; height: 10px; width: 100%; position: relative; overflow: hidden;">
+                            <div 
+                              :style="{ width: Math.min(ao.pct, 100) + '%', background: getProgressColor(ao.pct) === 'success' ? '#10b981' : (getProgressColor(ao.pct) === 'warning' ? '#f59e0b' : '#ef4444') }"
+                              style="height: 100%; border-radius: 4px; transition: width 1s ease-in-out;"
+                            ></div>
+                          </div>
+                          <!-- Bullet Chart Target Marker (100% YTD) -->
+                          <v-tooltip text="Target YTD (100%)">
+                            <template #activator="{ props }">
+                              <div 
+                                v-bind="props"
+                                class="position-absolute" 
+                                style="top: -3px; bottom: -3px; width: 3px; background-color: #334155; right: 0; z-index: 1; border-radius: 2px;"
+                              ></div>
+                            </template>
+                          </v-tooltip>
+                        </div>
                       </div>
                     </td>
                     <td class="text-center">

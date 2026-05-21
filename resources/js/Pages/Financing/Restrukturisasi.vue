@@ -194,72 +194,91 @@ watch([selectedAo, selectedCabang, searchQuery], resetPage)
     </div>
 
     <!-- Executive Scorecards (Pro Max) -->
-    <div class="kpi-cards-grid mb-6">
-      <div class="kpi-card">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #1e40af, #3b82f6)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label">Total Restrukturisasi</span>
-            <div class="kpi-card__icon fin-icon-blue">
-              <v-icon icon="ri-file-list-3-line" size="18" />
+    <v-row class="mb-6">
+      <v-col cols="12" md="4">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-file-list-3-line" size="120" color="#3b82f6" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL RESTRUKTURISASI</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
+                  <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="blue"></v-progress-circular>
+                  <template v-else>{{ summary.total_kontrak }}</template>
+                </h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Dari {{ summary.total_nasabah }} nasabah unik</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2">
-            <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="blue"></v-progress-circular>
-            <template v-else>{{ summary.total_kontrak }}</template>
-          </div>
-          <div class="kpi-card__sub">Dari {{ summary.total_nasabah }} nasabah unik</div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #d97706, #fbbf24)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label">Avg. Restrukturisasi Ke</span>
-            <div class="kpi-card__icon fin-icon-amber">
-              <v-icon icon="ri-repeat-2-line" size="18" />
+      <v-col cols="12" md="4">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-repeat-2-line" size="120" color="#d97706" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">AVG. RESTRUKTURISASI KE-</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #d97706; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
+                  <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="amber"></v-progress-circular>
+                  <template v-else>{{ summary.avg_ke }}x</template>
+                </h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Rata-rata frekuensi perpanjangan</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2">
-            <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="amber"></v-progress-circular>
-            <template v-else>{{ summary.avg_ke }}x</template>
-          </div>
-          <div class="kpi-card__sub">Rata-rata frekuensi perpanjangan</div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card kpi-card--success">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #10b981, #34d399)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-emerald-600">Perubahan Kolektibilitas</span>
+      <v-col cols="12" md="4">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-pie-chart-2-line" size="120" color="#059669" />
           </div>
-          <div class="d-flex align-center justify-space-between mt-2">
-            <div class="d-flex flex-column gap-1">
-              <div class="d-flex align-center gap-2">
-                <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
-                <span class="text-xs font-bold text-slate-700">Membaik ({{ summary.kol_membaik }})</span>
-              </div>
-              <div class="d-flex align-center gap-2">
-                <div class="w-3 h-3 rounded-full bg-rose-500"></div>
-                <span class="text-xs font-bold text-slate-700">Memburuk ({{ summary.kol_memburuk }})</span>
-              </div>
-              <div class="d-flex align-center gap-2">
-                <div class="w-3 h-3 rounded-full bg-amber-500"></div>
-                <span class="text-xs font-bold text-slate-700">Tetap ({{ summary.kol_tetap }})</span>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex flex-column">
+              <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-3" style="color: #64748B; font-family: 'Inter', sans-serif;">PERUBAHAN KOLEKTIBILITAS</p>
+              <div class="d-flex align-center justify-center gap-4 flex-grow-1">
+                <div style="width: 80px; height: 80px;">
+                  <VueApexCharts v-if="!loading" type="donut" width="100%" height="100%" :options="chartOptions" :series="chartSeries"></VueApexCharts>
+                  <div v-else class="d-flex align-center justify-center h-100">
+                    <v-progress-circular indeterminate color="indigo" size="24"></v-progress-circular>
+                  </div>
+                </div>
+                <div class="d-flex flex-column gap-2">
+                  <div class="d-flex align-center gap-2">
+                    <div class="w-3 h-3 rounded-full" style="background: #10B981; flex-shrink: 0;"></div>
+                    <div>
+                      <div class="text-xs font-weight-bold" style="color: #1e293b;">Membaik</div>
+                      <div class="text-sm font-weight-bold" style="color: #10B981;">{{ summary.kol_membaik }}</div>
+                    </div>
+                  </div>
+                  <div class="d-flex align-center gap-2">
+                    <div class="w-3 h-3 rounded-full" style="background: #EF4444; flex-shrink: 0;"></div>
+                    <div>
+                      <div class="text-xs font-weight-bold" style="color: #1e293b;">Memburuk</div>
+                      <div class="text-sm font-weight-bold" style="color: #EF4444;">{{ summary.kol_memburuk }}</div>
+                    </div>
+                  </div>
+                  <div class="d-flex align-center gap-2">
+                    <div class="w-3 h-3 rounded-full" style="background: #F59E0B; flex-shrink: 0;"></div>
+                    <div>
+                      <div class="text-xs font-weight-bold" style="color: #1e293b;">Tetap</div>
+                      <div class="text-sm font-weight-bold" style="color: #F59E0B;">{{ summary.kol_tetap }}</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div style="width: 70px; height: 70px;" class="relative">
-              <VueApexCharts v-if="!loading" type="donut" width="100%" height="100%" :options="chartOptions" :series="chartSeries"></VueApexCharts>
-              <div v-else class="absolute inset-0 flex items-center justify-center">
-                <v-progress-circular indeterminate color="indigo" size="20"></v-progress-circular>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
     <!-- Independent Filter Bar (Pro Max) -->
     <v-card class="d-flex flex-wrap align-center ga-3 pa-4 bg-white rounded-xl border shadow-sm mb-6" elevation="0">
@@ -312,11 +331,11 @@ watch([selectedAo, selectedCabang, searchQuery], resetPage)
           <table class="fin-table fin-vtable text-sm">
             <thead>
               <tr>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase sticky left-0 z-10 bg-slate-50 whitespace-nowrap">Nasabah / Kontrak</th>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase whitespace-nowrap">Restruk Ke</th>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase whitespace-nowrap">Akad (Lama → Baru)</th>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase whitespace-nowrap text-center">Kolektibilitas</th>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase text-right whitespace-nowrap">O/S Pokok Baru</th>
+                <th class="sticky left-0 z-10 whitespace-nowrap">Nasabah / Kontrak</th>
+                <th class="whitespace-nowrap">Restruk Ke</th>
+                <th class="whitespace-nowrap">Akad (Lama → Baru)</th>
+                <th class="whitespace-nowrap text-center">Kolektibilitas</th>
+                <th class="text-right whitespace-nowrap">O/S Pokok Baru</th>
               </tr>
             </thead>
           <tbody>

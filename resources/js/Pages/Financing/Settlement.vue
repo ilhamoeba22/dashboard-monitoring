@@ -85,6 +85,21 @@ const formatRp = (value) => {
   }).format(value)
 }
 
+const formatShortRp = (value) => {
+  if (!value && value !== 0) return 'Rp 0'
+  const num = Number(value)
+  if (Math.abs(num) >= 1e12) return `Rp ${(num / 1e12).toFixed(2)} T`
+  if (Math.abs(num) >= 1e9) return `Rp ${(num / 1e9).toFixed(2)} M`
+  if (Math.abs(num) >= 1e6) return `Rp ${(num / 1e6).toFixed(2)} Jt`
+  
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(num)
+}
+
 const resetPage = () => { currentPage.value = 1 }
 
 watch([activeTab, selectedCabang, searchQuery], resetPage)
@@ -129,75 +144,87 @@ onMounted(() => { fetchData() })
     </div>
 
     <!-- Executive Scorecards (Pro Max) -->
-    <div class="kpi-cards-grid mb-6">
-      <div class="kpi-card kpi-card--success">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #10b981, #34d399)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-emerald-600">Realisasi Baru</span>
-            <div class="kpi-card__icon fin-icon-green">
-              <v-icon icon="ri-download-circle-fill" size="18" />
+    <v-row class="mb-6">
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-download-circle-fill" size="120" color="#10b981" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">REALISASI BARU</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #059669; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
+                  <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="emerald"></v-progress-circular>
+                  <template v-else>{{ summary.total_realisasi_count }}</template>
+                </h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #059669; font-weight: 600;">Kontrak Pencairan</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2">
-            <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="emerald"></v-progress-circular>
-            <template v-else>{{ summary.total_realisasi_count }}</template>
-          </div>
-          <div class="kpi-card__sub text-emerald-600 font-weight-bold">Kontrak Pencairan</div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card kpi-card--success">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #10b981, #34d399)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-emerald-600">Volume Realisasi</span>
-            <div class="kpi-card__icon fin-icon-green">
-              <v-icon icon="ri-money-dollar-circle-fill" size="18" />
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-money-dollar-circle-fill" size="120" color="#10b981" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">VOLUME REALISASI</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #059669; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
+                  <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="green"></v-progress-circular>
+                  <template v-else>{{ formatShortRp(summary.total_realisasi_volume) }}</template>
+                </h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #059669; font-weight: 600;">Margin: {{ formatShortRp(summary.total_realisasi_margin) }}</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2">
-            <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="green"></v-progress-circular>
-            <template v-else>{{ formatRp(summary.total_realisasi_volume) }}</template>
-          </div>
-          <div class="kpi-card__sub text-emerald-600 font-weight-bold">Margin: {{ formatRp(summary.total_realisasi_margin) }}</div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card kpi-card--danger">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #e11d48, #fb7185)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-rose-600">Total Pelunasan</span>
-            <div class="kpi-card__icon fin-icon-red">
-              <v-icon icon="ri-upload-circle-fill" size="18" />
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-upload-circle-fill" size="120" color="#e11d48" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL PELUNASAN</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #e11d48; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
+                  <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="rose"></v-progress-circular>
+                  <template v-else>{{ summary.total_pelunasan_count }}</template>
+                </h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #e11d48; font-weight: 600;">Kontrak Berakhir</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2">
-            <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="rose"></v-progress-circular>
-            <template v-else>{{ summary.total_pelunasan_count }}</template>
-          </div>
-          <div class="kpi-card__sub text-rose-600 font-weight-bold">Kontrak Berakhir</div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card" :class="summary.net_cash_flow >= 0 ? 'kpi-card--info' : 'kpi-card--danger'">
-        <div class="kpi-card__accent" :style="`background: linear-gradient(90deg, ${summary.net_cash_flow >= 0 ? '#3b82f6, #60a5fa' : '#e11d48, #fb7185'})`"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label" :class="summary.net_cash_flow >= 0 ? 'text-blue-600' : 'text-rose-600'">Net Cash Flow</span>
-            <div class="kpi-card__icon" :class="summary.net_cash_flow >= 0 ? 'fin-icon-blue' : 'fin-icon-red'">
-              <v-icon :icon="summary.net_cash_flow >= 0 ? 'ri-line-chart-fill' : 'ri-funds-line'" size="18" />
+      <v-col cols="12" sm="6" lg="3">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon :icon="summary.net_cash_flow >= 0 ? 'ri-line-chart-fill' : 'ri-funds-line'" size="120" :color="summary.net_cash_flow >= 0 ? '#3b82f6' : '#e11d48'" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">NET CASH FLOW</p>
+                <h2 class="text-h4 font-weight-bold mb-2" :style="{ color: summary.net_cash_flow >= 0 ? '#3b82f6' : '#e11d48', fontFamily: 'Plus Jakarta Sans, sans-serif', lineHeight: 1.2 }">
+                  <v-progress-circular v-if="loading" indeterminate size="24" width="3" :color="summary.net_cash_flow >= 0 ? 'blue' : 'red'"></v-progress-circular>
+                  <template v-else>{{ formatShortRp(summary.net_cash_flow) }}</template>
+                </h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; font-weight: 600;" :style="{ color: summary.net_cash_flow >= 0 ? '#3b82f6' : '#e11d48' }">Realisasi - Pelunasan Pokok</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2">
-            <v-progress-circular v-if="loading" indeterminate size="24" width="3" :color="summary.net_cash_flow >= 0 ? 'blue' : 'red'"></v-progress-circular>
-            <template v-else>{{ formatRp(summary.net_cash_flow) }}</template>
-          </div>
-          <div class="kpi-card__sub" :class="summary.net_cash_flow >= 0 ? 'text-blue-600 font-weight-bold' : 'text-rose-600 font-weight-bold'">Realisasi - Pelunasan Pokok</div>
-        </div>
-      </div>
-    </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
     <!-- Independent Filter Bar & Tab Navigation (Pro Max) -->
     <v-card class="rounded-xl border shadow-sm bg-white mb-6 overflow-hidden" elevation="0">
@@ -254,11 +281,11 @@ onMounted(() => { fetchData() })
           <table class="fin-table fin-vtable text-sm">
             <thead>
               <tr>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase sticky left-0 z-10 bg-slate-50 whitespace-nowrap">Nasabah / Kontrak</th>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase whitespace-nowrap">Timeline</th>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase whitespace-nowrap">Status Settlement</th>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase text-right whitespace-nowrap">Outstanding Pokok</th>
-                <th class="text-caption font-weight-black text-slate-600 text-uppercase text-right whitespace-nowrap">Outstanding Margin</th>
+                <th class="sticky left-0 z-10 whitespace-nowrap">Nasabah / Kontrak</th>
+                <th class="whitespace-nowrap">Timeline</th>
+                <th class="whitespace-nowrap">Status Settlement</th>
+                <th class="text-right whitespace-nowrap">Outstanding Pokok</th>
+                <th class="text-right whitespace-nowrap">Outstanding Margin</th>
               </tr>
             </thead>
             <tbody>
@@ -282,13 +309,15 @@ onMounted(() => { fetchData() })
                 </td>
 
                 <td style="border-bottom: 1px solid #f1f5f9;">
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="inline-block px-2 py-0.5 text-[9px] font-black bg-slate-100 text-slate-500 rounded uppercase">Book</span>
-                    <span class="text-xs text-slate-600 font-bold">{{ item.tglbook }}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="inline-block px-2 py-0.5 text-[9px] font-black bg-slate-100 text-slate-500 rounded uppercase">Exp</span>
-                    <span class="text-xs text-slate-600 font-bold">{{ item.tglexp }}</span>
+                  <div class="d-flex align-center gap-3">
+                    <div class="flex items-center gap-2">
+                      <span class="inline-block px-2 py-0.5 text-[9px] font-black bg-slate-100 text-slate-500 rounded uppercase">Book</span>
+                      <span class="text-xs text-slate-600 font-bold">{{ item.tglbook }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="inline-block px-2 py-0.5 text-[9px] font-black bg-slate-100 text-slate-500 rounded uppercase">Exp</span>
+                      <span class="text-xs text-slate-600 font-bold">{{ item.tglexp }}</span>
+                    </div>
                   </div>
                 </td>
 
@@ -307,12 +336,12 @@ onMounted(() => { fetchData() })
 
                 <td class="text-right" style="border-bottom: 1px solid #f1f5f9;">
                   <div class="font-black text-slate-800 text-sm">{{ formatRp(activeTab === 'realisasi' ? item.mdlawal : item.mdleom) }}</div>
-                  <div class="text-[10px] text-slate-400 font-bold uppercase mt-1">Pokok Baki Debet</div>
+                  <div class="text-[10px] text-slate-400 font-bold uppercase mt-1">O/S Pokok (Cair)</div>
                 </td>
 
                 <td class="text-right" style="border-bottom: 1px solid #f1f5f9;">
                   <div class="font-black text-slate-600 text-sm">{{ formatRp(activeTab === 'realisasi' ? item.mgnawal : item.mgneom) }}</div>
-                  <div class="text-[10px] text-slate-400 font-bold uppercase mt-1">Sisa Margin</div>
+                  <div class="text-[10px] text-slate-400 font-bold uppercase mt-1">O/S Margin (Lunas)</div>
                 </td>
               </tr>
             </tbody>

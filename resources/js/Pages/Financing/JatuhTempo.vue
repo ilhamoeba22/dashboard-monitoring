@@ -43,6 +43,32 @@ const isSaldoSufficient = (item) => {
   return saldoEfektif >= tagihanTotal
 }
 
+// ─── Bulk Action Logic ───────────────────────────────────────
+const selectedItems = ref([])
+const selectAll = ref(false)
+
+const toggleSelectAll = () => {
+  if (selectAll.value) {
+    selectedItems.value = paginatedJatuhTempo.value.map(i => i.nokontrak)
+  } else {
+    selectedItems.value = []
+  }
+}
+
+watch(selectedItems, (val) => {
+  if (val.length === 0) selectAll.value = false
+  else if (val.length === paginatedJatuhTempo.value.length && val.length > 0) selectAll.value = true
+})
+
+const handleBulkWA = () => {
+  if (selectedItems.value.length === 0) {
+    alert('Pilih minimal 1 nasabah untuk mengirim WA Blast.')
+    return
+  }
+  console.log('Sending WA Blast to:', selectedItems.value)
+  alert(`Memproses pengiriman WA Blast ke ${selectedItems.value.length} nasabah terpilih. (Fungsi dummy, silakan cek console)`)
+}
+
 // ─── Analytics: Kesiapan Dana Chart ───────────────────────────
 const ratioChartSeries = computed(() => [saldoStatus.value.cukup, saldoStatus.value.kurang])
 const ratioChartOpts = computed(() => ({ 
@@ -74,6 +100,15 @@ const getUrgency = (dateStr) => {
   if (diffDays <= 3) return { label: 'CRITICAL', color: 'deep-orange', icon: 'ri-fire-fill' }
   if (diffDays <= 7) return { label: 'WARNING', color: 'orange', icon: 'ri-error-warning-fill' }
   return { label: 'SAFE', color: 'success', icon: 'ri-checkbox-circle-fill' }
+}
+
+const getRowClass = (item) => {
+  const urgency = getUrgency(item.tglexp).label
+  const kurangSaldo = !isSaldoSufficient(item)
+  if ((urgency === 'CRITICAL' || urgency === 'OVERDUE') && kurangSaldo) {
+    return 'row--danger'
+  }
+  return ''
 }
 
 const formatDate = (dateStr) => {
@@ -139,11 +174,14 @@ watch(selectedCabang, () => store.fetchJatuhTempo())
               v-model="selectedCabang"
               :items="['Semua Cabang', ...cabangs.map(c => c.nama)]"
               label="Filter Cabang"
-              variant="plain"
+              variant="solo"
               density="compact"
+              flat
               hide-details
-              style="width: 200px"
+              rounded="lg"
+              bg-color="white"
               prepend-inner-icon="ri-store-2-line"
+              style="min-width: 180px; max-width: 240px;"
             ></v-select>
             
             <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.2);" class="mx-1"></div>
@@ -162,74 +200,88 @@ watch(selectedCabang, () => store.fetchJatuhTempo())
     </div>
 
     <!-- 2. Executive Scorecards -->
-    <div class="kpi-cards-grid mb-6">
-      <div class="kpi-card">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #64748b, #94a3b8)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label">Total Antrian</span>
-            <div class="kpi-card__icon bg-slate-100">
-              <v-icon icon="ri-user-follow-line" size="18" color="grey-darken-1" />
+    <v-row class="mb-6">
+      <v-col cols="12" md="4">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-user-follow-line" size="120" color="#64748b" />
+          </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL ANTRIAN</p>
+                <div class="d-flex align-center gap-2 mb-2">
+                  <h2 class="text-h4 font-weight-bold" style="color: #64748b; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ totalJatuhTempo }}</h2>
+                  <VueApexCharts type="donut" width="40" height="40" :options="ratioChartOpts" :series="ratioChartSeries" />
+                </div>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Akun jatuh tempo bulan ini</p>
+              </div>
             </div>
-          </div>
-          <div class="d-flex align-center gap-3 mt-2">
-            <div class="kpi-card__value" style="font-size: 24px;">{{ totalJatuhTempo }}</div>
-            <VueApexCharts type="donut" width="40" height="40" :options="ratioChartOpts" :series="ratioChartSeries" />
-          </div>
-          <div class="kpi-card__sub">Akun jatuh tempo bulan ini</div>
-        </div>
-      </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card kpi-card--info">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #3b82f6, #0ea5e9)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-blue-600">Proyeksi Tagihan Pokok</span>
-            <div class="kpi-card__icon fin-icon-blue">
-              <v-icon icon="ri-money-dollar-circle-line" size="18" />
-            </div>
+      <v-col cols="12" md="4">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-money-dollar-circle-line" size="120" color="#3b82f6" />
           </div>
-          <div class="kpi-card__value mt-2">{{ store.formatShortRp(totalTagihanPokok) }}</div>
-          <div class="kpi-card__sub">Estimasi total likuiditas masuk</div>
-        </div>
-      </div>
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">PROYEKSI TAGIHAN</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ store.formatShortRp(totalTagihanPokok) }}</h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Estimasi total likuiditas</p>
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div class="kpi-card kpi-card--success">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #10b981, #34d399)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-emerald-600">Saldo Cukup</span>
-            <div class="kpi-card__icon fin-icon-green">
-              <v-icon icon="ri-checkbox-circle-line" size="18" />
-            </div>
+      <v-col cols="12" md="4">
+        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+            <v-icon icon="ri-checkbox-circle-line" size="120" color="#059669" />
           </div>
-          <div class="kpi-card__value mt-2">{{ saldoStatus.cukup }}</div>
-          <div class="kpi-card__sub text-emerald-600 font-weight-bold">Dana aman untuk autodebet</div>
-        </div>
-      </div>
-
-      <div class="kpi-card kpi-card--danger">
-        <div class="kpi-card__accent" style="background: linear-gradient(90deg, #e11d48, #fb7185)"></div>
-        <div class="kpi-card__inner">
-          <div class="kpi-card__header">
-            <span class="kpi-card__label text-rose-600">Saldo Kurang / Risiko</span>
-            <div class="kpi-card__icon fin-icon-red">
-              <v-icon icon="ri-error-warning-line" size="18" />
+          <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+            <div class="d-flex justify-space-between align-start">
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">SALDO CUKUP</p>
+                <h2 class="text-h4 font-weight-bold mb-2" style="color: #059669; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ saldoStatus.cukup }}</h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="color: #059669; font-weight: 600; font-family: 'Inter', sans-serif;">Dana aman untuk autodebet</p>
+              </div>
             </div>
-          </div>
-          <div class="kpi-card__value mt-2">{{ saldoStatus.kurang }}</div>
-          <div class="kpi-card__sub text-rose-600 font-weight-bold">Perlu tindak lanjut segera</div>
-        </div>
-      </div>
-    </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
     <!-- 3. Main Data Grid -->
     <div class="content-card">
+      <div class="content-card__header d-flex justify-space-between align-center px-6 py-4 border-b">
+        <div>
+          <div class="content-card__title">Daftar Nasabah Jatuh Tempo</div>
+          <div class="content-card__subtitle">Daftar nasabah yang mendekati atau melewati jatuh tempo</div>
+        </div>
+        <v-btn 
+          v-if="selectedItems.length > 0"
+          color="success" 
+          variant="flat" 
+          prepend-icon="ri-whatsapp-line" 
+          @click="handleBulkWA"
+          class="font-weight-bold"
+        >
+          WA Blast ({{ selectedItems.length }})
+        </v-btn>
+      </div>
       <div class="content-card__body pa-0">
         <div class="overflow-x-auto">
           <table class="fin-table fin-vtable">
             <thead>
               <tr>
+                <th style="width: 50px" class="text-center px-0">
+                  <v-checkbox-btn v-model="selectAll" @change="toggleSelectAll" color="primary" density="compact" inline hide-details />
+                </th>
                 <th class="text-center" style="width: 80px">EWS</th>
                 <th class="text-left">NASABAH & KONTRAK</th>
                 <th class="text-center">TGL JATUH TEMPO</th>
@@ -241,7 +293,10 @@ watch(selectedCabang, () => store.fetchJatuhTempo())
             </thead>
 
             <tbody v-if="!loadingJatuhTempo">
-              <tr v-for="item in paginatedJatuhTempo" :key="item.nokontrak">
+              <tr v-for="item in paginatedJatuhTempo" :key="item.nokontrak" :class="getRowClass(item)">
+                <td class="text-center px-0">
+                  <v-checkbox-btn v-model="selectedItems" :value="item.nokontrak" color="primary" density="compact" inline hide-details />
+                </td>
                 <td class="text-center">
                   <v-tooltip :text="getUrgency(item.tglexp).label" location="top">
                     <template #activator="{ props }">

@@ -18,7 +18,6 @@ const tabOptions = [
   { title: 'Per AO', value: 'ao', icon: 'ri-user-follow-line' },
   { title: 'Per Produk', value: 'produk', icon: 'ri-briefcase-line' },
   { title: 'Per Cabang', value: 'cabang', icon: 'ri-bank-line' },
-  { title: 'Per Wilayah', value: 'wilayah', icon: 'ri-map-pin-line' },
   { title: 'Per Segmen', value: 'segmen', icon: 'ri-pie-chart-line' },
 ]
 
@@ -57,18 +56,21 @@ const tableHeaders = computed(() => {
   ]
 
   // Dynamic Month Column Pairs
-  periods.value.forEach(p => {
+  periods.value.forEach((p, index) => {
+    const isCurrent = index === periods.value.length - 1;
     headers.push({ 
       title: `Nominal ${p.label}`, 
       key: `m${p.index}_nominal`, 
       align: 'end',
-      width: '140px'
+      width: '140px',
+      cellProps: { class: isCurrent ? 'bg-blue-50' : '' }
     })
     headers.push({ 
       title: `Growth % (${p.label})`, 
       key: `m${p.index}_growth`, 
       align: 'center',
-      width: '120px'
+      width: '120px',
+      cellProps: { class: isCurrent ? 'bg-blue-50' : '' }
     })
   })
 
@@ -123,19 +125,17 @@ onMounted(fetchGrowthData)
           <div class="pa-1 rounded-pill d-inline-flex" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); min-width: 600px; border: 1px solid rgba(255,255,255,0.1);">
             <v-tabs
               v-model="activeTab"
-              color="primary"
               density="compact"
               hide-slider
               grow
               :show-arrows="false"
-              selected-class="bg-white elevation-2 text-primary font-weight-black rounded-pill"
-              class="dimension-tabs w-100"
+              class="fin-hero-tabs w-100"
             >
               <v-tab
                 v-for="opt in tabOptions"
                 :key="opt.value"
                 :value="opt.value"
-                class="text-none font-weight-bold text-white rounded-pill transition-all px-4"
+                class="text-none rounded-pill transition-all px-4"
               >
                 <v-icon :icon="opt.icon" start size="16" />
                 {{ opt.title }}

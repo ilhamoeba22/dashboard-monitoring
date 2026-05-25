@@ -87,7 +87,6 @@ const depositCards = computed(() => [
   { label: 'Total Saldo Deposito', value: fmt(d.value.total_saldo), growth: d.value.growth, icon: 'ri-safe-2-line', variant: 'info', hint: 'Saldo deposito' },
   { label: 'Total Bagi Hasil', value: fmt(d.value.total_baghas), growth: d.value.baghas_growth, icon: 'ri-money-dollar-circle-line', variant: 'warning', hint: 'Nominal bagi hasil' },
   { label: 'Total NOA', value: `${num(d.value.total_noa)} Rekening`, growth: d.value.noa_growth, icon: 'ri-file-list-3-line', variant: 'purple', hint: 'Rekening deposito' },
-  { label: 'Total AO Aktif', value: `${num(d.value.total_ao)} Orang`, growth: d.value.ao_growth, icon: 'ri-user-star-line', variant: 'success', hint: 'Marketing aktif' },
 ])
 
 const chartPlaceholders = {
@@ -235,7 +234,7 @@ const chartPlaceholders = {
                   <div class="pa-4 border-b border-slate-100">
                     <div class="content-card__title">{{ chart.title }}</div>
                   </div>
-                  <div class="content-card__body d-flex align-center justify-center" style="height: 220px;">
+                  <div class="content-card__body d-flexbody d-flex align-center justify-center" style="height: 220px;">
                     <div class="text-center text-medium-emphasis">
                       <v-icon :icon="chart.icon" size="44" />
                       <div class="text-caption mt-2">{{ chart.text }}</div>
@@ -336,3 +335,5 @@ const chartPlaceholders = {
     </div>
   </div>
 </template>
+/template>
+late>

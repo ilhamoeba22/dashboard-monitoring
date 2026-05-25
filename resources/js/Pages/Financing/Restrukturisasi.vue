@@ -1,10 +1,11 @@
-<script setup>
+﻿<script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { Head } from '@inertiajs/vue3'
 import DefaultLayout from '@/layouts/default.vue'
 import axios from 'axios'
 import VueApexCharts from 'vue3-apexcharts'
 import '@/assets/css/financing-shared.css'
+import { formatExactRupiah } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -128,13 +129,7 @@ const chartSeries = computed(() => [
 
 // Utility Formatters
 const formatRp = (value) => {
-  if (!value) return 'Rp 0'
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value)
+  return formatExactRupiah(value)
 }
 
 const getKolStyle = (kol) => {
@@ -161,7 +156,7 @@ watch([selectedAo, selectedCabang, searchQuery], resetPage)
   <div class="fin-page px-4 pt-0">
     <Head title="Restrukturisasi Pembiayaan" />
 
-    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+    <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div class="fin-hero mb-6">
       <div class="fin-hero__deco"></div>
       <div class="fin-hero__inner">
@@ -174,7 +169,7 @@ watch([selectedAo, selectedCabang, searchQuery], resetPage)
               <h1 class="fin-hero__title">Restrukturisasi Pembiayaan</h1>
               <p class="fin-hero__subtitle">Intelligence Control Center untuk pemantauan data addendum dan perubahan syarat kontrak.</p>
               <div class="fin-hero__badges">
-                <span class="fin-badge fin-badge--warning">📝 Addendum</span>
+                <span class="fin-badge fin-badge--warning">ðŸ“ Addendum</span>
               </div>
             </div>
           </div>
@@ -333,7 +328,7 @@ watch([selectedAo, selectedCabang, searchQuery], resetPage)
               <tr>
                 <th class="sticky left-0 z-10 whitespace-nowrap">Nasabah / Kontrak</th>
                 <th class="whitespace-nowrap">Restruk Ke</th>
-                <th class="whitespace-nowrap">Akad (Lama → Baru)</th>
+                <th class="whitespace-nowrap">Akad (Lama â†’ Baru)</th>
                 <th class="whitespace-nowrap text-center">Kolektibilitas</th>
                 <th class="text-right whitespace-nowrap">O/S Pokok Baru</th>
               </tr>

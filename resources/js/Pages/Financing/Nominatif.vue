@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref, watch, onMounted } from 'vue'
 import { Head } from '@inertiajs/vue3'
 import DefaultLayout from '@/layouts/default.vue'
@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import '@/assets/css/financing-shared.css'
+import { formatExactRupiah } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -265,12 +266,7 @@ watch(itemsPerPage, (newVal) => {
 })
 
 function formatCurrency(v) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(v)
+  return formatExactRupiah(v)
 }
 
 // Data Formatting Helpers
@@ -366,7 +362,7 @@ onMounted(() => {
   <div class="fin-page px-4 pt-0">
     <Head title="Nominatif Keseluruhan" />
 
-    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+    <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div class="fin-hero mb-6">
       <div class="fin-hero__deco"></div>
       <div class="fin-hero__inner">
@@ -378,7 +374,7 @@ onMounted(() => {
             <h1 class="fin-hero__title">Nominatif Keseluruhan</h1>
             <p class="fin-hero__subtitle">Daftar rincian seluruh nasabah pembiayaan aktif</p>
             <div class="fin-hero__badges">
-              <span class="fin-badge fin-badge--teal">👥 Data Nasabah</span>
+              <span class="fin-badge fin-badge--teal">ðŸ‘¥ Data Nasabah</span>
             </div>
           </div>
         </div>

@@ -50,11 +50,11 @@ const chartSeriesData = computed(() => {
     if (idx === 0) { // Jan (YoY vs Base sum)
         const curr = nominals[0]
         const prev = totalYoyBase
-        totalGrowth.push(prev === 0 ? (curr > 0 ? 100 : 0) : parseFloat((((curr - prev) / prev) * 100).toFixed(2)))
+        totalGrowth.push(prev === 0 ? (curr > 0 ? 100 : 0) : (((curr - prev) / prev) * 100))
     } else { // MoM
         const curr = nominals[idx]
         const prev = nominals[idx - 1]
-        totalGrowth.push(prev === 0 ? (curr > 0 ? 100 : 0) : parseFloat((((curr - prev) / prev) * 100).toFixed(2)))
+        totalGrowth.push(prev === 0 ? (curr > 0 ? 100 : 0) : (((curr - prev) / prev) * 100))
     }
   })
 

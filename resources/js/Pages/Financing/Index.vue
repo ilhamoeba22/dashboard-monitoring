@@ -5,6 +5,7 @@ import DefaultLayout from '@/layouts/default.vue'
 import VueApexCharts from 'vue3-apexcharts'
 import axios from 'axios'
 import '@/assets/css/financing-shared.css'
+import { formatExactNumber, formatExactRupiah } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -36,7 +37,7 @@ const trendChartOptions = computed(() => ({
   dataLabels: { enabled: false },
   stroke: { curve: 'smooth', width: 3 },
   xaxis: { categories: overviewData.value.trend.map(t => t.month) },
-  yaxis: { labels: { formatter: (val) => `Rp ${(val / 1e9).toFixed(1)}M` } },
+  yaxis: { labels: { formatter: (val) => formatExactRupiah(val) } },
   colors: ['#0ea5e9'],
   fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 100] } },
   title: { text: 'Pertumbuhan Portofolio (12 Bulan)', style: { fontWeight: 600 } }
@@ -60,12 +61,9 @@ const kolDonutSeries = computed(() => overviewData.value.kolektibilitas.map(k =>
 
 // Helpers
 const formatRp = (v) => {
-  if (!v) return 'Rp 0'
-  if (v >= 1e9) return `Rp ${(v / 1e9).toFixed(2)} Miliar`
-  if (v >= 1e6) return `Rp ${(v / 1e6).toFixed(2)} Juta`
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v)
+  return formatExactRupiah(v)
 }
-const formatNum = (v) => new Intl.NumberFormat('id-ID').format(v || 0)
+const formatNum = (v) => formatExactNumber(v)
 
 // API Fetch
 const fetchCabangs = async () => {
@@ -184,7 +182,7 @@ const badgeColor = (kol) => {
             <div class="d-flex justify-space-between align-start">
               <div>
                 <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL PORTOFOLIO</p>
-                <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(overviewData.summary.total_os) }}</h2>
+                <h2 class="fin-money-exact mb-2" style="color: #3b82f6;">{{ formatRp(overviewData.summary.total_os) }}</h2>
                 <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;"><v-icon icon="ri-group-line" size="14"></v-icon> {{ formatNum(overviewData.summary.total_noa) }} Rekening Aktif</p>
               </div>
             </div>
@@ -201,7 +199,7 @@ const badgeColor = (kol) => {
             <div class="d-flex justify-space-between align-start">
               <div>
                 <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL TUNGGAKAN</p>
-                <h2 class="text-h4 font-weight-bold mb-2" style="color: #d97706; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(overviewData.summary.total_tunggakan || 0) }}</h2>
+                <h2 class="fin-money-exact mb-2" style="color: #d97706;">{{ formatRp(overviewData.summary.total_tunggakan || 0) }}</h2>
                 <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Tunggakan pokok berjalan</p>
               </div>
             </div>
@@ -218,7 +216,7 @@ const badgeColor = (kol) => {
             <div class="d-flex justify-space-between align-start">
               <div>
                 <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">EXPOSURE NPF</p>
-                <h2 class="text-h4 font-weight-bold mb-2" style="color: #e11d48; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(overviewData.summary.npf_os) }}</h2>
+                <h2 class="fin-money-exact mb-2" style="color: #e11d48;">{{ formatRp(overviewData.summary.npf_os) }}</h2>
                 <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;"><v-icon icon="ri-close-circle-line" size="14"></v-icon> {{ formatNum(overviewData.summary.npf_noa) }} Rekening Macet</p>
               </div>
             </div>

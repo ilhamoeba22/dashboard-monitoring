@@ -5,6 +5,7 @@ import DefaultLayout from '@/layouts/default.vue'
 import axios from 'axios'
 import VueApexCharts from 'vue3-apexcharts'
 import '@/assets/css/financing-shared.css'
+import { formatExactRupiah } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -139,7 +140,7 @@ const chartOptions = computed(() => ({
             fontSize: '28px', 
             fontWeight: 800, 
             color: '#1E293B',
-            formatter: (val) => 'Rp ' + (val / 1e6).toFixed(1) + ' Jt' 
+            formatter: (val) => formatExactRupiah(val)
           },
           total: { 
             show: true, 
@@ -147,7 +148,7 @@ const chartOptions = computed(() => ({
             label: 'Total PPAP', 
             fontSize: '12px', 
             color: '#64748B', 
-            formatter: (w) => 'Rp ' + (summary.value.total_ppap / 1e6).toFixed(1) + ' Jt' 
+            formatter: () => formatExactRupiah(summary.value.total_ppap)
           }
         }
       }
@@ -156,7 +157,7 @@ const chartOptions = computed(() => ({
   stroke: { width: 0 },
   tooltip: { 
     theme: 'light', 
-    y: { formatter: (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val) } 
+    y: { formatter: (val) => formatExactRupiah(val) } 
   }
 }))
 
@@ -169,13 +170,7 @@ const chartSeries = computed(() => [
 ])
 
 const formatRp = (value) => {
-  if (!value) return 'Rp 0'
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value)
+  return formatExactRupiah(value)
 }
 
 const getKolStyle = (kol) => {

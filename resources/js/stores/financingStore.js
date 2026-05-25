@@ -7,6 +7,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { formatExactRupiah } from '@/utils/money'
 
 // API Base URL
 const API = '/api/v1/financing'
@@ -221,11 +222,7 @@ export const useFinancingStore = defineStore('financing', () => {
    * Helpers
    */
   function formatRp(value) {
-    if (!value && value !== 0) return '-'
-    const num = parseFloat(value)
-    if (Math.abs(num) >= 1e9) return `Rp ${(num / 1e9).toFixed(2)} M`
-    if (Math.abs(num) >= 1e6) return `Rp ${(num / 1e6).toFixed(1)} Jt`
-    return `Rp ${num.toLocaleString('id-ID')}`
+    return formatExactRupiah(value, '-')
   }
 
   return {

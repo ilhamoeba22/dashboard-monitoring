@@ -93,16 +93,13 @@ function formatValue(value, format) {
   
   switch (format) {
     case 'number':
-      return parseInt(value).toLocaleString('id-ID')
+      return formatExactNumber(value, '—')
     case 'currency':
-      const num = parseFloat(value)
-      if (Math.abs(num) >= 1e9) return `Rp ${(num / 1e9).toFixed(2)} M`
-      if (Math.abs(num) >= 1e6) return `Rp ${(num / 1e6).toFixed(1)} Jt`
-      return `Rp ${num.toLocaleString('id-ID')}`
+      return formatExactRupiah(value, '—')
     case 'percent':
-      return `${parseFloat(value).toFixed(2)}%`
+      return `${value}%`
     case 'decimal':
-      return parseFloat(value).toFixed(2)
+      return `${value}`
     default:
       return value
   }
@@ -284,6 +281,18 @@ const hasData = computed(() => {
         <div class="d-flex align-center gap-2">
           <v-icon icon="ri-arrow-down-line" color="error" size="16" />
           <span class="text-caption text-medium-emphasis">Decrease</span>
+        </div>
+        <div class="d-flex align-center gap-2">
+          <v-icon icon="ri-subtract-line" color="secondary" size="16" />
+          <span class="text-caption text-medium-emphasis">Stable</span>
+        </div>
+      </div>
+    </v-card-text>
+  </v-card>
+</template>
+d>
+</template>
+e</span>
         </div>
         <div class="d-flex align-center gap-2">
           <v-icon icon="ri-subtract-line" color="secondary" size="16" />

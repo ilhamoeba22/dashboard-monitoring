@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { formatExactRupiah, formatExactNumber } from '@/utils/money'
 
 const props = defineProps({
   data: {
@@ -51,22 +52,19 @@ const cards = computed(() => [
 
 function formatValue(value, format) {
   if (value === null || value === undefined) return '0'
-  const num = parseFloat(value)
   
   switch (format) {
     case 'currency':
-      if (Math.abs(num) >= 1e9) return `${(num / 1e9).toFixed(2)} M`
-      if (Math.abs(num) >= 1e6) return `${(num / 1e6).toFixed(1)} Jt`
-      return num.toLocaleString('id-ID')
+      return formatExactRupiah(value, '0')
     case 'percent':
-      return `${num.toFixed(2)}%`
+      return `${value}%`
     default:
-      return num.toLocaleString('id-ID')
+      return formatExactNumber(value, '0')
   }
 }
 
 function getCurrencyPrefix(format) {
-  return format === 'currency' ? 'Rp ' : ''
+  return ''
 }
 </script>
 

@@ -392,11 +392,11 @@ class TargetManagementService
             
             for ($i = 1; $i <= $numPeriods; $i++) {
                 $aoRunTarget += $aoTargetMonths[$i];
-                $aoCumTarget[] = round($aoRunTarget / 1e9, 3);
+                $aoCumTarget[] = $aoRunTarget;
                 
                 if ($i <= $currentPeriod) {
                     $aoRunReal += $aoRealMonths[$i];
-                    $aoCumReal[] = round($aoRunReal / 1e9, 3);
+                    $aoCumReal[] = $aoRunReal;
                 } else {
                     $aoCumReal[] = null;
                 }
@@ -436,11 +436,11 @@ class TargetManagementService
 
         for ($i = 1; $i <= $numPeriods; $i++) {
             $runTarget += $chartTarget[$i];
-            $cumTarget[] = round($runTarget / 1e9, 3);
+            $cumTarget[] = $runTarget;
             
             if ($i <= $currentPeriod) {
                 $runReal += $chartRealisasi[$i];
-                $cumRealisasi[] = round($runReal / 1e9, 3);
+                $cumRealisasi[] = $runReal;
             } else {
                 $cumRealisasi[] = null;
             }
@@ -450,13 +450,13 @@ class TargetManagementService
             'has_data' => true,
             'year'     => $year,
             'scorecards' => [
-                'total_target_annual' => round($trueAnnualTargetTotal / 1e9, 3),
-                'total_realisasi'     => round($totalRealisasi / 1e9, 3),
-                'total_target_ytd'    => round($targetYtdTotal / 1e9, 3),
+                'total_target_annual' => $trueAnnualTargetTotal,
+                'total_realisasi'     => $totalRealisasi,
+                'total_target_ytd'    => $targetYtdTotal,
                 'pacing_pct'          => $pacingPct,
-                'gap_miliar'          => round($sisaGap / 1e9, 3),
+                'gap_miliar'          => $sisaGap,
                 'current_month'       => $currentPeriod,
-                'sparkline'           => array_map(fn($v) => round($v / 1e9, 3), array_slice(array_values($chartRealisasi), max(0, $currentPeriod - 6), 6)),
+                'sparkline'           => array_slice(array_values($chartRealisasi), max(0, $currentPeriod - 6), 6),
             ],
             'pacing_chart' => [
                 'categories' => $periodNames,

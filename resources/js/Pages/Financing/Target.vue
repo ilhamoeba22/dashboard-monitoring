@@ -5,6 +5,7 @@ import DefaultLayout from '@/layouts/default.vue'
 import axios from 'axios'
 import VueApexCharts from 'vue3-apexcharts'
 import '@/assets/css/financing-shared.css'
+import { formatExactNumber, formatExactRupiah } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -114,7 +115,7 @@ const chartOpts = computed(() => ({
     labels: { style: { fontSize: '12px', fontWeight: 600 } }
   },
   yaxis: {
-    labels: { formatter: v => v !== null ? `Rp ${Number(v).toFixed(1)} M` : '' }
+    labels: { formatter: v => v !== null ? formatExactRupiah(v) : '' }
   },
   legend: {
     position: 'top', horizontalAlign: 'right',
@@ -124,7 +125,7 @@ const chartOpts = computed(() => ({
   tooltip: {
     shared: true,
     intersect: false,
-    y: { formatter: v => v !== null ? `Rp ${Number(v).toFixed(2)} Miliar` : '-' }
+    y: { formatter: v => v !== null ? formatExactRupiah(v, '-') : '-' }
   },
   grid: { borderColor: '#F1F5F9', strokeDashArray: 4 }
 }))
@@ -143,8 +144,8 @@ const aoChartSeries = computed(() => {
 })
 
 // ─── Helpers ─────────────────────────────────────────────────
-const formatM = (val) => `${Number(val).toFixed(1)} M`
-const formatRp = (val) => new Intl.NumberFormat('id-ID').format(val)
+const formatM = (val) => formatExactRupiah(val)
+const formatRp = (val) => formatExactNumber(val)
 
 const getStatusColor = (status) => {
   if (status === 'overachieved') return 'success'
@@ -300,7 +301,7 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
               <div class="d-flex justify-space-between align-start">
                 <div>
                   <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TARGET ANNUAL (RBB)</p>
-                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(scorecards.total_target_annual) }}</h2>
+                  <h2 class="fin-money-exact mb-2" style="color: #3b82f6;">Rp {{ formatRp(scorecards.total_target_annual) }}</h2>
                   <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Plafon penyaluran tahun ini</p>
                 </div>
               </div>
@@ -317,7 +318,7 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
               <div class="d-flex justify-space-between align-start">
                 <div>
                   <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">REALISASI (YTD)</p>
-                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #10b981; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(scorecards.total_realisasi) }}</h2>
+                  <h2 class="fin-money-exact mb-2" style="color: #10b981;">Rp {{ formatRp(scorecards.total_realisasi) }}</h2>
                   <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Total pencairan berjalan</p>
                 </div>
               </div>
@@ -354,7 +355,7 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
               <div class="d-flex justify-space-between align-start">
                 <div>
                   <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">SISA TARGET</p>
-                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #8b5cf6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(scorecards.gap_miliar) }}</h2>
+                  <h2 class="fin-money-exact mb-2" style="color: #8b5cf6;">Rp {{ formatRp(scorecards.gap_miliar) }}</h2>
                   <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Kekurangan pencairan</p>
                 </div>
               </div>
@@ -421,8 +422,8 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
                         </div>
                       </div>
                     </td>
-                    <td class="text-right font-weight-medium text-slate-600">Rp {{ formatRp(Math.round(ao.target_ytd)) }}</td>
-                    <td class="text-right font-weight-black text-slate-800">Rp {{ formatRp(Math.round(ao.realisasi)) }}</td>
+                    <td class="text-right font-weight-medium text-slate-600"><span class="fin-money-exact fin-money-exact--dense">Rp {{ formatRp(ao.target_ytd) }}</span></td>
+                    <td class="text-right font-weight-black text-slate-800"><span class="fin-money-exact fin-money-exact--dense">Rp {{ formatRp(ao.realisasi) }}</span></td>
                     <td>
                       <div class="d-flex flex-column justify-center pr-4">
                         <div class="d-flex justify-space-between mb-1">

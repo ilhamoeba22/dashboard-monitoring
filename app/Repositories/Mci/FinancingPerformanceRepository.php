@@ -152,9 +152,9 @@ class FinancingPerformanceRepository extends MciBaseRepository implements Financ
                     CAST(B.byrmgn_capped AS FLOAT) AS byrmgn,
                     CAST((B.byrmdl_capped + B.byrmgn_capped) AS FLOAT) AS totalbyr,
 
-                    CAST(ISNULL(ROUND((B.byrmdl_capped * 100.0 / NULLIF(B.tagmdl, 0)), 2), 0) AS FLOAT) AS pctmdl,
-                    CAST(ISNULL(ROUND((B.byrmgn_capped * 100.0 / NULLIF(B.tagmgn, 0)), 2), 0) AS FLOAT) AS pctmgn,
-                    CAST(ISNULL(ROUND(((B.byrmdl_capped + B.byrmgn_capped) * 100.0 / NULLIF(B.tagmdl + B.tagmgn, 0)), 2), 0) AS FLOAT) AS pcttotal,
+                    CAST(ISNULL(((B.byrmdl_capped * 100.0 / NULLIF(B.tagmdl, 0))), 0) AS FLOAT) AS pctmdl,
+                    CAST(ISNULL(((B.byrmgn_capped * 100.0 / NULLIF(B.tagmgn, 0))), 0) AS FLOAT) AS pctmgn,
+                    CAST(ISNULL((((B.byrmdl_capped + B.byrmgn_capped) * 100.0 / NULLIF(B.tagmdl + B.tagmgn, 0))), 0) AS FLOAT) AS pcttotal,
 
                     CAST(ISNULL(H.sahirrp - (H.saldoblok + 20000), 0) AS FLOAT) AS saldo_netto,
 
@@ -237,7 +237,7 @@ class FinancingPerformanceRepository extends MciBaseRepository implements Financ
         $totalTagih = $data->sum('totaltag');
         $totalBayar = $data->sum('totalbyr');
 
-        $overallRate = $totalTagih > 0 ? round(($totalBayar / $totalTagih) * 100, 2) : 0;
+        $overallRate = $totalTagih > 0 ? ($totalBayar / $totalTagih) * 100 : 0;
 
         $nasabah100 = $data->filter(fn($item) => ($item['pcttotal'] ?? 0) >= 100)->count();
         $nasabahWarning = $data->filter(fn($item) => ($item['pcttotal'] ?? 0) < 80)->count();
@@ -318,10 +318,10 @@ class FinancingPerformanceRepository extends MciBaseRepository implements Financ
                 SELECT
                     B.*,
                     -- Kalkulasi Repayment Rate (RR)
-                    CAST(ISNULL(ROUND((B.cash_in_mdl + B.cash_in_mgn) * 100.0 / NULLIF(B.tag_current_mdl + B.tag_current_mgn, 0), 2), 0) AS FLOAT) AS rr_pct,
+                    CAST(ISNULL(((B.cash_in_mdl + B.cash_in_mgn) * 100.0 / NULLIF(B.tag_current_mdl + B.tag_current_mgn, 0)), 0) AS FLOAT) AS rr_pct,
 
                     -- Kalkulasi Recovery Rate (RecR)
-                    CAST(ISNULL(ROUND((B.cash_in_mdl + B.cash_in_mgn) * 100.0 / NULLIF(B.target_recovery_mdl + B.target_recovery_mgn, 0), 2), 0) AS FLOAT) AS recr_pct,
+                    CAST(ISNULL(((B.cash_in_mdl + B.cash_in_mgn) * 100.0 / NULLIF(B.target_recovery_mdl + B.target_recovery_mgn, 0)), 0) AS FLOAT) AS recr_pct,
                     
                     -- NEW: Risk Status
                     CASE
@@ -379,10 +379,10 @@ class FinancingPerformanceRepository extends MciBaseRepository implements Financ
         $tagihanCurrent = $data->sum(fn($item) => ($item['tag_current_mdl'] ?? 0) + ($item['tag_current_mgn'] ?? 0));
         $cashInCurrent = $data->sum(fn($item) => ($item['cash_in_mdl'] ?? 0) + ($item['cash_in_mgn'] ?? 0));
         
-        $overallRr = $tagihanCurrent > 0 ? round(($cashInCurrent / $tagihanCurrent) * 100, 2) : 0;
+        $overallRr = $tagihanCurrent > 0 ? ($cashInCurrent / $tagihanCurrent) * 100 : 0;
 
         $targetRecovery = $data->sum(fn($item) => ($item['target_recovery_mdl'] ?? 0) + ($item['target_recovery_mgn'] ?? 0));
-        $overallRecr = $targetRecovery > 0 ? round(($cashInCurrent / $targetRecovery) * 100, 2) : 0;
+        $overallRecr = $targetRecovery > 0 ? ($cashInCurrent / $targetRecovery) * 100 : 0;
 
         // Risk breakdown
         $goodCount = $data->where('risk_status', 'Good')->count();
@@ -391,7 +391,7 @@ class FinancingPerformanceRepository extends MciBaseRepository implements Financ
 
         // First payment success rate (RR >= 100% on first month)
         $firstPaymentSuccess = $data->filter(fn($item) => ($item['rr_pct'] ?? 0) >= 100)->count();
-        $firstPaymentRate = $data->count() > 0 ? round(($firstPaymentSuccess / $data->count()) * 100, 2) : 0;
+        $firstPaymentRate = $data->count() > 0 ? ($firstPaymentSuccess / $data->count()) * 100 : 0;
 
         return [
             'total_nasabah' => $data->count(),
@@ -404,7 +404,7 @@ class FinancingPerformanceRepository extends MciBaseRepository implements Financ
             'warning_count' => $warningCount,
             'at_risk_count' => $atRiskCount,
             'first_payment_success_rate' => $firstPaymentRate,
-            'avg_days_since_onboarding' => $data->count() > 0 ? round($data->avg('days_since_onboarding'), 0) : 0,
+            'avg_days_since_onboarding' => $data->count() > 0 ? $data->avg('days_since_onboarding') : 0,
         ];
     }
 }

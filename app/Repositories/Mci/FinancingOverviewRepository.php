@@ -185,7 +185,7 @@ class FinancingOverviewRepository
         $npfRow = $npfQuery->first();
         
         $npfOsmdlc = (float) ($npfRow->npf_osmdlc ?? 0);
-        $npfPersen = $totalOsmdlc > 0 ? round(($npfOsmdlc / $totalOsmdlc) * 100, 2) : 0;
+        $npfPersen = $totalOsmdlc > 0 ? ($npfOsmdlc / $totalOsmdlc) * 100 : 0;
 
         return [
             'total_noa' => (int) ($row->total_noa ?? 0),
@@ -197,7 +197,7 @@ class FinancingOverviewRepository
             'npf_noa' => (int) ($npfRow->npf_noa ?? 0),
             'npf_osmdlc' => $npfOsmdlc,
             'npf_persen' => $npfPersen,
-            'avg_kolek' => round((float) ($row->avg_kolek ?? 0), 2),
+            'avg_kolek' => (float) ($row->avg_kolek ?? 0),
         ];
     }
 
@@ -245,7 +245,7 @@ class FinancingOverviewRepository
                 'osmdlc' => $osmdlc,
                 'osmgnc' => $osmgnc,
                 'total_os' => $osmdlc + $osmgnc,
-                'avg_kolek' => round((float) $row->avg_kolek, 2),
+                'avg_kolek' => (float) $row->avg_kolek,
             ];
         })->toArray();
     }
@@ -284,7 +284,7 @@ class FinancingOverviewRepository
                 'noa' => (int) $row->noa,
                 'osmdlc' => $osmdlc,
                 'npf_os' => $npfOs,
-                'npf_persen' => $osmdlc > 0 ? round(($npfOs / $osmdlc) * 100, 2) : 0,
+                'npf_persen' => $osmdlc > 0 ? ($npfOs / $osmdlc) * 100 : 0,
             ];
         })->toArray();
     }
@@ -323,7 +323,7 @@ class FinancingOverviewRepository
                 'noa' => (int) $row->noa,
                 'osmdlc' => $osmdlc,
                 'npf_os' => $npfOs,
-                'npf_persen' => $osmdlc > 0 ? round(($npfOs / $osmdlc) * 100, 2) : 0,
+                'npf_persen' => $osmdlc > 0 ? ($npfOs / $osmdlc) * 100 : 0,
             ];
         })->toArray();
     }
@@ -362,7 +362,7 @@ class FinancingOverviewRepository
                 'noa' => (int) $row->noa,
                 'osmdlc' => $osmdlc,
                 'npf_os' => $npfOs,
-                'npf_persen' => $osmdlc > 0 ? round(($npfOs / $osmdlc) * 100, 2) : 0,
+                'npf_persen' => $osmdlc > 0 ? ($npfOs / $osmdlc) * 100 : 0,
             ];
         })->toArray();
     }
@@ -557,10 +557,10 @@ class FinancingOverviewRepository
             foreach ($snapshots as $snapshot) {
                 $labels[] = $this->formatBulanLabel($snapshot->tahun_bulan);
                 $series['noa'][] = $snapshot->total_noa;
-                $series['osmdlc'][] = round($snapshot->total_osmdlc / 1000000, 2);
-                $series['osmgnc'][] = round($snapshot->total_osmgnc / 1000000, 2);
-                $series['npf_persen'][] = round((float) $snapshot->npf_persen, 2);
-                $series['avg_kolek'][] = round((float) $snapshot->avg_kolek, 2);
+                $series['osmdlc'][] = (float) $snapshot->total_osmdlc;
+                $series['osmgnc'][] = (float) $snapshot->total_osmgnc;
+                $series['npf_persen'][] = (float) $snapshot->npf_persen;
+                $series['avg_kolek'][] = (float) $snapshot->avg_kolek;
             }
 
             return [
@@ -634,7 +634,7 @@ class FinancingOverviewRepository
     {
         $calculateChange = function ($curr, $prev) {
             $change = $curr - $prev;
-            $pct = $prev != 0 ? round(($change / $prev) * 100, 2) : 0;
+            $pct = $prev != 0 ? ($change / $prev) * 100 : 0;
 
             return [
                 'value' => $curr,

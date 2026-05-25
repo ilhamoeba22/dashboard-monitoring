@@ -1,9 +1,9 @@
-<template>
+﻿<template>
   <DefaultLayout>
     <Head title="Repayment Rate (Akuisisi & Retensi)" />
 
     <div class="fin-page px-4 pt-0">
-      <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+      <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
       <div class="fin-hero mb-6">
         <div class="fin-hero__deco"></div>
         <div class="fin-hero__inner">
@@ -16,7 +16,7 @@
                 <h1 class="fin-hero__title">Repayment Rate (Akuisisi & Retensi)</h1>
                 <p class="fin-hero__subtitle">Monitor kinerja pembayaran nasabah baru dan retensi</p>
                 <div class="fin-hero__badges">
-                  <span class="fin-badge fin-badge--info">📈 Analytics</span>
+                  <span class="fin-badge fin-badge--info">ðŸ“ˆ Analytics</span>
                 </div>
               </div>
             </div>
@@ -105,7 +105,7 @@
             <v-card-text class="pa-5" style="position: relative; z-index: 1;">
               <div class="d-flex justify-space-between align-start">
                 <div>
-                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">GOOD (RR ≥ 90%)</p>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">GOOD (RR â‰¥ 90%)</p>
                   <h2 class="text-h4 font-weight-bold mb-2" style="color: #10b981; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ parseInt(summary.good_count || 0) }}</h2>
                   <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #10b981; font-weight: 600;">Nasabah</p>
                 </div>
@@ -122,7 +122,7 @@
             <v-card-text class="pa-5" style="position: relative; z-index: 1;">
               <div class="d-flex justify-space-between align-start">
                 <div>
-                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">WARNING (RR 70–90%)</p>
+                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">WARNING (RR 70â€“90%)</p>
                   <h2 class="text-h4 font-weight-bold mb-2" style="color: #f59e0b; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ parseInt(summary.warning_count || 0) }}</h2>
                   <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Nasabah</p>
                 </div>
@@ -364,6 +364,7 @@ import DefaultLayout from '@/Layouts/default.vue'
 import axios from 'axios'
 import VueApexCharts from 'vue3-apexcharts'
 import '@/assets/css/financing-shared.css'
+import { formatExactRupiah } from '@/utils/money'
 
 const apexchart = VueApexCharts
 
@@ -387,7 +388,7 @@ const onboardingOptions = [
 ]
 
 const riskOptions = [
-  { title: 'Good (≥90%)', value: 'Good' },
+  { title: 'Good (â‰¥90%)', value: 'Good' },
   { title: 'Warning (70-90%)', value: 'Warning' },
   { title: 'At Risk (<70%)', value: 'At Risk' }
 ]
@@ -603,13 +604,7 @@ const safeSum = (a, b) => {
 }
 
 const formatCurrency = (value) => {
-  const num = safeNum(value)
-  if (num === 0) return 'Rp 0'
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0
-  }).format(num)
+  return formatExactRupiah(value)
 }
 
 const formatAge = (days) => {

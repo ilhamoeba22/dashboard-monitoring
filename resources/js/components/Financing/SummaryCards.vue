@@ -10,6 +10,7 @@
  */
 
 import { computed } from 'vue'
+import { formatExactRupiah, formatExactNumber } from '@/utils/money'
 
 const props = defineProps({
   data: {

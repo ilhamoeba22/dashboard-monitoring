@@ -264,7 +264,7 @@ abstract class MciBaseRepository
      */
     protected function formatRupiah(float $value): string
     {
-        return 'Rp '.number_format($value, 0, ',', '.');
+        return 'Rp '.number_format($value, 2, ',', '.');
     }
 
     /**

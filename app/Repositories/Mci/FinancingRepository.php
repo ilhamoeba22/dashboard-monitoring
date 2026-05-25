@@ -499,7 +499,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
             ];
 
             if ($totals['total_os'] > 0) {
-                $totals['npf_ratio'] = round(($totals['npf_os'] / $totals['total_os']) * 100, 2);
+                $totals['npf_ratio'] = ($totals['npf_os'] / $totals['total_os']) * 100;
             }
 
             return [
@@ -995,7 +995,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
             $restruTotalKontrak = isset($restruTotal[0]->total_kontrak) ? (int)$restruTotal[0]->total_kontrak  : 0;
             $restruFailKontrak  = isset($restruFail[0]->gagal_kontrak)  ? (int)$restruFail[0]->gagal_kontrak   : 0;
             $vintageFailureRate = $restruTotalKontrak > 0
-                ? round(($restruFailKontrak / $restruTotalKontrak) * 100, 2) : 0;
+                ? ($restruFailKontrak / $restruTotalKontrak) * 100 : 0;
 
             $totalOS   = collect($kolRows)->sum('total_os');
             $totalNPF  = collect($kolRows)->whereIn('kol', ['3','4','5'])->sum('total_os');
@@ -1008,25 +1008,25 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
             if ($isHistoris) $queryPPAP->where('periode', sprintf('%04d%02d', $reqTahun, $reqBulan));
             $totalPPAP = $queryPPAP->sum('ppap');
 
-            $npfGross      = $totalOS > 0 ? round(($totalNPF / $totalOS) * 100, 2)                 : 0;
+            $npfGross      = $totalOS > 0 ? ($totalNPF / $totalOS) * 100                 : 0;
             $npfNetVal     = max(0, $totalNPF - $totalPPAP);
-            $npfNet        = $totalOS > 0 ? round(($npfNetVal / $totalOS) * 100, 2)                : 0;
-            $coverageRatio = $totalNPF > 0 ? round(($totalPPAP / $totalNPF) * 100, 2)             : 0;
-            $farRatio      = $totalOS > 0 ? round(($totalFAR / $totalOS) * 100, 2)                 : 0;
+            $npfNet        = $totalOS > 0 ? ($npfNetVal / $totalOS) * 100                : 0;
+            $coverageRatio = $totalNPF > 0 ? ($totalPPAP / $totalNPF) * 100             : 0;
+            $farRatio      = $totalOS > 0 ? ($totalFAR / $totalOS) * 100                 : 0;
             $topAkad       = collect($akadRows)->sortByDesc('npf_os')->first();
 
             $bagiHasilOS  = collect($akadRows)->filter(fn ($i) =>
                 str_contains(strtolower($i->akad), 'mudharabah') ||
                 str_contains(strtolower($i->akad), 'musyarakah')
             )->sum('total_os');
-            $porsiBagiHasil = $totalOS > 0 ? round(($bagiHasilOS / $totalOS) * 100, 2) : 0;
+            $porsiBagiHasil = $totalOS > 0 ? ($bagiHasilOS / $totalOS) * 100 : 0;
 
             // Stress test numerics
             $top5OS  = array_sum(array_map(fn ($r) => (float)$r->os, array_slice($topObligorRows, 0, 5)));
             $top10OS = array_sum(array_map(fn ($r) => (float)$r->os, array_slice($topObligorRows, 0, 10)));
-            $npfIfTop5Fail  = $totalOS > 0 ? round((($totalNPF + $top5OS)  / $totalOS) * 100, 2) : 0;
-            $npfIfTop10Fail = $totalOS > 0 ? round((($totalNPF + $top10OS) / $totalOS) * 100, 2) : 0;
-            $restruToTotal  = $totalOS > 0 ? round(($restruTotalOS / $totalOS) * 100, 2)          : 0;
+            $npfIfTop5Fail  = $totalOS > 0 ? (($totalNPF + $top5OS)  / $totalOS) * 100 : 0;
+            $npfIfTop10Fail = $totalOS > 0 ? (($totalNPF + $top10OS) / $totalOS) * 100 : 0;
+            $restruToTotal  = $totalOS > 0 ? ($restruTotalOS / $totalOS) * 100          : 0;
 
             return [
                 'kolektibilitas' => $kolRows,

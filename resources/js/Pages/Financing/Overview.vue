@@ -1,9 +1,10 @@
-<script setup>
+﻿<script setup>
 import DefaultLayout from '@/layouts/default.vue'
 import { useFinancingStore } from '@/stores/financingStore'
 import SummaryCards from '@/components/Financing/SummaryCards.vue'
 import { computed, onMounted } from 'vue'
 import '@/assets/css/financing-shared.css'
+import { formatExactRupiah } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -23,12 +24,7 @@ const quickLinks = [
 
 // Formatting Helpers
 function formatCurrency(value) {
-  if (!value && value !== 0) return '—'
-  const num = parseFloat(value)
-  if (isNaN(num)) return '—'
-  if (Math.abs(num) >= 1e9) return `${(num / 1e9).toFixed(2)} M`
-  if (Math.abs(num) >= 1e6) return `${(num / 1e6).toFixed(1)} Jt`
-  return num.toLocaleString('id-ID')
+  return formatExactRupiah(value, '—')
 }
 
 function getKolColor(kol) {
@@ -114,10 +110,10 @@ const areaChartOptions = computed(() => {
       y: { 
         formatter: function (val, { seriesIndex, dataPointIndex, w }) {
           if (seriesIndex === 0) {
-            return `Rp ${val.toLocaleString('id-ID')}`;
+            return formatCurrency(val);
           } else {
             const nominalNpf = parseFloat(rtData.value.trend[dataPointIndex]?.total_npf) || 0;
-            return `${val.toFixed(2)}% (Rp ${nominalNpf.toLocaleString('id-ID')})`;
+            return `${val}% (${formatCurrency(nominalNpf)})`;
           }
         }
       } 
@@ -148,7 +144,7 @@ onMounted(() => store.loadAll())
 <template>
   <div class="fin-page px-4 pt-0">
 
-    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+    <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div class="fin-hero mb-6">
       <div class="fin-hero__deco"></div>
       <div class="fin-hero__inner">
@@ -158,9 +154,9 @@ onMounted(() => store.loadAll())
           </div>
           <div class="fin-hero__meta">
             <h1 class="fin-hero__title">Executive Overview</h1>
-            <p class="fin-hero__subtitle">High-level realtime intelligence — portofolio pembiayaan aktif bank syariah</p>
+            <p class="fin-hero__subtitle">High-level realtime intelligence â€” portofolio pembiayaan aktif bank syariah</p>
             <div class="fin-hero__badges">
-              <span class="fin-badge fin-badge--teal">🏦 Islamic Banking</span>
+              <span class="fin-badge fin-badge--teal">ðŸ¦ Islamic Banking</span>
               <span class="fin-badge fin-badge--glass">
                 <v-icon size="10" color="white">ri-database-2-line</v-icon>
                 {{ rtData?.database || 'Memuat...' }}
@@ -171,7 +167,7 @@ onMounted(() => store.loadAll())
       </div>
     </div>
 
-    <!-- ── LOADING SKELETON ─────────────────────────────────────── -->
+    <!-- â”€â”€ LOADING SKELETON â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div v-if="isLoading">
       <v-row class="mb-4">
         <v-col v-for="i in 4" :key="i" cols="12" sm="6" lg="3">
@@ -184,7 +180,7 @@ onMounted(() => store.loadAll())
       </v-row>
     </div>
 
-    <!-- ── DASHBOARD CONTENT ────────────────────────────────────── -->
+    <!-- â”€â”€ DASHBOARD CONTENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <template v-else-if="hasData">
 
       <!-- Quick Links Navigation -->
@@ -256,7 +252,7 @@ onMounted(() => store.loadAll())
               </div>
               <a href="/financing/perkembangan" style="text-decoration: none;">
                 <div class="fin-badge fin-badge--glass" style="background: rgba(13,148,136,0.12); color: #0d9488; border-color: rgba(13,148,136,0.2);">
-                  Detail MoM/YoY →
+                  Detail MoM/YoY â†’
                 </div>
               </a>
             </div>
@@ -285,7 +281,7 @@ onMounted(() => store.loadAll())
             </div>
             <div>
               <div class="content-card__title">Top High-Risk Alerts (NPF)</div>
-              <div class="content-card__subtitle">Prioritas penagihan hari ini — Top 5 Outstanding Macet</div>
+              <div class="content-card__subtitle">Prioritas penagihan hari ini â€” Top 5 Outstanding Macet</div>
             </div>
           </div>
           <a href="/financing/quality" style="text-decoration: none;">

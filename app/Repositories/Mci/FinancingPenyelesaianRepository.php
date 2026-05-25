@@ -132,20 +132,20 @@ class FinancingPenyelesaianRepository extends MciBaseRepository implements Finan
                     t.nocif, t.nokontrak, t.nama, t.noakad, t.tgleff, t.jw, t.tglexp, CAST(t.mdlawal AS FLOAT) as mdlawal, CAST(t.osmdlc AS FLOAT) as osmdlc, CAST(t.osmgnc AS FLOAT) as osmgnc, t.haritgk, t.colbaru, CAST(t.ppap_system AS FLOAT) as ppap_system, ISNULL(t.nmao, 'TANPA AO') as nmao, ISNULL(t.ket_wilayah, '-') as ket_wilayah, ISNULL(t.nama_cabang, '-') as nama_cabang,
                     CAST(t.total_agunan_ppka AS FLOAT) as total_agunan_ppka,
                     CASE
-                        WHEN t.colbaru = 1 THEN ROUND(t.osmdlc * 0.005, 0)
-                        WHEN t.colbaru = 2 THEN ROUND(CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.03 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.03 END, 0)
-                        WHEN t.colbaru = 3 THEN ROUND(CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.1 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.1 END, 0)
-                        WHEN t.colbaru = 4 THEN ROUND(CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.5 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.5 END, 0)
-                        WHEN t.colbaru = 5 THEN ROUND(CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 1 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 1 END, 0)
+                        WHEN t.colbaru = 1 THEN t.osmdlc * 0.005
+                        WHEN t.colbaru = 2 THEN CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.03 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.03 END
+                        WHEN t.colbaru = 3 THEN CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.1 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.1 END
+                        WHEN t.colbaru = 4 THEN CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.5 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.5 END
+                        WHEN t.colbaru = 5 THEN CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 1 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 1 END
                         ELSE 0
                     END AS ppap_manual,
                     -- simplified ppap_seharusnya using the same manual calculation to avoid the huge query complexity but keep core logic
                     CASE
-                        WHEN t.colbaru = 1 THEN ROUND(t.osmdlc * 0.005, 0)
-                        WHEN t.colbaru = 2 THEN ROUND(CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.03 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.03 END, 0)
-                        WHEN t.colbaru = 3 THEN ROUND(CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.1 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.1 END, 0)
-                        WHEN t.colbaru = 4 THEN ROUND(CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.5 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.5 END, 0)
-                        WHEN t.colbaru = 5 THEN ROUND(CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 1 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 1 END, 0)
+                        WHEN t.colbaru = 1 THEN t.osmdlc * 0.005
+                        WHEN t.colbaru = 2 THEN CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.03 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.03 END
+                        WHEN t.colbaru = 3 THEN CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.1 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.1 END
+                        WHEN t.colbaru = 4 THEN CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.5 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 0.5 END
+                        WHEN t.colbaru = 5 THEN CASE WHEN (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 1 < 0 THEN 0 ELSE (t.osmdlc - ISNULL(t.total_agunan_ppka,0)) * 1 END
                         ELSE 0
                     END AS ppap_seharusnya
                 FROM total_per_kontrak t

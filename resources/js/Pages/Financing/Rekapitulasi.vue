@@ -5,6 +5,7 @@ import DefaultLayout from '@/layouts/default.vue'
 import axios from 'axios'
 import VueApexCharts from 'vue3-apexcharts'
 import '@/assets/css/financing-shared.css'
+import { formatExactNumber, formatExactRupiah } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -49,18 +50,11 @@ const totals = computed(() => rekapData.value.totals)
 
 // Helper: Format Rupiah
 const formatRp = (value) => {
-  if (!value) return 'Rp 0'
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value)
+  return formatExactRupiah(value)
 }
 
 const formatNumber = (value) => {
-  if (!value) return '0'
-  return new Intl.NumberFormat('id-ID').format(value)
+  return formatExactNumber(value)
 }
 
 // Format metric for table
@@ -83,7 +77,7 @@ const getNpfCellStyle = (npfRatio) => {
 const treeMapSeries = computed(() => [{
   data: filteredRows.value.map(r => ({
     x: r.label || '(Kosong)',
-    y: Number((r.total_os / 1e9).toFixed(2)) // Miliar
+    y: Number(r.total_os || 0)
   }))
 }])
 
@@ -94,7 +88,7 @@ const donutSeries = computed(() => [
 
 const treeMapOpts = computed(() => ({
   chart: { type: 'treemap', fontFamily: "'Plus Jakarta Sans', sans-serif", toolbar: { show: false } },
-  title: { text: 'Sebaran Outstanding (Miliar)', style: { fontWeight: 600 } },
+  title: { text: 'Sebaran Outstanding', style: { fontWeight: 600 } },
   plotOptions: {
     treemap: {
       enableShades: true,
@@ -114,8 +108,8 @@ const treeMapOpts = computed(() => ({
     dropShadow: { enabled: false },
     style: { fontSize: '11px', fontWeight: 600 },
     formatter: function (text, op) {
-      if (op.value < 10) return ''; // Hide label if value is too small (< 10M)
-      return [text, op.value + ' M']
+      if (op.value <= 0) return ''
+      return [text, formatRp(op.value)]
     }
   }
 }))
@@ -288,7 +282,7 @@ watch([selectedDimension, selectedCabang], () => {
             <div class="d-flex justify-space-between align-start">
               <div>
                 <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL OUTSTANDING</p>
-                <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(totals.total_os) }}</h2>
+                <h2 class="fin-money-exact mb-2" style="color: #3b82f6;">{{ formatRp(totals.total_os) }}</h2>
                 <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Volume portofolio</p>
               </div>
             </div>
@@ -344,7 +338,7 @@ watch([selectedDimension, selectedCabang], () => {
             <div class="d-flex justify-space-between align-start">
               <div>
                 <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL PPAP</p>
-                <h2 class="text-h4 font-weight-bold mb-2" style="color: #8b5cf6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRp(totals.total_ppap) }}</h2>
+                <h2 class="fin-money-exact mb-2" style="color: #8b5cf6;">{{ formatRp(totals.total_ppap) }}</h2>
                 <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Cadangan kerugian</p>
               </div>
             </div>
@@ -436,7 +430,7 @@ watch([selectedDimension, selectedCabang], () => {
           <v-row>
             <v-col cols="12">
               <v-card variant="outlined" class="rounded-lg border">
-                <v-card-title class="text-subtitle-1 font-weight-bold pa-4 pb-0">Distribusi Outstanding (Miliar) per {{ dimensionOptions.find(d => d.value === selectedDimension)?.label }}</v-card-title>
+                <v-card-title class="text-subtitle-1 font-weight-bold pa-4 pb-0">Distribusi Outstanding per {{ dimensionOptions.find(d => d.value === selectedDimension)?.label }}</v-card-title>
                 <v-card-text>
                   <VueApexCharts type="treemap" height="500" :options="treeMapOpts" :series="treeMapSeries" />
                 </v-card-text>

@@ -1,9 +1,9 @@
-<template>
+﻿<template>
   <DefaultLayout>
     <Head title="Repayment Rate Monitoring" />
 
     <div class="fin-page px-4 pt-0">
-      <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+      <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
       <div class="fin-hero mb-6">
         <div class="fin-hero__deco"></div>
         <div class="fin-hero__inner">
@@ -16,7 +16,7 @@
                 <h1 class="fin-hero__title">Repayment Rate Monitoring</h1>
                 <p class="fin-hero__subtitle">Analisis tingkat pembayaran nasabah aktif (Modal + Margin)</p>
                 <div class="fin-hero__badges">
-                  <span class="fin-badge fin-badge--info">📈 Analytics</span>
+                  <span class="fin-badge fin-badge--info">ðŸ“ˆ Analytics</span>
                 </div>
               </div>
             </div>
@@ -344,6 +344,7 @@ import { Head } from '@inertiajs/vue3'
 import DefaultLayout from '@/Layouts/default.vue'
 import axios from 'axios'
 import '@/assets/css/financing-shared.css'
+import { formatExactRupiah } from '@/utils/money'
 
 const loading = ref(false)
 const exporting = ref(false)
@@ -503,13 +504,7 @@ const safePct = (val) => {
 }
 
 const formatCurrency = (value) => {
-  const num = safeNum(value)
-  if (num === 0) return 'Rp 0'
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0
-  }).format(num)
+  return formatExactRupiah(value)
 }
 
 // =========================================================================

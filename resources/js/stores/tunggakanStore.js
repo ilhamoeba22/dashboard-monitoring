@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { formatExactRupiah } from '@/utils/money'
 
 const API = '/api/v1/financing/tunggakan'
 
@@ -103,19 +104,11 @@ export const useTunggakanStore = defineStore('tunggakan', () => {
   
   // Helper
   function formatRp(value) {
-    if (!value && value !== 0) return '—'
-    const num = parseFloat(value)
-    if (isNaN(num)) return '—'
-    return `Rp ${num.toLocaleString('id-ID')}`
+    return formatExactRupiah(value, '—')
   }
   
   function formatShortRp(value) {
-    if (!value && value !== 0) return '—'
-    const num = parseFloat(value)
-    if (isNaN(num)) return '—'
-    if (Math.abs(num) >= 1e9) return `Rp ${(num / 1e9).toFixed(2)} M`
-    if (Math.abs(num) >= 1e6) return `Rp ${(num / 1e6).toFixed(1)} Jt`
-    return `Rp ${num.toLocaleString('id-ID')}`
+    return formatExactRupiah(value, '—')
   }
 
   return {

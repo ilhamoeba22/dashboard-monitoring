@@ -4,6 +4,7 @@ import { Head } from '@inertiajs/vue3'
 import DefaultLayout from '@/layouts/default.vue'
 import axios from 'axios'
 import VueApexCharts from 'vue3-apexcharts'
+import { formatExactRupiah } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -104,13 +105,9 @@ const hasTrendGap = computed(() => {
   return lastAvailableTrendMonth.value !== selectedShort
 })
 
-const formatRp = (v) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(parseFloat(v) || 0)
+const formatRp = (v) => formatExactRupiah(v)
 const formatRpSingkat = (v) => {
-  const val = parseFloat(v) || 0
-  if (val >= 1e12) return `Rp ${(val / 1e12).toFixed(2)} Triliun`
-  if (val >= 1e9) return `Rp ${(val / 1e9).toFixed(2)} Miliar`
-  if (val >= 1e6) return `Rp ${(val / 1e6).toFixed(2)} Juta`
-  return formatRp(val)
+  return formatRp(v)
 }
 
 const activeFilterText = computed(() => {
@@ -461,7 +458,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                     <div>
                       <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL PEMBIAYAAN</p>
                       <h2 class="text-h4 font-weight-bold mb-2" style="color: #059669; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
-                        {{ formatRpSingkat(summary.total_os) }}
+                        <span class="fin-money-exact">{{ formatRpSingkat(summary.total_os) }}</span>
                       </h2>
                       <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Porsi Bagi Hasil: <strong>{{ summary.porsi_bagi_hasil || 0 }}%</strong></p>
                     </div>

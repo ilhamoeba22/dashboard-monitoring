@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { Head } from '@inertiajs/vue3'
 import DefaultLayout from '@/layouts/default.vue'
@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia'
 import axios from 'axios'
 import VueApexCharts from 'vue3-apexcharts'
 import '@/assets/css/financing-shared.css'
+import { formatExactRupiah } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -129,13 +130,7 @@ const chartSeries = computed(() => [
 
 // Utility Formatters
 const formatRp = (value) => {
-  if (!value) return 'Rp 0'
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value)
+  return formatExactRupiah(value)
 }
 
 const getAnalisaColor = (type) => {
@@ -178,7 +173,7 @@ watch([selectedAo, selectedAnalisa, searchQuery], resetPage)
   <div class="fin-page px-4 pt-0">
     <Head title="Top-Up & Retention Pembiayaan" />
 
-    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+    <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div class="fin-hero mb-6">
       <div class="fin-hero__deco"></div>
       <div class="fin-hero__inner">
@@ -191,7 +186,7 @@ watch([selectedAo, selectedAnalisa, searchQuery], resetPage)
               <h1 class="fin-hero__title">Top-Up & Retention</h1>
               <p class="fin-hero__subtitle">Pemantauan fasilitas penambahan plafon, retensi nasabah lunas, dan pembiayaan berulang.</p>
               <div class="fin-hero__badges">
-                <span class="fin-badge fin-badge--warning">🔄 Repeat Order</span>
+                <span class="fin-badge fin-badge--warning">ðŸ”„ Repeat Order</span>
               </div>
             </div>
           </div>
@@ -344,7 +339,7 @@ watch([selectedAo, selectedAnalisa, searchQuery], resetPage)
               <tr>
                 <th class="sticky left-0 z-10 whitespace-nowrap">Transisi Fasilitas</th>
                 <th class="whitespace-nowrap">Analisa Nasabah</th>
-                <th class="text-right whitespace-nowrap">Plafon Lama → Baru</th>
+                <th class="text-right whitespace-nowrap">Plafon Lama â†’ Baru</th>
               </tr>
             </thead>
             <tbody>

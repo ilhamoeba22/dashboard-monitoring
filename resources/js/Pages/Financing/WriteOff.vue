@@ -1,9 +1,9 @@
-<template>
+﻿<template>
   <DefaultLayout>
     <Head title="Write-Off Monitoring" />
     
     <div class="fin-page px-4 pt-0">
-      <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+      <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
       <div class="fin-hero mb-6">
         <div class="fin-hero__deco"></div>
         <div class="fin-hero__inner">
@@ -16,7 +16,7 @@
                 <h1 class="fin-hero__title">Write-Off Monitoring</h1>
                 <p class="fin-hero__subtitle">Monitor pembiayaan yang di-write off dan recovery rate</p>
                 <div class="fin-hero__badges">
-                  <span class="fin-badge fin-badge--danger">🗑 Hapus Buku</span>
+                  <span class="fin-badge fin-badge--danger">ðŸ—‘ Hapus Buku</span>
                 </div>
               </div>
             </div>
@@ -201,6 +201,7 @@ import DefaultLayout from '@/layouts/default.vue'
 import axios from 'axios'
 import VueApexCharts from 'vue3-apexcharts'
 import '@/assets/css/financing-shared.css'
+import { formatExactRupiah } from '@/utils/money'
 
 const apexchart = VueApexCharts
 
@@ -375,12 +376,7 @@ const fetchData = async () => {
 }
 
 const formatCurrency = (value) => {
-  if (!value) return 'Rp 0'
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0
-  }).format(value)
+  return formatExactRupiah(value)
 }
 
 const formatDate = (date) => {

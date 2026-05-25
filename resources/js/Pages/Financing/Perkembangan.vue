@@ -1,9 +1,10 @@
-<script setup>
+﻿<script setup>
 import { ref, watch, onMounted, computed } from 'vue'
 import { Head, usePage } from '@inertiajs/vue3'
 import DefaultLayout from '@/layouts/default.vue'
 import GrowthMixedChart from '@/components/Financing/GrowthMixedChart.vue'
 import '@/assets/css/financing-shared.css'
+import { formatExactRupiah } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -79,10 +80,7 @@ const tableHeaders = computed(() => {
 
 // --- Formatting Helpers ---
 const formatCurrency = (v) => {
-  if (v === null || v === undefined || v === 0) return '—'
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0
-  }).format(v)
+  return formatExactRupiah(v)
 }
 
 const getGrowthColor = (val) => {
@@ -106,7 +104,7 @@ onMounted(fetchGrowthData)
   <div class="fin-page px-4 pt-0">
     <Head title="Perkembangan & Pertumbuhan" />
 
-    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+    <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div class="fin-hero mb-6">
       <div class="fin-hero__deco"></div>
       <div class="fin-hero__inner">
@@ -209,7 +207,7 @@ onMounted(fetchGrowthData)
                 <v-icon :icon="getGrowthIcon(item[`m${p.index}_growth`])" size="14" />
                 <span>{{ Math.abs(item[`m${p.index}_growth`]).toFixed(2) }}%</span>
               </div>
-              <span v-else class="text-slate-300">—</span>
+              <span v-else class="text-slate-300">â€”</span>
             </template>
 
             <template #loading>

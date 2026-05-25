@@ -8,6 +8,7 @@
  */
 
 import { computed } from 'vue'
+import { formatExactRupiah, formatExactNumber } from '@/utils/money'
 
 const props = defineProps({
   data: {
@@ -131,7 +132,7 @@ const chartOptions = computed(() => {
         opacity: 0.9,
         dropShadow: { enabled: false }
       },
-      formatter: (val) => isRatio ? `${val.toFixed(2)}%` : formatCompactRp(val)
+      formatter: (val) => isRatio ? `${val}%` : formatCompactRp(val)
     },
     markers: {
       size: 6,

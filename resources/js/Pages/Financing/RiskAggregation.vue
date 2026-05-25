@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref, onMounted, watch } from 'vue'
 import { Head } from '@inertiajs/vue3'
 import DefaultLayout from '@/layouts/default.vue'
@@ -6,6 +6,7 @@ import FinancingStats from '@/components/Financing/FinancingStats.vue'
 import TrendChart from '@/components/Financing/TrendChart.vue'
 import KolektibilitasProgress from '@/components/Financing/KolektibilitasProgress.vue'
 import '@/assets/css/financing-shared.css'
+import { formatExactRupiah } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -57,8 +58,7 @@ async function fetchDashboardData() {
 }
 
 function formatCurrency(v) {
-  if (!v) return 'Rp 0'
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
+  return formatExactRupiah(v)
 }
 
 const getGrowthStyle = (val) => {
@@ -82,7 +82,7 @@ onMounted(() => { fetchCabangs(); fetchDashboardData(); })
   <div class="fin-page px-4 pt-0">
     <Head title="Risk Aggregation" />
 
-    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+    <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div class="fin-hero mb-6">
       <div class="fin-hero__deco"></div>
       <div class="fin-hero__inner">
@@ -95,7 +95,7 @@ onMounted(() => { fetchCabangs(); fetchDashboardData(); })
               <h1 class="fin-hero__title">Risk Aggregation</h1>
               <p class="fin-hero__subtitle">Analytics Portofolio & Risk Management PT. BPRS HIK MCI</p>
               <div class="fin-hero__badges">
-                <span class="fin-badge fin-badge--info">🛡️ Risk</span>
+                <span class="fin-badge fin-badge--info">ðŸ›¡ï¸ Risk</span>
               </div>
             </div>
           </div>

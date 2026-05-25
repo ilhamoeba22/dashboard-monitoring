@@ -4,6 +4,7 @@ import { Head } from '@inertiajs/vue3'
 import DefaultLayout from '@/layouts/default.vue'
 import axios from 'axios'
 import '@/assets/css/financing-shared.css'
+import { formatExactRupiah } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -76,28 +77,11 @@ const paginatedData = computed(() => {
 })
 
 const formatRp = (value) => {
-  if (!value) return 'Rp 0'
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(value)
+  return formatExactRupiah(value)
 }
 
 const formatShortRp = (value) => {
-  if (!value && value !== 0) return 'Rp 0'
-  const num = Number(value)
-  if (Math.abs(num) >= 1e12) return `Rp ${(num / 1e12).toFixed(2)} T`
-  if (Math.abs(num) >= 1e9) return `Rp ${(num / 1e9).toFixed(2)} M`
-  if (Math.abs(num) >= 1e6) return `Rp ${(num / 1e6).toFixed(2)} Jt`
-  
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(num)
+  return formatExactRupiah(value)
 }
 
 const resetPage = () => { currentPage.value = 1 }
@@ -176,7 +160,7 @@ onMounted(() => { fetchData() })
                 <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">VOLUME REALISASI</p>
                 <h2 class="text-h4 font-weight-bold mb-2" style="color: #059669; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">
                   <v-progress-circular v-if="loading" indeterminate size="24" width="3" color="green"></v-progress-circular>
-                  <template v-else>{{ formatShortRp(summary.total_realisasi_volume) }}</template>
+                  <template v-else><span class="fin-money-exact">{{ formatShortRp(summary.total_realisasi_volume) }}</span></template>
                 </h2>
                 <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #059669; font-weight: 600;">Margin: {{ formatShortRp(summary.total_realisasi_margin) }}</p>
               </div>
@@ -216,7 +200,7 @@ onMounted(() => { fetchData() })
                 <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">NET CASH FLOW</p>
                 <h2 class="text-h4 font-weight-bold mb-2" :style="{ color: summary.net_cash_flow >= 0 ? '#3b82f6' : '#e11d48', fontFamily: 'Plus Jakarta Sans, sans-serif', lineHeight: 1.2 }">
                   <v-progress-circular v-if="loading" indeterminate size="24" width="3" :color="summary.net_cash_flow >= 0 ? 'blue' : 'red'"></v-progress-circular>
-                  <template v-else>{{ formatShortRp(summary.net_cash_flow) }}</template>
+                  <template v-else><span class="fin-money-exact">{{ formatShortRp(summary.net_cash_flow) }}</span></template>
                 </h2>
                 <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; font-weight: 600;" :style="{ color: summary.net_cash_flow >= 0 ? '#3b82f6' : '#e11d48' }">Realisasi - Pelunasan Pokok</p>
               </div>

@@ -13,7 +13,9 @@ use App\Repositories\Interfaces\FinancingRestrukturisasiRepositoryInterface;
 use App\Repositories\Interfaces\FinancingTunggakanRepositoryInterface;
 use App\Repositories\Interfaces\ReportingRepositoryInterface;
 use App\Repositories\Interfaces\SavingRepositoryInterface;
+use App\Repositories\Interfaces\CifAuditRepositoryInterface;
 use App\Repositories\Mci\CifRepository;
+use App\Repositories\Mci\CifAuditRepository;
 use App\Repositories\Mci\DepositRepository;
 use App\Repositories\Mci\FinancingPenyelesaianRepository;
 use App\Repositories\Mci\FinancingPerformanceRepository;
@@ -45,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(FinancingPenyelesaianRepositoryInterface::class, FinancingPenyelesaianRepository::class);
         $this->app->bind(FinancingTunggakanRepositoryInterface::class, FinancingTunggakanRepository::class);
         $this->app->bind(CifRepositoryInterface::class, CifRepository::class);
+        $this->app->bind(CifAuditRepositoryInterface::class, CifAuditRepository::class);
         $this->app->bind(SavingRepositoryInterface::class, SavingRepository::class);
         $this->app->bind(DepositRepositoryInterface::class, DepositRepository::class);
         $this->app->bind(ReportingRepositoryInterface::class, ReportingRepository::class);

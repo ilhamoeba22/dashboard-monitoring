@@ -1,240 +1,435 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import DefaultLayout from '@/layouts/default.vue'
+import '@/assets/css/cif-shared.css'
 
 defineOptions({ layout: DefaultLayout })
 
+// State
+const isLoading = ref(true)
+const rtData = ref(null)
+const hasData = computed(() => rtData.value !== null)
 
-
-const activeTab = ref('daftar')
-const loading = ref(true)
-const tableLoading = ref(false)
-const error = ref(null)
-const search = ref('')
-const groupBy = ref('cabang')
-const data = ref([])
-const rekapData = ref([])
-const cursor = ref(null)
-const hasMore = ref(true)
-const loadMoreLoading = ref(false)
-const totalCount = ref(0)
-
-const headers = [
-  { title: 'No. CIF', key: 'nocif', width: '130px' },
-  { title: 'Nama Nasabah', key: 'nm', sortable: true },
-  { title: 'Jenis Kelamin', key: 'sex', width: '110px', align: 'center' },
-  { title: 'No. HP', key: 'hp', width: '130px' },
-  { title: 'Cabang', key: 'cabang', width: '110px' },
-  { title: 'AO', key: 'ao', width: '110px' },
-]
-
-const rekapHeaders = [
-  { title: 'Grup', key: 'label', sortable: true },
-  { title: 'Jumlah Nasabah', key: 'total_nasabah', sortable: true, align: 'end' },
-]
-
-const groupOptions = [
-  { value: 'cabang', title: 'Per Cabang' },
-  { value: 'ao', title: 'Per AO' },
-  { value: 'segmen', title: 'Per Segmen' },
-  { value: 'agama', title: 'Per Agama' },
-]
-
-async function fetchList(reset = false) {
-  if (reset) {
-    data.value = []
-    cursor.value = null
-    hasMore.value = true
-  }
-  
-  tableLoading.value = true
+// Mock API Call
+async function fetchSummary() {
+  isLoading.value = true
   try {
-    const params = new URLSearchParams({ per_page: 500 })
-    if (search.value) params.append('search', search.value)
-    if (cursor.value) params.append('cursor', cursor.value)
-    const url = `/api/v1/cif?${params}`
-    const r = await fetch(url)
-    const json = await r.json()
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 800))
     
-    if (json.data?.data) {
-      const newData = json.data.data.filter(item => !data.value.some(existing => existing.nocif === item.nocif))
-      data.value = [...data.value, ...newData]
-      cursor.value = json.data.meta?.next_cursor ?? null
-      hasMore.value = json.data.meta?.has_more ?? false
-      totalCount.value = json.data.meta?.total ?? data.value.length
-    } else if (json.data) {
-      data.value = json.data
-      totalCount.value = json.data.length
-      hasMore.value = false
+    // Mock data for Cif Overview
+    rtData.value = {
+      database: 'Dashboard_Data',
+      summary: {
+        total_nasabah: 125430,
+        persen_lengkap: 78.5,
+        persen_belum_lengkap: 21.5,
+        total_anomali: 15420
+      },
+      status_distribusi: [
+        { status: 'Lengkap', total: 98462, color: '#10B981' },
+        { status: 'Belum Lengkap', total: 20124, color: '#EF4444' },
+        { status: 'Cek Ulang', total: 6844, color: '#F59E0B' }
+      ],
+      top_anomali_cabang: [
+        { cabang: 'Cabang Utama', anomali: 4520 },
+        { cabang: 'Cabang A', anomali: 3100 },
+        { cabang: 'Cabang B', anomali: 2850 },
+        { cabang: 'Cabang C', anomali: 2100 },
+        { cabang: 'Cabang D', anomali: 1850 }
+      ]
     }
-  } catch (e) { error.value = e.message } finally { tableLoading.value = false }
+  } catch (e) {
+    console.error('Error fetching CIF summary:', e)
+    rtData.value = null
+  } finally {
+    isLoading.value = false
+  }
 }
 
-// Load more button handler
-async function loadMore() {
-  if (loadMoreLoading.value || !hasMore.value) return
-  loadMoreLoading.value = true
-  try {
-    await fetchList(false)
-  } finally { loadMoreLoading.value = false }
+// Quick Links Configuration (3 Columns)
+const quickLinks = [
+  { title: 'Audit CIF Pembiayaan', icon: 'ri-bank-line', color: '#10B981', bg: 'rgba(16,185,129,0.12)', route: '/cif/pembiayaan', desc: 'Pengecekan nasabah pembiayaan' },
+  { title: 'Audit CIF Tabungan', icon: 'ri-wallet-3-line', color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)', route: '/cif/tabungan', desc: 'Pengecekan nasabah tabungan' },
+  { title: 'Audit CIF Deposito', icon: 'ri-safe-2-line', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', route: '/cif/deposito', desc: 'Pengecekan nasabah deposito' },
+]
+
+// Formatting Helpers
+function formatNumber(value) {
+  if (!value && value !== 0) return '—'
+  return parseFloat(value).toLocaleString('id-ID')
 }
 
-async function fetchRekap() {
-  tableLoading.value = true
-  try {
-    const r = await fetch(`/api/v1/cif/rekapitulasi?group_by=${groupBy.value}`)
-    const json = await r.json()
-    rekapData.value = json.data ?? []
-  } catch (e) { error.value = e.message } finally { tableLoading.value = false }
+// Cards Configuration
+const cards = computed(() => [
+  {
+    id: 'total_nasabah',
+    title: 'Total Nasabah (CIF)',
+    value: rtData.value?.summary?.total_nasabah ?? 0,
+    format: 'number',
+    subtitle: 'Keseluruhan data terdaftar',
+    icon: 'ri-group-line',
+    color: 'primary'
+  },
+  {
+    id: 'persen_lengkap',
+    title: 'Persentase Lengkap',
+    value: rtData.value?.summary?.persen_lengkap ?? 0,
+    format: 'percent',
+    subtitle: 'Data valid & lengkap',
+    icon: 'ri-checkbox-circle-line',
+    color: 'success'
+  },
+  {
+    id: 'persen_belum_lengkap',
+    title: 'Persentase Belum Lengkap',
+    value: rtData.value?.summary?.persen_belum_lengkap ?? 0,
+    format: 'percent',
+    subtitle: 'Data perlu pembaruan',
+    icon: 'ri-close-circle-line',
+    color: 'error'
+  },
+  {
+    id: 'total_anomali',
+    title: 'Total Anomali Data',
+    value: rtData.value?.summary?.total_anomali ?? 0,
+    format: 'number',
+    subtitle: 'Indikasi data tidak wajar',
+    icon: 'ri-alert-line',
+    color: 'warning'
+  }
+])
+
+function formatValue(value, format) {
+  if (value === null || value === undefined) return '—'
+  if (format === 'number') return parseInt(value).toLocaleString('id-ID')
+  if (format === 'percent') return `${parseFloat(value).toFixed(1)}%`
+  return value
 }
 
-onMounted(async () => {
-  loading.value = true
-  await fetchList()
-  loading.value = false
+function getCardColor(color) {
+  const colorMap = {
+    primary: '#10b981', // emerald
+    success: '#10B981',
+    error: '#EF4444',
+    warning: '#F59E0B'
+  }
+  return colorMap[color] || '#10b981'
+}
+
+// Chart Configurations
+const donutChartOptions = computed(() => {
+  const labels = []
+  const colors = []
+  if (rtData.value?.status_distribusi) {
+    rtData.value.status_distribusi.forEach(item => {
+      labels.push(item.status)
+      colors.push(item.color)
+    })
+  }
+  return {
+    chart: { type: 'donut', fontFamily: 'Inter, sans-serif' },
+    labels,
+    colors,
+    stroke: { width: 0 },
+    dataLabels: {
+      enabled: true,
+      formatter: val => val.toFixed(1) + '%'
+    },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '72%',
+          labels: {
+            show: true,
+            name: { show: true },
+            value: { show: true, formatter: val => formatNumber(val) },
+            total: {
+              show: true, showAlways: true, label: 'Total CIF',
+              formatter: w => formatNumber(w.globals.seriesTotals.reduce((a, b) => a + b, 0))
+            }
+          }
+        }
+      }
+    },
+    legend: { position: 'bottom', fontSize: '12px', fontWeight: 600 }
+  }
 })
 
-watch(activeTab, (tab) => {
-  if (tab === 'daftar') fetchList(true)
-  else if (tab === 'rekapitulasi') fetchRekap()
+const donutChartSeries = computed(() => {
+  if (!rtData.value?.status_distribusi) return []
+  return rtData.value.status_distribusi.map(item => item.total)
 })
 
-watch(groupBy, () => { if (activeTab.value === 'rekapitulasi') fetchRekap() })
+const barChartOptions = computed(() => {
+  const categories = []
+  if (rtData.value?.top_anomali_cabang) {
+    rtData.value.top_anomali_cabang.forEach(item => {
+      categories.push(item.cabang)
+    })
+  }
+  return {
+    chart: { type: 'bar', fontFamily: 'Inter, sans-serif', toolbar: { show: false } },
+    colors: ['#EF4444'],
+    plotOptions: {
+      bar: {
+        borderRadius: 4,
+        horizontal: true,
+      }
+    },
+    dataLabels: { enabled: true, formatter: val => formatNumber(val) },
+    xaxis: { categories, labels: { formatter: v => formatNumber(v) } },
+    tooltip: { y: { formatter: val => formatNumber(val) + ' CIF' } }
+  }
+})
 
-let st = null
-watch(search, () => {
-  clearTimeout(st)
-  st = setTimeout(() => { if (activeTab.value === 'daftar') fetchList(true) }, 500)
+const barChartSeries = computed(() => {
+  const data = []
+  if (rtData.value?.top_anomali_cabang) {
+    rtData.value.top_anomali_cabang.forEach(item => {
+      data.push(item.anomali)
+    })
+  }
+  return [{ name: 'Total Anomali', data }]
+})
+
+onMounted(() => {
+  fetchSummary()
 })
 </script>
 
 <template>
-  <div class="d-flex align-center justify-space-between mb-6">
-    <div>
-      <div class="d-flex align-center gap-2 mb-1">
-        <VAvatar color="success" variant="tonal" size="32" rounded="lg">
-          <VIcon icon="ri-user-star-line" size="18" />
-        </VAvatar>
-        <h1 class="text-h5 font-weight-bold mb-0" style="font-family: 'Plus Jakarta Sans', sans-serif;">
-          Nasabah (CIF)
-        </h1>
-      </div>
-      <p class="text-body-2 text-medium-emphasis mb-0 ms-10">
-        Customer Information File — data nasabah terdaftar
-      </p>
-    </div>
-    <VChip color="success" variant="tonal" size="small" prepend-icon="ri-user-star-line">
-      CIF Module
-    </VChip>
-  </div>
+  <div class="cif-page px-4 pt-0">
 
-  <VAlert v-if="error" type="warning" variant="tonal" closable class="mb-4" :text="`Koneksi API: ${error}`" />
-
-  <VCard elevation="0" border rounded="xl">
-    <VTabs v-model="activeTab" color="success" class="border-b">
-      <VTab value="daftar" prepend-icon="ri-list-unordered">Daftar Nasabah</VTab>
-      <VTab value="rekapitulasi" prepend-icon="ri-bar-chart-2-line">Rekapitulasi</VTab>
-    </VTabs>
-
-    <VTabsWindow v-model="activeTab">
-      <!-- Daftar Nasabah -->
-      <VTabsWindowItem value="daftar">
-        <VCardText>
-          <VTextField
-            v-model="search"
-            placeholder="Cari nama, no. CIF..."
-            prepend-inner-icon="ri-search-line"
-            variant="outlined"
-            density="compact"
-            clearable
-            hide-details
-            class="mb-4"
-            style="max-width: 400px;"
-          />
-          <div class="d-flex align-center justify-space-between mt-4">
-            <span class="text-body-2 text-medium-emphasis">
-              Total: {{ totalCount.toLocaleString('id-ID') }} data
-            </span>
-            <VBtn
-              v-if="hasMore"
-              variant="tonal"
-              color="success"
-              size="small"
-              :loading="loadMoreLoading"
-              @click="loadMore"
-            >
-              <VIcon icon="ri-add-line" start />
-              Muat Lebih Banyak ({{ data.length }})
-            </VBtn>
+    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+    <div class="cif-hero mb-6">
+      <div class="cif-hero__deco"></div>
+      <div class="cif-hero__inner">
+        <div class="cif-hero__top">
+          <div class="cif-hero__icon">
+            <v-icon icon="ri-user-search-line" size="26" color="white" />
           </div>
-          <VDataTable
-            :headers="headers"
-            :items="data"
-            :loading="tableLoading || loading"
-            density="comfortable"
-            :items-per-page="-1"
-            class="rounded-lg border"
-            hover
-          >
-            <template #item.sex="{ item }">
-              <VChip :color="item.sex === 'P' || item.sex === 'W' ? 'pink' : 'info'" size="small" variant="tonal">
-                {{ item.sex === 'P' || item.sex === 'W' ? 'Perempuan' : 'Laki-laki' }}
-              </VChip>
-            </template>
-            <template #item.hp="{ item }">
-              {{ item.hp || '—' }}
-            </template>
-            <template #item.cabang="{ item }">
-              {{ item.cabang?.nama || '—' }}
-            </template>
-            <template #item.ao="{ item }">
-              {{ item.ao?.nmao || '—' }}
-            </template>
-            <template #no-data>
-              <div class="text-center py-8 text-medium-emphasis">
-                <VIcon icon="ri-user-search-line" size="48" class="mb-2" style="opacity: 0.3;" />
-                <p>Tidak ada data atau koneksi SQL Server belum aktif</p>
-              </div>
-            </template>
-          </VDataTable>
-        </VCardText>
-      </VTabsWindowItem>
-
-      <!-- Rekapitulasi -->
-      <VTabsWindowItem value="rekapitulasi">
-        <VCardText>
-          <div class="d-flex align-center gap-3 mb-4">
-            <span class="text-body-2">Kelompokkan:</span>
-            <VSelect
-              v-model="groupBy"
-              :items="groupOptions"
-              item-title="title"
-              item-value="value"
-              density="compact"
-              variant="outlined"
-              hide-details
-              style="max-width: 200px;"
-            />
-          </div>
-          <VDataTable
-            :headers="rekapHeaders"
-            :items="rekapData"
-            :loading="tableLoading"
-            density="comfortable"
-            class="rounded-lg border"
-            hover
-          >
-            <template #item.total_nasabah="{ item }">
-              <span class="financial-number font-weight-semibold text-success">
-                {{ item.total_nasabah?.toLocaleString('id-ID') || '0' }}
+          <div class="cif-hero__meta">
+            <h1 class="cif-hero__title">Dashboard CIF & Pengecekan Nasabah</h1>
+            <p class="cif-hero__subtitle">Overview status kelengkapan dan anomali data Customer Information File (Individu & Badan Hukum).</p>
+            <div class="cif-hero__badges">
+              <span class="cif-badge cif-badge--teal">🏦 Islamic Banking</span>
+              <span class="cif-badge cif-badge--glass">
+                <v-icon size="10" color="white">ri-database-2-line</v-icon>
+                {{ rtData?.database || 'Memuat...' }}
               </span>
-            </template>
-            <template #no-data>
-              <div class="text-center py-6"><p class="text-body-2 text-medium-emphasis">Klik tab Rekapitulasi untuk memuat data</p></div>
-            </template>
-          </VDataTable>
-        </VCardText>
-      </VTabsWindowItem>
-    </VTabsWindow>
-  </VCard>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LOADING SKELETON ─────────────────────────────────────── -->
+    <div v-if="isLoading">
+      <v-row class="mb-4">
+        <v-col v-for="i in 4" :key="i" cols="12" sm="6" lg="3">
+          <v-skeleton-loader type="card" rounded="xl" />
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="12" lg="4"><v-skeleton-loader type="image" height="350" rounded="xl" /></v-col>
+        <v-col cols="12" lg="8"><v-skeleton-loader type="image" height="350" rounded="xl" /></v-col>
+      </v-row>
+    </div>
+
+    <!-- ── DASHBOARD CONTENT ────────────────────────────────────── -->
+    <template v-else-if="hasData">
+
+      <!-- Quick Links Navigation (3 Columns) -->
+      <div class="mb-6">
+        <div class="cif-section__label">
+          <v-icon size="13" class="me-1">ri-navigation-line</v-icon>
+          Navigasi Cepat
+        </div>
+        <v-row>
+          <v-col v-for="(link, i) in quickLinks" :key="i" cols="12" sm="4">
+            <a :href="link.route" style="text-decoration: none; display: block;">
+              <div class="content-card quick-link-card pa-0">
+                <div class="d-flex align-center gap-3 pa-4">
+                  <div class="content-card__icon" :style="{ background: link.bg }">
+                    <v-icon :icon="link.icon" size="22" :style="{ color: link.color }" />
+                  </div>
+                  <div>
+                    <div class="font-weight-bold text-sm" style="font-size:14px; color:#1e293b;">{{ link.title }}</div>
+                    <div class="text-xs mt-1" style="font-size:11.5px; color:#94a3b8; line-height:1.3;">{{ link.desc }}</div>
+                  </div>
+                </div>
+              </div>
+            </a>
+          </v-col>
+        </v-row>
+      </div>
+
+      <!-- KPI Cards -->
+      <v-row class="mb-2">
+        <v-col v-for="card in cards" :key="card.id" cols="12" sm="6" lg="3">
+          <v-card
+            elevation="0"
+            :style="{
+              border: '1px solid rgba(var(--v-border-color), 0.08)',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              position: 'relative'
+            }"
+            class="h-100 transition-swing kpi-card-hover"
+          >
+            <!-- Background accent stripe -->
+            <div
+              :style="{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '4px',
+                background: `linear-gradient(90deg, ${getCardColor(card.color)} 0%, transparent 100%)`
+              }"
+            />
+            
+            <v-card-text class="pa-5" style="padding: 20px !important;">
+              <div class="d-flex align-start justify-space-between">
+                <!-- Content -->
+                <div class="flex-grow-1 pe-4">
+                  <p 
+                    class="text-body-2 text-medium-emphasis mb-2 font-weight-medium"
+                    style="font-size: 12px; letter-spacing: 0.5px; text-transform: uppercase;"
+                  >
+                    {{ card.title }}
+                  </p>
+                  
+                  <h2 
+                    class="text-h4 font-weight-bold mb-2"
+                    :style="{ 
+                      color: getCardColor(card.color),
+                      fontFamily: 'Plus Jakarta Sans, sans-serif',
+                      lineHeight: 1.2
+                    }"
+                  >
+                    {{ formatValue(card.value, card.format) }}
+                  </h2>
+                  
+                  <p class="text-caption text-medium-emphasis mb-0">
+                    {{ card.subtitle }}
+                  </p>
+                </div>
+                
+                <!-- Icon Container -->
+                <div
+                  :style="{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '12px',
+                    background: `${getCardColor(card.color)}1E`, // 12% opacity roughly
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }"
+                >
+                  <v-icon
+                    :icon="card.icon"
+                    size="22px"
+                    :color="getCardColor(card.color)"
+                  />
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <!-- Visual Analytics -->
+      <v-row class="mt-4 mb-6">
+        <!-- Donut Chart -->
+        <v-col cols="12" lg="4">
+          <div class="content-card h-100">
+            <div class="content-card__accent-top" style="background: linear-gradient(90deg, #10B981, #34D399);"></div>
+            <div class="content-card__header">
+              <div>
+                <div class="content-card__title">Distribusi Status Kelengkapan</div>
+                <div class="content-card__subtitle">Berdasarkan validasi NIK dan pasangan</div>
+              </div>
+              <div class="content-card__icon cif-icon-green">
+                <v-icon icon="ri-pie-chart-2-fill" size="20" />
+              </div>
+            </div>
+            <div class="content-card__body">
+              <apexchart
+                v-if="donutChartSeries.length"
+                type="donut" height="300"
+                :options="donutChartOptions"
+                :series="donutChartSeries"
+              />
+              <div v-else class="cif-empty py-12">
+                <v-icon icon="ri-bar-chart-2-line" size="40" class="cif-empty__icon" />
+                <div class="cif-empty__desc">Data distribusi tidak tersedia</div>
+              </div>
+            </div>
+          </div>
+        </v-col>
+
+        <!-- Bar Chart -->
+        <v-col cols="12" lg="8">
+          <div class="content-card h-100">
+            <div class="content-card__accent-top" style="background: linear-gradient(90deg, #EF4444, #F87171);"></div>
+            <div class="content-card__header">
+              <div>
+                <div class="content-card__title">Top 5 Cabang (Anomali Terbanyak)</div>
+                <div class="content-card__subtitle">Fokus prioritas perbaikan data CIF</div>
+              </div>
+              <a href="/cif/quality" style="text-decoration: none;">
+                <div class="cif-badge cif-badge--glass" style="background: rgba(239,68,68,0.12); color: #EF4444; border-color: rgba(239,68,68,0.2);">
+                  Audit Quality →
+                </div>
+              </a>
+            </div>
+            <div class="content-card__body">
+              <apexchart
+                v-if="barChartSeries[0].data.length"
+                type="bar" height="300"
+                :options="barChartOptions"
+                :series="barChartSeries"
+              />
+              <div v-else class="cif-empty py-12">
+                <div class="cif-empty__desc">Data tren tidak tersedia</div>
+              </div>
+            </div>
+          </div>
+        </v-col>
+      </v-row>
+
+    </template>
+
+    <!-- Empty State -->
+    <div v-if="!isLoading && !hasData" class="cif-empty mt-6">
+      <v-icon icon="ri-database-warning-line" size="56" class="cif-empty__icon" />
+      <div class="cif-empty__title">Data Tidak Tersedia</div>
+      <div class="cif-empty__desc">Tidak ada data yang dapat dimuat. Periksa koneksi API.</div>
+    </div>
+
+  </div>
 </template>
+
+<style scoped>
+.cif-page { background: var(--cif-bg); min-height: 100vh; padding-bottom: 48px; }
+
+.quick-link-card {
+  cursor: pointer;
+  transition: transform 0.22s cubic-bezier(0.4,0,0.2,1), box-shadow 0.22s ease;
+}
+.quick-link-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10) !important;
+}
+
+.kpi-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.kpi-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.12) !important;
+}
+</style>

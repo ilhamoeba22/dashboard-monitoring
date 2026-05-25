@@ -38,13 +38,25 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
     <VerticalNavLink :item="{ title: 'Target RBB', to: '/financing/target', icon: 'ri-focus-2-line' }" />
   </VerticalNavGroup>
 
-  <VerticalNavLink
+  <VerticalNavGroup
     :item="{
       title: 'Nasabah (CIF)',
       icon: 'ri-user-search-line',
-      to: '/cif',
+      badgeContent: 'MCI',
+      badgeClass: 'bg-success',
     }"
-  />
+  >
+    <VerticalNavLink :item="{ title: 'Overview', to: '/cif', icon: 'ri-dashboard-3-line' }" />
+    
+    <VerticalNavSectionTitle :item="{ heading: 'PENGECEKAN DATA' }" />
+    <VerticalNavLink :item="{ title: 'CIF Pembiayaan', to: '/cif/pembiayaan', icon: 'ri-bank-line' }" />
+    <VerticalNavLink :item="{ title: 'CIF Tabungan', to: '/cif/tabungan', icon: 'ri-wallet-3-line' }" />
+    <VerticalNavLink :item="{ title: 'CIF Deposito', to: '/cif/deposito', icon: 'ri-safe-2-line' }" />
+    
+    <VerticalNavSectionTitle :item="{ heading: 'ANALITIK' }" />
+    <VerticalNavLink :item="{ title: 'Rekapitulasi', to: '/cif/rekapitulasi', icon: 'ri-bar-chart-grouped-line' }" />
+    <VerticalNavLink :item="{ title: 'Quality Audit', to: '/cif/quality', icon: 'ri-shield-check-line' }" />
+  </VerticalNavGroup>
 
   <VerticalNavLink
     :item="{

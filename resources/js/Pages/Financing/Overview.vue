@@ -93,40 +93,52 @@ const donutChartSeries = computed(() => {
 const areaChartOptions = computed(() => {
   const categories = []
   if (rtData.value.trend) {
-    // No more .reverse()! Using the array exactly as it comes from the backend
     rtData.value.trend.forEach(item => {
-      // Backend already supplies the 'month' key (e.g., "Apr 26") based on the repository fix
       categories.push(item.month || item.periode)
     })
   }
   return {
-    chart: { type: 'area', fontFamily: 'Inter, sans-serif', toolbar: { show: false }, zoom: { enabled: false } },
+    chart: { type: 'line', fontFamily: 'Inter, sans-serif', toolbar: { show: false }, zoom: { enabled: false } },
     colors: ['#059669', '#EF4444'],
     dataLabels: { enabled: false },
-    stroke: { curve: 'smooth', width: 2 },
-    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.03, stops: [0, 90, 100] } },
+    stroke: { curve: 'smooth', width: [0, 3] },
+    fill: { type: 'solid', opacity: [1, 1] },
     xaxis: { categories, tooltip: { enabled: false } },
     yaxis: [
       { labels: { formatter: v => formatCurrency(v) }, title: { text: 'Total O/S', style: { fontWeight: 600 } } },
-      { opposite: true, labels: { formatter: v => formatCurrency(v) }, title: { text: 'Total NPF', style: { fontWeight: 600 } } }
+      { opposite: true, min: 0, labels: { formatter: v => v.toFixed(2) + '%' }, title: { text: 'Rasio NPF (%)', style: { fontWeight: 600 } } }
     ],
-    tooltip: { y: { formatter: val => 'Rp ' + val.toLocaleString('id-ID') } },
+    tooltip: { 
+      shared: true,
+      intersect: false,
+      y: { 
+        formatter: function (val, { seriesIndex, dataPointIndex, w }) {
+          if (seriesIndex === 0) {
+            return `Rp ${val.toLocaleString('id-ID')}`;
+          } else {
+            const nominalNpf = parseFloat(rtData.value.trend[dataPointIndex]?.total_npf) || 0;
+            return `${val.toFixed(2)}% (Rp ${nominalNpf.toLocaleString('id-ID')})`;
+          }
+        }
+      } 
+    },
     legend: { position: 'top', horizontalAlign: 'right' }
   }
 })
 
 const areaChartSeries = computed(() => {
-  const totalOs = [], totalNpf = []
+  const totalOs = [], npfRatio = []
   if (rtData.value.trend) {
-    // No more .reverse()!
     rtData.value.trend.forEach(item => {
-      totalOs.push(parseFloat(item.total_os) || 0)
-      totalNpf.push(parseFloat(item.total_npf) || 0)
+      const os = parseFloat(item.total_os) || 0;
+      const npf = parseFloat(item.total_npf) || 0;
+      totalOs.push(os);
+      npfRatio.push(os > 0 ? (npf / os) * 100 : 0);
     })
   }
   return [
-    { name: 'Total Outstanding', data: totalOs },
-    { name: 'Total NPF (Macet)',  data: totalNpf }
+    { name: 'Total Outstanding', type: 'column', data: totalOs },
+    { name: 'Rasio NPF', type: 'line', data: npfRatio }
   ]
 })
 
@@ -251,7 +263,7 @@ onMounted(() => store.loadAll())
             <div class="content-card__body">
               <apexchart
                 v-if="areaChartSeries[0].data.length"
-                type="area" height="300"
+                type="line" height="300"
                 :options="areaChartOptions"
                 :series="areaChartSeries"
               />

@@ -50,7 +50,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                 // Rule #11: Subquery untuk total_bayar (menghindari JOIN + GROUP BY massal)
                 DB::raw("(SELECT COUNT(*) FROM TOFRS WHERE TOFRS.nokontrak = a.nokontrak AND TOFRS.stsbyr IN ('L', 'LUNAS')) as total_bayar")
             ])
-            ->where('a.stsrec', 'A')
+            ->whereIn('a.stsrec', ['A', 'N'])
             ->where('a.stsacc', '<>', 'W');
 
         // Filter Type (Logic from Legacy)
@@ -178,7 +178,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
         $header = Toflmb::query()
             ->with(['cif:nocif,alamat', 'produk:kdprd,ket', 'tabunganPokok:notab,saldoblok,sahirrp'])
             ->where('nokontrak', $nokontrak)
-            ->where('stsrec', 'A')
+            ->whereIn('stsrec', ['A', 'N'])
             ->firstOrFail();
 
         // 2. Ambil List Jadwal Angsuran
@@ -342,7 +342,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
     {
         try {
             $query = Toflmb::query()
-                ->where('TOFLMB.stsrec', 'A')
+                ->whereIn('TOFLMB.stsrec', ['A', 'N'])
                 ->where('TOFLMB.stsacc', '<>', 'W');
 
             $aggregates = [
@@ -477,7 +477,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     {$aggregates}
                 FROM TOFLMB a
                 {$joinClause}
-                WHERE a.stsrec = 'A'
+                WHERE a.stsrec IN ('A', 'N')
                   AND a.stsacc <> 'W'
                   {$cabangFilter}
                 GROUP BY {$groupByClause}
@@ -684,7 +684,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
             $kolRows = DB::connection($this->connection)->select("
                 SELECT a.colbaru as kol, SUM(CAST(a.osmdlc AS DECIMAL(18,4))) AS total_os
                 FROM {$tableName} a
-                WHERE a.stsrec = 'A' AND a.stsacc <> 'W' {$mainFilter}
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
                 GROUP BY a.colbaru
             ", $mainBindings);
 
@@ -694,7 +694,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     SUM(CAST(a.osmdlc AS DECIMAL(18,4))) AS total_os,
                     SUM(CASE WHEN a.colbaru IN ('3','4','5') THEN CAST(a.osmdlc AS DECIMAL(18,4)) ELSE 0 END) AS npf_os
                 FROM {$tableName} a LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
-                WHERE a.stsrec = 'A' AND a.stsacc <> 'W' {$mainFilter}
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
                 GROUP BY p.ket ORDER BY npf_os DESC
             ", $mainBindings);
 
@@ -708,7 +708,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                         SELECT {$labelSelect} AS label, a.colbaru,
                             CAST(a.osmdlc AS DECIMAL(18,4)) as osmdlc
                         FROM {$tableName} a {$joinClause}
-                        WHERE a.stsrec = 'A' AND a.stsacc <> 'W' {$mainFilter}
+                        WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
                     )
                     SELECT label,
                         SUM(CASE WHEN colbaru = '1' THEN osmdlc ELSE 0 END) AS aging_0,
@@ -725,7 +725,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     WITH BaseData AS (
                         SELECT {$labelSelect} AS label, a.haritgk, CAST(a.osmdlc AS DECIMAL(18,4)) as osmdlc
                         FROM {$tableName} a {$joinClause}
-                        WHERE a.stsrec = 'A' AND a.stsacc <> 'W' {$mainFilter}
+                        WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
                     )
                     SELECT label,
                         SUM(CASE WHEN haritgk = 0 THEN osmdlc ELSE 0 END) AS aging_0,
@@ -748,7 +748,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                               / NULLIF(SUM(CAST(a.osmdlc AS DECIMAL(18,4))), 0)) * 100
                         ELSE 0 END as npf_ratio
                 FROM {$tableName} a JOIN CABANG c ON a.kdloc = c.kdloc
-                WHERE a.stsrec = 'A' AND a.stsacc <> 'W' {$cabangCompareFilter}
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$cabangCompareFilter}
                 GROUP BY c.nama ORDER BY npf_ratio DESC
             ", $cabangCompareBindings);
 
@@ -764,7 +764,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                         ISNULL(CAST(a.htgagun AS DECIMAL(18,4)), 0) as htgagun,
                         ISNULL(CAST(a.ppap AS DECIMAL(18,4)), 0) as ppap
                     FROM {$tableName} a LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
-                    WHERE a.stsrec = 'A' AND a.stsacc <> 'W' AND a.colbaru IN ('2','3','4','5') {$mainFilter}
+                    WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' AND a.colbaru IN ('2','3','4','5') {$mainFilter}
                     ORDER BY a.osmdlc DESC
                 ", $mainBindings);
             } else {
@@ -777,7 +777,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                         ISNULL(CAST(a.htgagun AS DECIMAL(18,4)), 0) as htgagun,
                         ISNULL(CAST(a.ppap AS DECIMAL(18,4)), 0) as ppap
                     FROM {$tableName} a LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
-                    WHERE a.stsrec = 'A' AND a.stsacc <> 'W' AND a.colbaru IN ('2','3','4','5') {$mainFilter}
+                    WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' AND a.colbaru IN ('2','3','4','5') {$mainFilter}
                     ORDER BY a.osmdlc DESC, a.haritgk DESC
                 ", $mainBindings);
             }
@@ -792,7 +792,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                 SELECT ISNULL(MAX(periode), '') as max_periode
                 FROM TOFLMBEOM
                 WHERE LEFT(periode, 4) = ?
-                  AND stsrec = 'A' AND stsacc <> 'W'
+                  AND stsrec IN ('A', 'N') AND stsacc <> 'W'
             ", [str_pad((string)$reqTahun, 4, '0', STR_PAD_LEFT)]);
             $maxPeriodeDb = isset($maxPeriodeResult[0]->max_periode) ? (string)$maxPeriodeResult[0]->max_periode : '';
 
@@ -826,7 +826,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     SUM(ISNULL(CAST(ppap AS DECIMAL(18,4)), 0)) as total_ppap
                 FROM TOFLMBEOM a
                 WHERE LEFT(periode, 4) = ? AND RIGHT(periode, 2) <= ?
-                  AND stsrec = 'A' AND stsacc <> 'W' {$trendFilter}
+                  AND stsrec IN ('A', 'N') AND stsacc <> 'W' {$trendFilter}
                 GROUP BY periode ORDER BY periode ASC
             ", array_merge([str_pad((string)$reqTahun, 4, '0', STR_PAD_LEFT), $effectiveBulanStr], $trendBindings));
 
@@ -860,7 +860,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     SUM(CASE WHEN a.colbaru = '1' THEN CAST(a.ppap AS DECIMAL(18,4)) ELSE 0 END) as ckpn_stage_1,
                     SUM(CASE WHEN a.colbaru = '2' THEN CAST(a.ppap AS DECIMAL(18,4)) ELSE 0 END) as ckpn_stage_2,
                     SUM(CASE WHEN a.colbaru IN ('3','4','5') THEN CAST(a.ppap AS DECIMAL(18,4)) ELSE 0 END) as ckpn_stage_3
-                FROM {$tableName} a WHERE a.stsrec = 'A' AND a.stsacc <> 'W' {$mainFilter}
+                FROM {$tableName} a WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
             ", $mainBindings);
             $eclData = $eclRows[0] ?? (object)['ckpn_stage_1'=>0,'ckpn_stage_2'=>0,'ckpn_stage_3'=>0];
 
@@ -870,7 +870,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     a.nokontrak, LTRIM(RTRIM(a.nama)) as nama,
                     CAST(a.osmdlc AS DECIMAL(18,4)) as os, a.colbaru
                 FROM {$tableName} a
-                WHERE a.stsrec = 'A' AND a.stsacc <> 'W' {$mainFilter}
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
                 ORDER BY a.osmdlc DESC
             ", $mainBindings);
 
@@ -889,7 +889,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                         / SUM(CAST(a.osmdlc AS DECIMAL(18,4))) * 100, 2)
                     ELSE 0 END as npf_ratio
                 FROM {$tableName} a LEFT JOIN AO b ON a.kdaoh = b.kdao
-                WHERE a.stsrec = 'A' AND a.stsacc <> 'W' {$mainFilter}
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
                 GROUP BY a.kdaoh, b.nmao ORDER BY npf_ratio DESC
             ", $mainBindings);
 
@@ -906,7 +906,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                                 ROUND(SUM(CASE WHEN a.colbaru IN ('3','4','5') THEN CAST(a.osmdlc AS DECIMAL(18,4)) ELSE 0 END)
                                 / SUM(CAST(a.osmdlc AS DECIMAL(18,4))) * 100, 2)
                             ELSE 0 END as npf_ratio
-                        FROM {$tableName} a WHERE a.stsrec = 'A' AND a.stsacc <> 'W' {$mainFilter}
+                        FROM {$tableName} a WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
                         GROUP BY a.sekon ORDER BY total_os DESC
                     ", $mainBindings);
                 } catch (\Throwable) {
@@ -921,7 +921,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                             ROUND(SUM(CASE WHEN a.colbaru IN ('3','4','5') THEN CAST(a.osmdlc AS DECIMAL(18,4)) ELSE 0 END)
                             / SUM(CAST(a.osmdlc AS DECIMAL(18,4))) * 100, 2)
                         ELSE 0 END as npf_ratio
-                    FROM {$tableName} a WHERE a.stsrec = 'A' AND a.stsacc <> 'W' {$mainFilter}
+                    FROM {$tableName} a WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
                     GROUP BY a.sekon ORDER BY total_os DESC
                 ", $mainBindings);
             }
@@ -935,7 +935,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                             SUM(CAST(a.osmdlc AS DECIMAL(18,4))) as total_os,
                             SUM(CASE WHEN a.colbaru IN ('3','4','5') THEN CAST(a.osmdlc AS DECIMAL(18,4)) ELSE 0 END) as npf_os
                         FROM {$tableName} a LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
-                        WHERE a.stsrec = 'A' AND a.stsacc <> 'W' {$mainFilter}
+                        WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
                         GROUP BY p.ket ORDER BY total_os DESC
                     ", $mainBindings);
                 } catch (\Throwable) {
@@ -947,7 +947,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                         SUM(CAST(a.osmdlc AS DECIMAL(18,4))) as total_os,
                         SUM(CASE WHEN a.colbaru IN ('3','4','5') THEN CAST(a.osmdlc AS DECIMAL(18,4)) ELSE 0 END) as npf_os
                     FROM {$tableName} a LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
-                    WHERE a.stsrec = 'A' AND a.stsacc <> 'W' {$mainFilter}
+                    WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
                     GROUP BY p.ket ORDER BY total_os DESC
                 ", $mainBindings);
             }
@@ -963,12 +963,12 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                         SELECT COUNT(DISTINCT a.nokontrak) as total_kontrak,
                             SUM(CAST(b.osmdlc AS DECIMAL(18,4))) as total_os
                         FROM TOFLMBHP a INNER JOIN {$tableName} b ON a.nokontrak = b.nokontrak
-                        WHERE b.stsrec = 'A' AND b.stsacc <> 'W' {$mainFilterB}
+                        WHERE b.stsrec IN ('A', 'N') AND b.stsacc <> 'W' {$mainFilterB}
                     ", $mainBindings);
                     $restruFail = DB::connection($this->connection)->select("
                         SELECT COUNT(DISTINCT b.nokontrak) as gagal_kontrak
                         FROM TOFLMBHP a INNER JOIN {$tableName} b ON a.nokontrak = b.nokontrak
-                        WHERE b.stsrec = 'A' AND b.stsacc <> 'W'
+                        WHERE b.stsrec IN ('A', 'N') AND b.stsacc <> 'W'
                           AND b.colbaru IN ('3','4','5') AND CAST(a.colnew AS VARCHAR) IN ('1','2') {$mainFilterB}
                     ", $mainBindings);
                 } catch (\Throwable) {
@@ -980,12 +980,12 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     SELECT COUNT(DISTINCT a.nokontrak) as total_kontrak,
                         SUM(CAST(b.osmdlc AS DECIMAL(18,4))) as total_os
                     FROM TOFLMBHP a INNER JOIN {$tableName} b ON a.nokontrak = b.nokontrak
-                    WHERE b.stsrec = 'A' AND b.stsacc <> 'W' {$mainFilterB}
+                    WHERE b.stsrec IN ('A', 'N') AND b.stsacc <> 'W' {$mainFilterB}
                 ", $mainBindings);
                 $restruFail = DB::connection($this->connection)->select("
                     SELECT COUNT(DISTINCT b.nokontrak) as gagal_kontrak
                     FROM TOFLMBHP a INNER JOIN {$tableName} b ON a.nokontrak = b.nokontrak
-                    WHERE b.stsrec = 'A' AND b.stsacc <> 'W'
+                    WHERE b.stsrec IN ('A', 'N') AND b.stsacc <> 'W'
                       AND b.colbaru IN ('3','4','5') AND CAST(a.colnew AS VARCHAR) IN ('1','2') {$mainFilterB}
                 ", $mainBindings);
             }
@@ -1094,7 +1094,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                 'cif:nocif,tgllhr,alamat,hp',
                 'cabang:kdloc,nama',
             ])
-            ->where('stsrec', 'A')
+            ->whereIn('stsrec', ['A', 'N'])
             ->where('stsacc', '<>', 'W')
             // Filter: Jatuh tempo <= Akhir bulan ini
             ->whereRaw('tglexp <= EOMONTH(GETDATE())')

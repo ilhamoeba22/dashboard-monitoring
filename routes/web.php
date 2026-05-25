@@ -45,8 +45,14 @@ Route::prefix('financing')->group(function () {
     Route::get('/repayment-rate-new', fn() => Inertia::render('Financing/RepaymentRateNew'))->name('financing.repayment-rate-new');
 });
 
-Route::get('/cif', function () {
-    return Inertia::render('Cif/Index');
+Route::prefix('cif')->group(function () {
+    Route::get('/', fn() => Inertia::render('Cif/Index'))->name('cif.index');
+    Route::get('/pembiayaan', fn() => Inertia::render('Cif/Pembiayaan'))->name('cif.pembiayaan');
+    Route::get('/tabungan', fn() => Inertia::render('Cif/Tabungan'))->name('cif.tabungan');
+    Route::get('/deposito', fn() => Inertia::render('Cif/Deposito'))->name('cif.deposito');
+    Route::get('/rekapitulasi', fn() => Inertia::render('Cif/Rekapitulasi'))->name('cif.rekapitulasi');
+    Route::get('/quality', fn() => Inertia::render('Cif/Quality'))->name('cif.quality');
+    Route::get('/{nocif}', fn($nocif) => Inertia::render('Cif/Detail', ['nocif' => $nocif]))->name('cif.detail');
 });
 
 Route::get('/funding', function () {

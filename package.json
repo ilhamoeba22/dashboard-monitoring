@@ -45,6 +45,7 @@
         "axios": "^1.15.2",
         "jspdf": "^4.2.1",
         "jspdf-autotable": "^5.0.7",
+        "lodash": "^4.18.1",
         "vue-flatpickr-component": "^12.0.0",
         "vue-router": "^5.0.6",
         "vue3-apexcharts": "^1.11.1",

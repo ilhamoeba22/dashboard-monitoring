@@ -71,7 +71,24 @@ const navItems = [
   },
 
   // ========== NASABAH (CIF) ==========
-  { title: 'Nasabah (CIF)', subtitle: 'Customer Data', icon: 'ri-user-star-line', href: '/cif' },
+  { 
+    title: 'Nasabah (CIF)', 
+    subtitle: 'Customer Data', 
+    icon: 'ri-user-search-line', 
+    value: 'cif',
+    children: [
+      { title: 'Overview', icon: 'ri-dashboard-3-line', href: '/cif' },
+      
+      { type: 'subheader', title: 'PENGECEKAN DATA' },
+      { title: 'CIF Pembiayaan', icon: 'ri-bank-line', href: '/cif/pembiayaan' },
+      { title: 'CIF Tabungan', icon: 'ri-wallet-3-line', href: '/cif/tabungan' },
+      { title: 'CIF Deposito', icon: 'ri-safe-2-line', href: '/cif/deposito' },
+      
+      { type: 'subheader', title: 'ANALITIK' },
+      { title: 'Rekapitulasi', icon: 'ri-bar-chart-grouped-line', href: '/cif/rekapitulasi' },
+      { title: 'Quality Audit', icon: 'ri-shield-check-line', href: '/cif/quality' },
+    ]
+  },
 
   // ========== FUNDING ==========
   { title: 'Funding', subtitle: 'Tabungan & Deposito', icon: 'ri-safe-2-line', href: '/funding' },

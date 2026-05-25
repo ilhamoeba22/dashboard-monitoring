@@ -308,7 +308,7 @@ class DashboardRepository extends MciBaseRepository
                 CROSS JOIN TANGGAL TGL
                 LEFT JOIN CABANG CG ON T1.kdloc = CG.kdloc
                 WHERE CAST(SUBSTRING(TGL.tgl, 5, 4) AS VARCHAR(4)) = ?
-                  AND T1.stsrec = 'A'
+                  AND T1.stsrec IN ('A', 'N')
                   AND T1.stsacc <> 'W'
 
                 UNION ALL
@@ -367,7 +367,7 @@ class DashboardRepository extends MciBaseRepository
                 CROSS JOIN TANGGAL TGL
                 LEFT JOIN CABANG CG ON T1.kodeloc = CG.kdloc
                 WHERE CAST(SUBSTRING(TGL.tgl, 5, 4) AS VARCHAR(4)) = ?
-                  AND T1.stsrec = 'A'
+                  AND T1.stsrec IN ('A', 'N')
                   AND T1.stsacc <> 'W'
 
                 UNION ALL
@@ -424,7 +424,7 @@ class DashboardRepository extends MciBaseRepository
                 CROSS JOIN TANGGAL TGL
                 LEFT JOIN CABANG CG ON T1.kdloc = CG.kdloc
                 WHERE CAST(SUBSTRING(TGL.tgl, 5, 4) AS VARCHAR(4)) = ?
-                  AND T1.stsrec = 'A'
+                  AND T1.stsrec IN ('A', 'N')
                   AND T1.stsacc <> 'W'
 
                 UNION ALL

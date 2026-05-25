@@ -485,7 +485,7 @@ class FinancingOverviewRepository
             $dbDate = $this->mciService->parseDatabaseDate($activeDb);
             $maxPeriod = $dbDate ? $dbDate->format('Ym') : now()->format('Ym');
 
-            $where = "WHERE LEFT(tglakad, 6) <= ? AND stsrec = 'A' AND stsacc <> 'W'";
+            $where = "WHERE LEFT(periode, 6) <= ? AND stsrec IN ('A', 'N') AND stsacc <> 'W'";
             $params = [$maxPeriod];
 
             if ($kdloc && $kdloc !== 'Semua Cabang') {
@@ -495,13 +495,13 @@ class FinancingOverviewRepository
 
             $sql = <<<SQL
                 SELECT 
-                    LEFT(tglakad, 6) as periode,
-                    SUM(CAST(mdlawal AS DECIMAL(18,2))) as total_nominal,
-                    SUM(CASE WHEN colbarU IN ('3','4','5') THEN CAST(osmdlc AS DECIMAL(18,2)) ELSE 0 END) as total_npf,
+                    LEFT(periode, 6) as periode,
+                    SUM(CAST(osmdlc AS DECIMAL(18,2))) as total_nominal,
+                    SUM(CASE WHEN colbaru IN ('3','4','5') THEN CAST(osmdlc AS DECIMAL(18,2)) ELSE 0 END) as total_npf,
                     COUNT(nokontrak) as total_noa
-                FROM TOFLMB
+                FROM TOFLMBEOM
                 $where
-                GROUP BY LEFT(tglakad, 6)
+                GROUP BY LEFT(periode, 6)
                 ORDER BY periode DESC
             SQL;
 

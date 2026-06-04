@@ -1,10 +1,10 @@
-﻿<script setup>
+<script setup>
 import DefaultLayout from '@/layouts/default.vue'
 import { useFinancingStore } from '@/stores/financingStore'
 import SummaryCards from '@/components/Financing/SummaryCards.vue'
 import { computed, onMounted } from 'vue'
 import '@/assets/css/financing-shared.css'
-import { formatExactRupiah } from '@/utils/money'
+import { formatExactRupiah, formatBanking6, formatTruncatedPercentage } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -27,57 +27,69 @@ function formatCurrency(value) {
   return formatExactRupiah(value, '—')
 }
 
-function getKolColor(kol) {
-  const colors = { '1': '#10B981', '2': '#3B82F6', '3': '#F59E0B', '4': '#F97316', '5': '#EF4444' }
-  return colors[String(kol)] || '#64748B'
-}
-
-function getKolLabel(kol) {
-  const labels = { '1': 'Lancar', '2': 'DPK', '3': 'Kurang Lancar', '4': 'Diragukan', '5': 'Macet' }
-  return labels[String(kol)] || 'Unknown'
-}
-
-function getKolPillClass(kol) {
-  const map = { '1': 'fin-pill--kol1', '2': 'fin-pill--kol2', '3': 'fin-pill--kol3', '4': 'fin-pill--kol4', '5': 'fin-pill--kol5' }
-  return map[String(kol)] || 'fin-pill--neutral'
-}
-
 // Chart Configurations
 const donutChartOptions = computed(() => {
   const labels = []
   const colors = []
   if (rtData.value.kolektibilitas) {
     rtData.value.kolektibilitas.forEach(item => {
-      labels.push(`Kol ${item.kol} - ${getKolLabel(item.kol)}`)
+      labels.push(`Kol ${item.kol}`)
       colors.push(getKolColor(item.kol))
     })
   }
   return {
-    chart: { type: 'donut', fontFamily: 'Inter, sans-serif' },
+    chart: { type: 'donut', fontFamily: 'Plus Jakarta Sans, sans-serif' },
     labels,
     colors,
-    stroke: { width: 0 },
+    stroke: { width: 2, colors: ['#fff'] },
     dataLabels: {
       enabled: true,
-      formatter: val => val.toFixed(1) + '%'
+      formatter: (val, { seriesIndex, w }) => {
+          // Persentase terlihat bagus (2 desimal)
+          return val.toFixed(2) + '%'
+      },
+      dropShadow: { enabled: false },
+      style: { fontSize: '11px', fontWeight: 'bold', colors: ['#334155'] }
     },
     plotOptions: {
       pie: {
         donut: {
-          size: '72%',
+          size: '70%',
           labels: {
             show: true,
-            name: { show: true },
-            value: { show: true, formatter: val => formatCurrency(val) },
+            name: { show: true, fontSize: '12px', color: '#64748b', offsetY: -10 },
+            value: { 
+                show: true, 
+                fontSize: '18px', 
+                fontWeight: '900', 
+                color: '#1e293b', 
+                offsetY: 5,
+                formatter: val => formatBanking6(val) // 6 Digit awal (skala jutaan) tanpa pembulatan
+            },
             total: {
-              show: true, showAlways: true, label: 'Total O/S',
-              formatter: w => formatCurrency(w.globals.seriesTotals.reduce((a, b) => a + b, 0))
+              show: true, 
+              showAlways: true, 
+              label: 'Total OS (Jt)',
+              color: '#94a3b8',
+              fontSize: '11px',
+              formatter: w => formatBanking6(w.globals.seriesTotals.reduce((a, b) => a + b, 0))
             }
           }
         }
       }
     },
-    legend: { position: 'bottom', fontSize: '12px', fontWeight: 600 }
+    legend: { 
+        position: 'bottom', 
+        fontSize: '12px', 
+        fontWeight: 600,
+        markers: { radius: 12 },
+        itemMargin: { horizontal: 10, vertical: 5 }
+    },
+    tooltip: {
+        y: {
+            formatter: val => formatExactRupiah(val) // Tooltip tetap detail 100%
+        }
+    }
   }
 })
 
@@ -101,19 +113,22 @@ const areaChartOptions = computed(() => {
     fill: { type: 'solid', opacity: [1, 1] },
     xaxis: { categories, tooltip: { enabled: false } },
     yaxis: [
-      { labels: { formatter: v => formatCurrency(v) }, title: { text: 'Total O/S', style: { fontWeight: 600 } } },
-      { opposite: true, min: 0, labels: { formatter: v => v.toFixed(2) + '%' }, title: { text: 'Rasio NPF (%)', style: { fontWeight: 600 } } }
+      { labels: { formatter: v => formatBanking6(v) }, title: { text: 'Total O/S (Jutaan)', style: { fontWeight: 600 } } },
+      { opposite: true, min: 0, labels: { formatter: v => formatTruncatedPercentage(v) }, title: { text: 'Rasio NPF (%)', style: { fontWeight: 600 } } }
     ],
     tooltip: { 
       shared: true,
       intersect: false,
       y: { 
-        formatter: function (val, { seriesIndex, dataPointIndex, w }) {
+        formatter: function (val, { seriesIndex, dataPointIndex }) {
+          if (typeof val === 'undefined' || val === null) return '—';
+
           if (seriesIndex === 0) {
             return formatCurrency(val);
           } else {
-            const nominalNpf = parseFloat(rtData.value.trend[dataPointIndex]?.total_npf) || 0;
-            return `${val}% (${formatCurrency(nominalNpf)})`;
+            const item = rtData.value.trend?.[dataPointIndex];
+            const nominalNpf = parseFloat(item?.total_npf) || 0;
+            return `${formatTruncatedPercentage(val)} (${formatCurrency(nominalNpf)})`;
           }
         }
       } 
@@ -138,13 +153,28 @@ const areaChartSeries = computed(() => {
   ]
 })
 
+function getKolColor(kol) {
+  const colors = { '1': '#10B981', '2': '#3B82F6', '3': '#F59E0B', '4': '#F97316', '5': '#EF4444' }
+  return colors[String(kol)] || '#64748B'
+}
+
+function getKolLabel(kol) {
+  const labels = { '1': 'Lancar', '2': 'DPK', '3': 'Kurang Lancar', '4': 'Diragukan', '5': 'Macet' }
+  return labels[String(kol)] || 'Unknown'
+}
+
+function getKolPillClass(kol) {
+  const map = { '1': 'fin-pill--kol1', '2': 'fin-pill--kol2', '3': 'fin-pill--kol3', '4': 'fin-pill--kol4', '5': 'fin-pill--kol5' }
+  return map[String(kol)] || 'fin-pill--neutral'
+}
+
 onMounted(() => store.loadAll())
 </script>
 
 <template>
   <div class="fin-page px-4 pt-0">
 
-    <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
     <div class="fin-hero mb-6">
       <div class="fin-hero__deco"></div>
       <div class="fin-hero__inner">
@@ -154,9 +184,9 @@ onMounted(() => store.loadAll())
           </div>
           <div class="fin-hero__meta">
             <h1 class="fin-hero__title">Executive Overview</h1>
-            <p class="fin-hero__subtitle">High-level realtime intelligence â€” portofolio pembiayaan aktif bank syariah</p>
+            <p class="fin-hero__subtitle">High-level realtime intelligence — portofolio pembiayaan aktif bank syariah</p>
             <div class="fin-hero__badges">
-              <span class="fin-badge fin-badge--teal">ðŸ¦ Islamic Banking</span>
+              <span class="fin-badge fin-badge--teal">🏦 Islamic Banking</span>
               <span class="fin-badge fin-badge--glass">
                 <v-icon size="10" color="white">ri-database-2-line</v-icon>
                 {{ rtData?.database || 'Memuat...' }}
@@ -167,7 +197,7 @@ onMounted(() => store.loadAll())
       </div>
     </div>
 
-    <!-- â”€â”€ LOADING SKELETON â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <!-- ── LOADING SKELETON ─────────────────────────────────────── -->
     <div v-if="isLoading">
       <v-row class="mb-4">
         <v-col v-for="i in 4" :key="i" cols="12" sm="6" lg="3">
@@ -180,7 +210,7 @@ onMounted(() => store.loadAll())
       </v-row>
     </div>
 
-    <!-- â”€â”€ DASHBOARD CONTENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <!-- ── DASHBOARD CONTENT ────────────────────────────────────── -->
     <template v-else-if="hasData">
 
       <!-- Quick Links Navigation -->
@@ -229,7 +259,7 @@ onMounted(() => store.loadAll())
             <div class="content-card__body">
               <apexchart
                 v-if="donutChartSeries.length"
-                type="donut" height="300"
+                type="donut" height="320"
                 :options="donutChartOptions"
                 :series="donutChartSeries"
               />
@@ -252,7 +282,7 @@ onMounted(() => store.loadAll())
               </div>
               <a href="/financing/perkembangan" style="text-decoration: none;">
                 <div class="fin-badge fin-badge--glass" style="background: rgba(13,148,136,0.12); color: #0d9488; border-color: rgba(13,148,136,0.2);">
-                  Detail MoM/YoY â†’
+                  Detail MoM/YoY →
                 </div>
               </a>
             </div>
@@ -281,7 +311,7 @@ onMounted(() => store.loadAll())
             </div>
             <div>
               <div class="content-card__title">Top High-Risk Alerts (NPF)</div>
-              <div class="content-card__subtitle">Prioritas penagihan hari ini â€” Top 5 Outstanding Macet</div>
+              <div class="content-card__subtitle">Prioritas penagihan hari ini — Top 5 Outstanding Macet</div>
             </div>
           </div>
           <a href="/financing/quality" style="text-decoration: none;">
@@ -317,8 +347,8 @@ onMounted(() => store.loadAll())
                     </div>
                   </div>
                 </td>
-                <td style="text-align:right; font-weight:700; color:#1e293b;">Rp {{ formatCurrency(item.osmdlc) }}</td>
-                <td style="text-align:right; font-weight:800; color:#e11d48;">Rp {{ formatCurrency(item.tgkmdl) }}</td>
+                <td style="text-align:right; font-weight:700; color:#1e293b;">{{ formatCurrency(item.osmdlc) }}</td>
+                <td style="text-align:right; font-weight:800; color:#e11d48;">{{ formatCurrency(item.tgkmdl) }}</td>
                 <td style="text-align:center;">
                   <span class="fin-pill" :class="getKolPillClass(item.colbaru)">{{ item.colbaru }}</span>
                 </td>

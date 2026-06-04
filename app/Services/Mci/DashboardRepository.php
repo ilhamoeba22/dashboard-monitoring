@@ -301,7 +301,7 @@ class DashboardRepository extends MciBaseRepository
                     T1.kdaoh,
                     T1.nokontrak,
                     CAST(T1.osmdlc  AS DECIMAL(18,2)) AS TotalOS,
-                    CAST(CASE WHEN T1.colbaru IN ('3','4','5') THEN T1.osmdlc ELSE 0 END AS DECIMAL(18,2)) AS TotalNPF,
+                    CAST(CASE WHEN T1.colbarU IN ('3','4','5') THEN T1.osmdlc ELSE 0 END AS DECIMAL(18,2)) AS TotalNPF,
                     T1.kdloc,
                     COALESCE(CG.nama, 'Konsolidasi') AS nama_cabang
                 FROM TOFLMB T1
@@ -319,7 +319,7 @@ class DashboardRepository extends MciBaseRepository
                     T3.kdaoh,
                     T2.nokontrak,
                     CAST(T2.osmdlc  AS DECIMAL(18,2)) AS TotalOS,
-                    CAST(CASE WHEN T3.colbaru IN ('3','4','5') THEN T2.osmdlc ELSE 0 END AS DECIMAL(18,2)) AS TotalNPF,
+                    CAST(CASE WHEN T3.colbarU IN ('3','4','5') THEN T2.osmdlc ELSE 0 END AS DECIMAL(18,2)) AS TotalNPF,
                     T3.kdloc,
                     COALESCE(CG.nama, 'Konsolidasi') AS nama_cabang
                 FROM TOFLMBEOM T2

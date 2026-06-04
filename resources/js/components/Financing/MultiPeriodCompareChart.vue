@@ -1,14 +1,11 @@
 <script setup>
 /**
- * MultiPeriodCompareChart Component - FINAL TREND VERSION
- * Exclusive Line Visualization:
- * - Smooth curves for all metrics
- * - Floating Data Labels (Rupiah/Percent)
- * - Dynamic Contrast Zoom (Auto-scaling Y-axis)
+ * MultiPeriodCompareChart Component - STRICT BANKING VERSION
+ * Visual guide with scaled labels but unrounded hover data.
  */
 
 import { computed } from 'vue'
-import { formatExactRupiah, formatExactNumber } from '@/utils/money'
+import { formatExactRupiah, formatExactNumber, formatScale } from '@/utils/money'
 
 const props = defineProps({
   data: {
@@ -33,24 +30,21 @@ const props = defineProps({
 const metricConfigs = {
   total_os: {
     name: 'Total Outstanding',
-    color: '#10B981', // Emerald
+    color: '#10B981', 
     unit: 'Rp'
   },
   total_npf: {
     name: 'Nominal NPF',
-    color: '#F59E0B', // Amber
+    color: '#F59E0B', 
     unit: 'Rp'
   },
   npf_persen: {
     name: 'Rasio NPF (%)',
-    color: '#EF4444', // Red
+    color: '#EF4444', 
     unit: '%'
   }
 }
 
-/**
- * Helper: Parse Database Name to Date Object
- */
 function parseDbDate(name) {
   if (!name) return new Date(0)
   const months = { 'JAN': 0, 'FEB': 1, 'MAR': 2, 'APR': 3, 'MEI': 4, 'JUN': 5, 'JUL': 6, 'AGU': 7, 'SEP': 8, 'OKT': 9, 'NOV': 10, 'DES': 11 }
@@ -61,9 +55,6 @@ function parseDbDate(name) {
   return new Date(0)
 }
 
-/**
- * Helper: Format label for X-Axis
- */
 function formatShortLabel(name) {
   const date = parseDbDate(name)
   if (date.getTime() === 0) return name
@@ -71,18 +62,6 @@ function formatShortLabel(name) {
   return `${monthNames[date.getMonth()]} ${date.getFullYear().toString().slice(-2)}`
 }
 
-/**
- * Helper: Dynamic Currency Formatter for Data Labels
- */
-function formatCompactRp(val) {
-  if (val >= 1e9) return `Rp ${(val / 1e9).toFixed(2)} M`
-  if (val >= 1e6) return `Rp ${(val / 1e6).toFixed(1)} Jt`
-  return val.toLocaleString('id-ID')
-}
-
-/**
- * Prepared Data for dynamic metric
- */
 const chartData = computed(() => {
   if (!props.data?.raw_data || props.data.raw_data.length === 0) return null
 
@@ -105,7 +84,7 @@ const chartOptions = computed(() => {
   return {
     chart: {
       height: 380,
-      type: 'line', // Forced Line Chart as per final requirement
+      type: 'line', 
       toolbar: { show: true },
       fontFamily: 'Plus Jakarta Sans, sans-serif',
       zoom: { enabled: false }
@@ -119,7 +98,7 @@ const chartOptions = computed(() => {
       enabled: true,
       offsetY: -12,
       style: {
-        fontSize: '12px',
+        fontSize: '11px',
         fontWeight: 700,
         colors: [config.color]
       },
@@ -132,7 +111,7 @@ const chartOptions = computed(() => {
         opacity: 0.9,
         dropShadow: { enabled: false }
       },
-      formatter: (val) => isRatio ? `${val}%` : formatCompactRp(val)
+      formatter: (val) => isRatio ? `${val}%` : formatScale(val, 1e9, ' M')
     },
     markers: {
       size: 6,
@@ -146,27 +125,22 @@ const chartOptions = computed(() => {
       labels: { style: { fontWeight: 700, colors: '#64748B' } }
     },
     yaxis: {
-      show: false, // Hide labels because DataLabels are prominent at each point
+      show: true,
+      labels: {
+          formatter: (val) => isRatio ? `${val}%` : formatScale(val, 1e9, ' M'),
+          style: { colors: '#94a3b8' }
+      },
       title: { 
-        text: config.name, 
+        text: isRatio ? 'Rasio (%)' : 'Skala Miliar (M)', 
         style: { color: config.color, fontWeight: 700 } 
-      },
-      // Dynamic Zoom Logic for Maximum Contrast
-      min: (min) => {
-          if (isRatio) return Math.max(0, min - 0.2);
-          return min - (min * 0.02); // 2% padding below the lowest point
-      },
-      max: (max) => {
-          if (isRatio) return max + 0.2;
-          return max + (max * 0.01); // 1% padding above the highest point
       }
     },
     tooltip: {
       theme: 'light',
       y: {
         formatter: (y) => {
-          if (isRatio) return `${y.toFixed(2)}%`
-          return `Rp ${y.toLocaleString('id-ID')}`
+          if (isRatio) return `${y}%`
+          return formatExactRupiah(y) // SHOW EXACT ON HOVER
         }
       }
     },

@@ -3,7 +3,7 @@
     <Head title="Write-Off Monitoring" />
     
     <div class="fin-page px-4 pt-0">
-      <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+      <!-- ── HERO HEADER ─────────────────────────────────────────── -->
       <div class="fin-hero mb-6">
         <div class="fin-hero__deco"></div>
         <div class="fin-hero__inner">
@@ -16,7 +16,7 @@
                 <h1 class="fin-hero__title">Write-Off Monitoring</h1>
                 <p class="fin-hero__subtitle">Monitor pembiayaan yang di-write off dan recovery rate</p>
                 <div class="fin-hero__badges">
-                  <span class="fin-badge fin-badge--danger">ðŸ—‘ Hapus Buku</span>
+                  <span class="fin-badge fin-badge--danger">🗑️ Hapus Buku</span>
                 </div>
               </div>
             </div>

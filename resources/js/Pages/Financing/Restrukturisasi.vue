@@ -20,11 +20,38 @@ const summary = ref({
   kol_memburuk: 0,
   kol_tetap: 0,
 })
+const periodMeta = ref({
+  requested_period: null,
+  active_period: null,
+  is_historical: false,
+  period_available: true,
+  source_table: 'TOFLMBHP',
+  source_database: null,
+  message: null,
+})
 
 // Filters
 const selectedAo = ref('Semua AO')
 const selectedCabang = ref('Semua Cabang')
 const searchQuery = ref('')
+const selectedTahun = ref(null)
+const selectedBulan = ref(null)
+const monthOptions = [
+  { title: 'Januari', value: 1 }, { title: 'Februari', value: 2 }, { title: 'Maret', value: 3 },
+  { title: 'April', value: 4 }, { title: 'Mei', value: 5 }, { title: 'Juni', value: 6 },
+  { title: 'Juli', value: 7 }, { title: 'Agustus', value: 8 }, { title: 'September', value: 9 },
+  { title: 'Oktober', value: 10 }, { title: 'November', value: 11 }, { title: 'Desember', value: 12 },
+]
+const yearOptions = computed(() => {
+  const current = new Date().getFullYear()
+  return [current, current - 1, current - 2, current - 3, current - 4]
+})
+const activePeriodLabel = computed(() => {
+  if (!selectedTahun.value || !selectedBulan.value) return 'Periode aktif CBS'
+  const month = monthOptions.find(item => item.value === selectedBulan.value)?.title || '-'
+  return `${month} ${selectedTahun.value}`
+})
+const periodUnavailable = computed(() => periodMeta.value?.period_available === false)
 
 // Pagination
 const currentPage = ref(1)
@@ -45,8 +72,17 @@ const cabangOptions = computed(() => {
 const fetchData = async () => {
   loading.value = true
   try {
-    const response = await axios.get('/api/v1/financing/restrukturisasi')
+    const params = {}
+    if (selectedTahun.value) params.tahun = selectedTahun.value
+    if (selectedBulan.value) params.bulan = selectedBulan.value
+    const response = await axios.get('/api/v1/financing/restrukturisasi', { params })
     if (response.data.success) {
+      periodMeta.value = response.data.period_meta || periodMeta.value
+      const requested = String(periodMeta.value?.requested_period || '')
+      if (requested.length === 6) {
+        selectedTahun.value = Number(requested.slice(0, 4))
+        selectedBulan.value = Number(requested.slice(4, 6))
+      }
       rawData.value = response.data.data
       summary.value = response.data.summary
     }
@@ -150,13 +186,17 @@ onMounted(() => {
 const resetPage = () => { currentPage.value = 1 }
 
 watch([selectedAo, selectedCabang, searchQuery], resetPage)
+watch([selectedTahun, selectedBulan], () => {
+  resetPage()
+  fetchData()
+})
 </script>
 
 <template>
   <div class="fin-page px-4 pt-0">
     <Head title="Restrukturisasi Pembiayaan" />
 
-    <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
     <div class="fin-hero mb-6">
       <div class="fin-hero__deco"></div>
       <div class="fin-hero__inner">
@@ -169,12 +209,40 @@ watch([selectedAo, selectedCabang, searchQuery], resetPage)
               <h1 class="fin-hero__title">Restrukturisasi Pembiayaan</h1>
               <p class="fin-hero__subtitle">Intelligence Control Center untuk pemantauan data addendum dan perubahan syarat kontrak.</p>
               <div class="fin-hero__badges">
-                <span class="fin-badge fin-badge--warning">ðŸ“ Addendum</span>
+                <span class="fin-badge fin-badge--warning">📄 Addendum</span>
               </div>
             </div>
           </div>
           
           <div class="fin-filter-bar">
+            <v-select
+              v-model="selectedTahun"
+              :items="yearOptions"
+              label="Tahun"
+              variant="solo"
+              density="compact"
+              flat
+              hide-details
+              rounded="lg"
+              bg-color="white"
+              prepend-inner-icon="ri-calendar-line"
+              style="min-width: 120px; max-width: 140px;"
+            />
+            <v-select
+              v-model="selectedBulan"
+              :items="monthOptions"
+              item-title="title"
+              item-value="value"
+              label="Bulan"
+              variant="solo"
+              density="compact"
+              flat
+              hide-details
+              rounded="lg"
+              bg-color="white"
+              prepend-inner-icon="ri-calendar-event-line"
+              style="min-width: 150px; max-width: 180px;"
+            />
             <v-btn 
               variant="text" 
               density="comfortable"
@@ -275,6 +343,18 @@ watch([selectedAo, selectedCabang, searchQuery], resetPage)
       </v-col>
     </v-row>
 
+    <v-alert
+      v-if="periodUnavailable && !loading"
+      type="warning"
+      variant="tonal"
+      border="start"
+      rounded="lg"
+      class="mb-6"
+    >
+      <div class="font-weight-bold mb-1">Periode {{ activePeriodLabel }} belum tersedia</div>
+      <div class="text-body-2">{{ periodMeta.message || 'Database snapshot periode ini belum tersedia.' }}</div>
+    </v-alert>
+
     <!-- Independent Filter Bar (Pro Max) -->
     <v-card class="d-flex flex-wrap align-center ga-3 pa-4 bg-white rounded-xl border shadow-sm mb-6" elevation="0">
         <div class="text-sm font-black text-slate-800 uppercase tracking-tight mr-2 flex items-center gap-2">
@@ -328,20 +408,21 @@ watch([selectedAo, selectedCabang, searchQuery], resetPage)
               <tr>
                 <th class="sticky left-0 z-10 whitespace-nowrap">Nasabah / Kontrak</th>
                 <th class="whitespace-nowrap">Restruk Ke</th>
-                <th class="whitespace-nowrap">Akad (Lama â†’ Baru)</th>
+                <th class="whitespace-nowrap text-center">Total Restruk</th>
+                <th class="whitespace-nowrap">Akad (Lama → Baru)</th>
                 <th class="whitespace-nowrap text-center">Kolektibilitas</th>
                 <th class="text-right whitespace-nowrap">O/S Pokok Baru</th>
               </tr>
             </thead>
           <tbody>
             <tr v-if="loading">
-              <td colspan="5" class="pa-12 text-center bg-slate-50">
+              <td colspan="6" class="pa-12 text-center bg-slate-50">
                 <v-progress-circular indeterminate color="indigo" size="48" class="mb-4"></v-progress-circular>
                 <div class="text-h6 text-slate-500 font-weight-bold">Memuat Data Restrukturisasi...</div>
               </td>
             </tr>
             <tr v-else-if="paginatedData.length === 0">
-              <td colspan="5" class="pa-12 text-center bg-slate-50">
+              <td colspan="6" class="pa-12 text-center bg-slate-50">
                 <v-icon icon="ri-inbox-line" size="64" class="text-slate-300 mb-4"></v-icon>
                 <div class="text-h6 text-slate-500 font-weight-bold">Data Tidak Ditemukan</div>
                 <div class="text-caption text-slate-400 mt-1 font-weight-medium">Coba sesuaikan filter pencarian Anda</div>
@@ -368,6 +449,17 @@ watch([selectedAo, selectedCabang, searchQuery], resetPage)
                 <div class="text-[10px] text-slate-500 font-bold uppercase">
                   Tgl: {{ item.tglakad_baru }}
                 </div>
+              </td>
+
+              <td class="text-center" style="border-bottom: 1px solid #f1f5f9;">
+                <v-chip
+                  size="small"
+                  variant="flat"
+                  class="font-weight-black px-3"
+                  :color="item.total_restrukturisasi >= 3 ? 'error' : (item.total_restrukturisasi >= 2 ? 'warning' : 'success')"
+                >
+                  {{ item.total_restrukturisasi }}x
+                </v-chip>
               </td>
 
               <td style="border-bottom: 1px solid #f1f5f9;">

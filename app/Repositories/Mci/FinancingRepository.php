@@ -10,17 +10,27 @@ use App\Models\Mci\Master\Cabang;
 use App\Models\Mci\Marketing\Ao;
 use App\Repositories\Interfaces\FinancingRepositoryInterface;
 use App\Services\Mci\MciBaseRepository;
+use App\Services\Mci\MciConnectionService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\Paginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class FinancingRepository extends MciBaseRepository implements FinancingRepositoryInterface
 {
+    /** @var array<string, mixed> */
+    private array $lastNominativePeriodMeta = [];
+
     protected function getTableName(): string
     {
         return 'TOFLMB';
+    }
+
+    public function getLastNominativePeriodMeta(): array
+    {
+        return $this->lastNominativePeriodMeta;
     }
 
     /**
@@ -31,32 +41,134 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
      */
     public function getNominative(array $filters = [], int $perPage = 50): Paginator
     {
+        $activePeriod = $this->getCurrentPeriodInternal();
+        $currentYear = (int) $activePeriod['year'];
+        $currentMonth = (int) $activePeriod['month'];
+        $currentPeriod = (string) $activePeriod['period'];
+        $reqTahun = isset($filters['tahun']) && (int) $filters['tahun'] > 0 ? (int) $filters['tahun'] : $currentYear;
+        $reqBulan = isset($filters['bulan']) && (int) $filters['bulan'] > 0 ? (int) $filters['bulan'] : $currentMonth;
+        $reqBulan = max(1, min(12, $reqBulan));
+        $isRequestedHistorical = ($reqTahun !== $currentYear || $reqBulan !== $currentMonth);
+        $monthlySnapshotDatabase = $isRequestedHistorical
+            ? $this->resolveMonthlySnapshotDatabase($reqTahun, $reqBulan)
+            : null;
+        $usingMonthlySnapshotDatabase = $monthlySnapshotDatabase !== null;
+        $isHistoris = $isRequestedHistorical && ! $usingMonthlySnapshotDatabase;
+        $tableName = $isHistoris ? 'TOFLMBEOM' : 'TOFLMB';
+        $periode = sprintf('%04d%02d', $reqTahun, $reqBulan);
+        $periodAvailable = true;
+
+        if ($usingMonthlySnapshotDatabase) {
+            app(MciConnectionService::class)->switchToDatabase($monthlySnapshotDatabase);
+        }
+
+        if ($isHistoris) {
+            $periodAvailable = DB::connection($this->connection)
+                ->table('TOFLMBEOM')
+                ->where('periode', $periode)
+                ->exists();
+        }
+
+        $this->lastNominativePeriodMeta = [
+            'requested_period' => $periode,
+            'active_period' => $currentPeriod,
+            'is_historical' => $isRequestedHistorical,
+            'period_available' => $periodAvailable,
+            'source_table' => $tableName,
+            'source_database' => $usingMonthlySnapshotDatabase
+                ? $monthlySnapshotDatabase
+                : DB::connection($this->connection)->selectOne('SELECT DB_NAME() as database_name')->database_name ?? null,
+            'message' => $periodAvailable
+                ? null
+                : "Data periode {$periode} belum tersedia di database historis TOFLMBEOM.",
+        ];
+
+        if (! $periodAvailable) {
+            return new LengthAwarePaginator(
+                [],
+                0,
+                $perPage,
+                LengthAwarePaginator::resolveCurrentPage(),
+                [
+                    'path' => LengthAwarePaginator::resolveCurrentPath(),
+                ]
+            );
+        }
+
+        $hasSegmenColumn = $this->tableHasColumn($tableName, 'segmen');
+
         // G2 Data Entry: Rebuild dengan Logika Proyek Legacy (Murni Query Builder untuk Performa)
-        $query = DB::connection($this->connection)->table('TOFLMB as a')
+        $query = DB::connection($this->connection)->table("{$tableName} as a")
             ->leftJoin('AO as b', 'a.kdaoh', '=', 'b.kdao')
             ->leftJoin('mCIF as c', 'a.nocif', '=', 'c.nocif')
-            ->leftJoin('TOFTABC as d', 'a.acpok', '=', 'd.notab')
             ->leftJoin('CABANG as e', 'a.kdloc', '=', 'e.kdloc')
             ->leftJoin('WILAYAH as f', 'a.kdwil', '=', 'f.kodewil')
-            ->leftJoin('SEGMEN as h', 'a.segmen', '=', 'h.kdseg')
-            ->leftJoin('SETUPLOAN as i', 'a.kdprd', '=', 'i.kdprd')
-            ->select([
-                'a.nokontrak', 'a.nocif', 'a.nama', 'c.tgllhr', 'a.segmen', 'h.ket as nm_segmen',
+            ->leftJoin('SETUPLOAN as i', 'a.kdprd', '=', 'i.kdprd');
+
+        if (! $isHistoris) {
+            $query->leftJoin('TOFTABC as d', 'a.acpok', '=', 'd.notab');
+        }
+
+        if ($hasSegmenColumn) {
+            $query->leftJoin('SEGMEN as h', 'a.segmen', '=', 'h.kdseg');
+        }
+
+        $segmenSelect = $hasSegmenColumn ? 'a.segmen' : DB::raw('NULL as segmen');
+        $segmenNameSelect = $hasSegmenColumn ? 'h.ket as nm_segmen' : DB::raw('NULL as nm_segmen');
+        $haritgkSelect = $isHistoris
+            ? DB::raw('ISNULL(CAST(a.haritgkmdl AS DECIMAL(18,4)), 0) as haritgk')
+            : 'a.haritgk';
+        $accountSelect = $isHistoris ? DB::raw('NULL as acpok') : 'a.acpok';
+        $saldoBlokSelect = $isHistoris ? DB::raw('0 as saldoblok') : 'd.saldoblok';
+        $saldoAkhirSelect = $isHistoris ? DB::raw('0 as sahirrp') : 'd.sahirrp';
+        $totalBayarSelect = $isHistoris
+            ? DB::raw("(
+                SELECT COUNT(*)
+                FROM TOFRS
+                WHERE TOFRS.nokontrak = a.nokontrak
+                  AND TOFRS.stsbyr IN ('L', 'LUNAS')
+                  AND (
+                    LEFT(ISNULL(NULLIF(TOFRS.tglbyrmdl, ''), ISNULL(TOFRS.tglbyrmgn, '')), 6) <= '{$periode}'
+                  )
+            ) as total_bayar")
+            : DB::raw("(SELECT COUNT(*) FROM TOFRS WHERE TOFRS.nokontrak = a.nokontrak AND TOFRS.stsbyr IN ('L', 'LUNAS')) as total_bayar");
+
+        $query->select([
+                'a.nokontrak', 'a.nocif', 'a.nama', 'c.tgllhr', $segmenSelect, $segmenNameSelect,
                 'a.tgleff', 'a.jw', 'a.kdjw', 'a.tglexp', 'a.noakad', 'a.mdlawal', 'a.osmdlc',
-                'a.tgkmdl', 'a.tgkmgn', 'a.haritgk', 'a.tglmacet', 'a.colbaru',
-                'a.htgagun', 'a.ppap', 'c.alamat', 'a.acpok', 'd.saldoblok',
-                'd.sahirrp', 'a.rateeff', 'a.rateflat', 'a.kdaoh', 'b.nmao',
+                'a.tgkmdl', 'a.tgkmgn', $haritgkSelect, 'a.tglmacet', 'a.colbaru',
+                'a.htgagun', 'a.ppap', 'c.alamat', $accountSelect, $saldoBlokSelect,
+                $saldoAkhirSelect, 'a.rateeff', 'a.rateflat', 'a.kdaoh', 'b.nmao',
                 'e.nama as nama_cabang', 'f.ket as nama_wilayah', 'i.ket as nama_produk',
                 // Rule #11: Subquery untuk total_bayar (menghindari JOIN + GROUP BY massal)
-                DB::raw("(SELECT COUNT(*) FROM TOFRS WHERE TOFRS.nokontrak = a.nokontrak AND TOFRS.stsbyr IN ('L', 'LUNAS')) as total_bayar")
+                $totalBayarSelect,
+                DB::raw("'{$periode}' as periode_data"),
+                DB::raw(($isHistoris ? "'TOFLMBEOM'" : "'TOFLMB'") . ' as sumber_data')
             ])
             ->whereIn('a.stsrec', ['A', 'N'])
             ->where('a.stsacc', '<>', 'W');
 
+        if ($isHistoris) {
+            $query->where('a.periode', $periode);
+        }
+
         // Filter Type (Logic from Legacy)
         if (! empty($filters['type'])) {
             if ($filters['type'] === 'sindikasi') {
-                $query->where('a.lb_jnspiutang', '10');
+                $query->where(function ($q) use ($isHistoris) {
+                    if (! $isHistoris) {
+                        $q->where('a.lb_jnspiutang', '10');
+                    } else {
+                        $q->where('a.jnspemb', '10');
+                    }
+
+                    $q->orWhereExists(function ($sub) {
+                        $sub->select(DB::raw(1))
+                            ->from('TOFLMSINDIKASI as s')
+                            ->whereColumn('s.nokontrak', 'a.nokontrak')
+                            ->whereIn('s.stsrec', ['A', 'N']);
+                    });
+                });
             } elseif ($filters['type'] === 'karyawan') {
                 $query->where('c.stskaryawan', 'Y');
             }
@@ -90,13 +202,14 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
         $result = $query->paginate($perPage);
 
         // Transformasi koleksi (Logic Business mapping)
-        $result->getCollection()->transform(function ($item) {
+        $result->getCollection()->transform(function ($item) use ($isHistoris) {
             $age = $item->tgllhr ? Carbon::parse($item->tgllhr)->age : 0;
             
             // Saldo Netto logic: sahirrp - (saldoblok + buffer 20k)
-            $sahirrp = (float)($item->sahirrp ?? 0);
-            $saldoblok = (float)($item->saldoblok ?? 0);
-            $saldo_netto = max(0, $sahirrp - ($saldoblok + 20000));
+            $sahirrp = (float) ($item->sahirrp ?? 0);
+            $saldoblok = (float) ($item->saldoblok ?? 0);
+            $saldo_netto = $isHistoris ? null : max(0, $sahirrp - ($saldoblok + 20000));
+            $tunggakanVsTabungan = $isHistoris ? null : $saldo_netto - ($item->tgkmdl + $item->tgkmgn);
 
             return [
                 'nokontrak' => trim((string)$item->nokontrak),
@@ -118,8 +231,8 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                 'colbaru' => $item->colbaru,
                 'tglmacet' => $this->formatSafeDate((string)$item->tglmacet),
                 'saldo_netto' => $saldo_netto,
-                'keterangan_debet' => ($saldo_netto > ($item->tgkmdl + $item->tgkmgn)) ? 'Cukup' : 'Kurang',
-                'tunggakan_vs_tabungan' => $saldo_netto - ($item->tgkmdl + $item->tgkmgn),
+                'keterangan_debet' => $isHistoris ? 'Tidak tersedia' : (($saldo_netto > ($item->tgkmdl + $item->tgkmgn)) ? 'Cukup' : 'Kurang'),
+                'tunggakan_vs_tabungan' => $tunggakanVsTabungan,
                 'htgagun' => (float)$item->htgagun,
                 'ppap' => (float)$item->ppap,
                 'ao' => $item->nmao ?? 'N/A',
@@ -127,10 +240,35 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                 'wilayah' => $item->nama_wilayah ?? 'N/A',
                 'alamat' => $item->alamat,
                 'produk' => $item->nama_produk ?? 'N/A',
+                'periode_data' => $item->periode_data ?? null,
+                'sumber_data' => $item->sumber_data ?? 'TOFLMB',
             ];
         });
 
         return $result;
+    }
+
+    private function tableHasColumn(string $tableName, string $columnName): bool
+    {
+        $cacheKey = "mci:column_exists:{$this->connection}:{$tableName}:{$columnName}";
+
+        return Cache::remember($cacheKey, self::CACHE_LONG, function () use ($tableName, $columnName): bool {
+            return DB::connection($this->connection)
+                ->table('INFORMATION_SCHEMA.COLUMNS')
+                ->where('TABLE_NAME', $tableName)
+                ->where('COLUMN_NAME', $columnName)
+                ->exists();
+        });
+    }
+
+    private function resolveMonthlySnapshotDatabase(int $year, int $month): ?string
+    {
+        $monthPrefixes = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGT', 'SEP', 'OKT', 'NOV', 'DES'];
+        $yearSuffix = substr((string) $year, -2);
+        $envKey = 'MCI_DB_'.$monthPrefixes[$month - 1].$yearSuffix;
+        $database = env($envKey);
+
+        return is_string($database) && $database !== '' ? $database : null;
     }
 
     /**
@@ -414,19 +552,75 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
      * @param  string  $cabang   Filter kode cabang (opsional, '' = semua)
      * @return array{rows: Collection, totals: array<string,mixed>, meta: array<string,mixed>}
      */
-    public function getRekapMaster(string $groupBy = 'cabang', string $cabang = ''): array
+    public function getRekapMaster(string $groupBy = 'cabang', string $cabang = '', int $tahun = 0, int $bulan = 0): array
     {
         $validGroups = ['cabang', 'wilayah', 'ao', 'produk', 'segmen', 'sekon'];
         if (! in_array($groupBy, $validGroups, true)) {
             throw new \InvalidArgumentException("Invalid group_by: {$groupBy}. Valid: ".implode(', ', $validGroups));
         }
 
-        $cacheKey = "financing:rekap_master:{$groupBy}:".($cabang ?: 'all');
+        $activePeriod = $this->getCurrentPeriodInternal();
+        $reqTahun = $tahun > 0 ? $tahun : (int) $activePeriod['year'];
+        $reqBulan = $bulan > 0 ? max(1, min(12, $bulan)) : (int) $activePeriod['month'];
+        $periode = sprintf('%04d%02d', $reqTahun, $reqBulan);
+        $isRequestedHistorical = ($reqTahun !== (int) $activePeriod['year'] || $reqBulan !== (int) $activePeriod['month']);
+        $monthlySnapshotDatabase = $isRequestedHistorical ? $this->resolveMonthlySnapshotDatabase($reqTahun, $reqBulan) : null;
+        $usingMonthlySnapshotDatabase = $monthlySnapshotDatabase !== null;
+        $tableName = $usingMonthlySnapshotDatabase || ! $isRequestedHistorical ? 'TOFLMB' : 'TOFLMBEOM';
+        $periodAvailable = true;
+
+        if ($usingMonthlySnapshotDatabase) {
+            app(MciConnectionService::class)->switchToDatabase($monthlySnapshotDatabase);
+        }
+
+        if ($isRequestedHistorical && ! $usingMonthlySnapshotDatabase) {
+            $periodAvailable = DB::connection($this->connection)
+                ->table('TOFLMBEOM')
+                ->where('periode', $periode)
+                ->exists();
+        }
+
+        $sourceDatabase = $usingMonthlySnapshotDatabase
+            ? $monthlySnapshotDatabase
+            : DB::connection($this->connection)->selectOne('SELECT DB_NAME() as database_name')->database_name ?? null;
+
+        $periodMeta = [
+            'requested_period' => $periode,
+            'active_period' => (string) $activePeriod['period'],
+            'is_historical' => $isRequestedHistorical,
+            'period_available' => $periodAvailable,
+            'source_table' => $tableName,
+            'source_database' => $sourceDatabase,
+            'message' => $periodAvailable
+                ? null
+                : "Data periode {$periode} belum tersedia di database snapshot maupun historis TOFLMBEOM.",
+        ];
+
+        if (! $periodAvailable) {
+            return [
+                'rows' => collect([]),
+                'totals' => [
+                    'noa' => 0,
+                    'total_os' => 0.0,
+                    'npf_os' => 0.0,
+                    'npf_noa' => 0,
+                    'total_ppap' => 0.0,
+                    'npf_ratio' => 0.0,
+                ],
+                'meta' => array_merge($periodMeta, [
+                    'group_by' => $groupBy,
+                    'generated_at' => now()->toIso8601String(),
+                    'row_count' => 0,
+                ]),
+            ];
+        }
+
+        $cacheKey = "financing:rekap_master:{$groupBy}:".($cabang ?: 'all').":{$periode}:{$sourceDatabase}:{$tableName}";
         $start    = microtime(true);
         $memory   = memory_get_usage(true);
 
         /** @var array<string,mixed> $cached */
-        $cached = Cache::remember($cacheKey, 60, function () use ($groupBy, $cabang): array {
+        $cached = Cache::remember($cacheKey, 60, function () use ($groupBy, $cabang, $tableName, $isRequestedHistorical, $usingMonthlySnapshotDatabase, $periode, $periodMeta): array {
             // ─── Build dimensi config ─────────────────────────────────────
             $dimConfig = $this->resolveDimensionConfig($groupBy);
 
@@ -475,14 +669,19 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     {$labelSelect} AS label,
                     {$idSelect}    AS id,
                     {$aggregates}
-                FROM TOFLMB a
+                FROM {$tableName} a
                 {$joinClause}
                 WHERE a.stsrec IN ('A', 'N')
                   AND a.stsacc <> 'W'
+                  ".($isRequestedHistorical && ! $usingMonthlySnapshotDatabase ? 'AND a.periode = ?' : '')."
                   {$cabangFilter}
                 GROUP BY {$groupByClause}
                 ORDER BY {$orderByClause}
             ";
+
+            if ($isRequestedHistorical && ! $usingMonthlySnapshotDatabase) {
+                array_unshift($bindings, $periode);
+            }
 
             /** @var array<int,object> $rows */
             $rows = DB::connection($this->connection)->select($sql, $bindings);
@@ -509,7 +708,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     'group_by'     => $groupBy,
                     'generated_at' => now()->toIso8601String(),
                     'row_count'    => $collection->count(),
-                ],
+                ] + $periodMeta,
             ];
         });
 
@@ -624,7 +823,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
         $segmenKey = $segmen ?: 'all';
         $cabangKey = $cabang ?: 'all';
 
-        $cacheKey = "financing:quality_analytics:g3:{$groupBy}:{$cabangKey}:{$tahunKey}:{$bulanKey}:{$segmenKey}";
+        $cacheKey = "financing:quality_analytics:g8-pkr-miapb-ayda:{$groupBy}:{$cabangKey}:{$tahunKey}:{$bulanKey}:{$segmenKey}";
         $start    = microtime(true);
         $memory   = memory_get_usage(true);
 
@@ -655,14 +854,24 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                 $bindSegmen[] = $segmen;
             }
 
-            $currentYear = (int)date('Y');
-            $currentMonth = (int)date('m');
+            $activePeriod = $this->getCurrentPeriodInternal();
+            $currentYear = (int) $activePeriod['year'];
+            $currentMonth = (int) $activePeriod['month'];
 
             $reqTahun = $tahun > 0 ? $tahun : $currentYear;
             $reqBulan = $bulan > 0 ? $bulan : $currentMonth;
 
-            $isHistoris = ($reqTahun !== $currentYear || $reqBulan !== $currentMonth);
+            $isRequestedHistorical = ($reqTahun !== $currentYear || $reqBulan !== $currentMonth);
+            $monthlySnapshotDatabase = $isRequestedHistorical
+                ? $this->resolveMonthlySnapshotDatabase($reqTahun, $reqBulan)
+                : null;
+            $usingMonthlySnapshotDatabase = $monthlySnapshotDatabase !== null;
+            $isHistoris = $isRequestedHistorical && ! $usingMonthlySnapshotDatabase;
             $tableName = $isHistoris ? 'TOFLMBEOM' : 'TOFLMB';
+
+            if ($usingMonthlySnapshotDatabase) {
+                app(MciConnectionService::class)->switchToDatabase($monthlySnapshotDatabase);
+            }
 
             $bindPeriode = [];
             $strPeriode = '';
@@ -865,11 +1074,53 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
             $eclData = $eclRows[0] ?? (object)['ckpn_stage_1'=>0,'ckpn_stage_2'=>0,'ckpn_stage_3'=>0];
 
             // 8. Top Obligor (BMPK Stress Test) — Top 10 debitur terbesar
+            $topObligorSelect = $isHistoris
+                ? "0 as haritgk"
+                : "ISNULL(CAST(a.haritgk AS DECIMAL(18,4)), 0) as haritgk";
+            $topObligorSegmenSelect = $isHistoris
+                ? "'(Tidak tersedia di EOM)' as segmen"
+                : "ISNULL(s.ket, '(Tanpa Segmen)') as segmen";
+            $topObligorRiskSelect = $isHistoris
+                ? "NULL as sekon, NULL as gunadeb"
+                : "a.sekon, a.gunadeb";
+            $topObligorSegmenJoin = $isHistoris
+                ? ''
+                : 'LEFT JOIN SEGMEN s ON a.segmen = s.kdseg';
+
             $topObligorRows = DB::connection($this->connection)->select("
                 SELECT TOP 10
-                    a.nokontrak, LTRIM(RTRIM(a.nama)) as nama,
-                    CAST(a.osmdlc AS DECIMAL(18,4)) as os, a.colbaru
+                    a.nokontrak,
+                    a.nocif,
+                    LTRIM(RTRIM(a.nama)) as nama,
+                    ISNULL(p.ket, 'Unknown') as jenis_akad,
+                    ISNULL(c.nama, '(Tanpa Cabang)') as cabang,
+                    ISNULL(w.ket, '(Tanpa Wilayah)') as wilayah,
+                    ISNULL(ao.nmao, '(Tanpa AO)') as nama_ao,
+                    {$topObligorSegmenSelect},
+                    a.noakad,
+                    a.tgleff,
+                    a.tglexp,
+                    a.tglakad,
+                    a.kdprd,
+                    a.kdloc,
+                    a.kdaoh,
+                    a.kdwil,
+                    {$topObligorRiskSelect},
+                    a.colbaru,
+                    {$topObligorSelect},
+                    ISNULL(CAST(a.mdlawal AS DECIMAL(18,4)), 0) as plafon,
+                    ISNULL(CAST(a.osmdlc AS DECIMAL(18,4)), 0) as os,
+                    ISNULL(CAST(a.osmgnc AS DECIMAL(18,4)), 0) as os_margin,
+                    ISNULL(CAST(a.tgkmdl AS DECIMAL(18,4)), 0) as tunggakan_pokok,
+                    ISNULL(CAST(a.tgkmgn AS DECIMAL(18,4)), 0) as tunggakan_margin,
+                    ISNULL(CAST(a.ppap AS DECIMAL(18,4)), 0) as ppap,
+                    ISNULL(CAST(a.htgagun AS DECIMAL(18,4)), 0) as nilai_agunan
                 FROM {$tableName} a
+                LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
+                LEFT JOIN CABANG c ON a.kdloc = c.kdloc
+                LEFT JOIN WILAYAH w ON a.kdwil = w.kodewil
+                LEFT JOIN AO ao ON a.kdaoh = ao.kdao
+                {$topObligorSegmenJoin}
                 WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
                 ORDER BY a.osmdlc DESC
             ", $mainBindings);
@@ -1014,6 +1265,45 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
             $coverageRatio = $totalNPF > 0 ? ($totalPPAP / $totalNPF) * 100             : 0;
             $farRatio      = $totalOS > 0 ? ($totalFAR / $totalOS) * 100                 : 0;
             $topAkad       = collect($akadRows)->sortByDesc('npf_os')->first();
+            $fdrMetrics    = $this->getTksFdrMetrics($tableName, $isHistoris ? sprintf('%04d%02d', $reqTahun, $reqBulan) : null);
+            $ckpnModel     = $this->getCkpnModelAnalytics($tableName, $isHistoris, $mainFilter, $mainBindings, $reqTahun, $reqBulan);
+            $kapMetrics    = $this->getKapRiskMetrics($tableName, $isHistoris, $mainFilter, $mainBindings, $reqTahun, $reqBulan);
+            $pkrMetrics    = $this->getPkrMetrics($tableName, $isHistoris, $mainFilter, $mainBindings, $reqTahun, $reqBulan);
+            $sourceDatabase = DB::connection($this->connection)->selectOne('SELECT DB_NAME() AS database_name')->database_name ?? null;
+            $kapPrudentialTrend = $this->getKapPrudentialTrend($reqTahun, $reqBulan, $mainFilter, $mainBindings, is_string($sourceDatabase) ? $sourceDatabase : null);
+            $kapMetrics['prudential_trend'] = $kapPrudentialTrend['trend'];
+            $kapMetrics['anomaly_detector'] = $this->buildKapAnomalyDetector($kapMetrics, $kapPrudentialTrend['trend'], $kapPrudentialTrend['meta']);
+            $kapMetrics['prudential_trend_meta'] = $kapPrudentialTrend['meta'];
+            $kapMetrics['worksheet_reconciliation'] = $this->buildKapWorksheetReconciliation($kapMetrics);
+
+            $kapSummary = $kapMetrics['summary'] ?? [];
+            $fdrComponents = $fdrMetrics['components'] ?? [];
+            $modalInti = (float) ($fdrComponents['modal_inti'] ?? 0);
+            $aydaAmount = (float) ($fdrComponents['ayda_pengurang'] ?? 0);
+            $asetBermasalah = (float) $totalNPF;
+            $ppapBermasalah = (float) ($kapSummary['ppap_system_npf'] ?? 0);
+            $miapbDenominator = $asetBermasalah - $ppapBermasalah;
+            $miapbRatio = $miapbDenominator > 0 ? ($modalInti / $miapbDenominator) * 100 : 0;
+            $aydaRatio = $totalOS > 0 ? ($aydaAmount / $totalOS) * 100 : 0;
+            $qualityRiskIndicators = [
+                'miapb' => [
+                    'ratio' => $miapbRatio,
+                    'modal_inti' => $modalInti,
+                    'aset_bermasalah' => $asetBermasalah,
+                    'ppap_bermasalah' => $ppapBermasalah,
+                    'denominator' => $miapbDenominator,
+                    'formula' => 'Modal Inti / (Aset Bermasalah - PPAP Bermasalah)',
+                    'interpretation' => $this->interpretMiapbRatio($miapbRatio, $miapbDenominator),
+                ],
+                'ayda' => [
+                    'amount' => $aydaAmount,
+                    'ratio' => $aydaRatio,
+                    'denominator' => (float) $totalOS,
+                    'formula' => 'AYDA / Total Pembiayaan',
+                    'interpretation' => $this->interpretAydaRatio($aydaRatio, $aydaAmount),
+                ],
+                'pkr' => $pkrMetrics['summary'] ?? [],
+            ];
 
             $bagiHasilOS  = collect($akadRows)->filter(fn ($i) =>
                 str_contains(strtolower($i->akad), 'mudharabah') ||
@@ -1043,6 +1333,10 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     'filter_bulan'  => $reqBulan,
                 ],
                 'ecl_staging'    => $eclData,
+                'ckpn_model'     => $ckpnModel,
+                'kap_metrics'    => $kapMetrics,
+                'quality_risk_indicators' => $qualityRiskIndicators,
+                'pkr_metrics'    => $pkrMetrics,
                 'top_obligor'    => $topObligorRows,
                 'ao_matrix'      => $aoMatrixRows,
                 'sector_data'    => $sectorRows,
@@ -1069,9 +1363,16 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     'npf_net'          => $npfNet,
                     'coverage_ratio'   => $coverageRatio,
                     'far_ratio'        => $farRatio,
+                    'pkr_ratio'        => (float) ($pkrMetrics['summary']['pkr_ratio'] ?? 0),
+                    'pkr_os'           => (float) ($pkrMetrics['summary']['pkr_os'] ?? 0),
+                    'miapb_ratio'      => $miapbRatio,
+                    'ayda_ratio'       => $aydaRatio,
+                    'ayda_amount'      => $aydaAmount,
                     'top_akad_risk'    => $topAkad ? $topAkad->akad : 'N/A',
                     'porsi_bagi_hasil' => $porsiBagiHasil,
-                    'fdr'              => 82.4,
+                    'fdr'              => $fdrMetrics['fdr'],
+                    'fdr_v2'           => $fdrMetrics['fdr_v2'],
+                    'fdr_components'   => $fdrMetrics['components'],
                     'composite_score'  => 2,
                     'risk_profile'     => [
                         'Kredit'=>3,'Likuiditas'=>2,'Operasional'=>2,'Kepatuhan'=>1,'Reputasi'=>2
@@ -1083,6 +1384,1918 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
         $this->logPerformance(__METHOD__, $start, $memory);
         return $data;
     }
+
+    /**
+     * KAP/APYD/PPAP WD berbasis data prudential pembiayaan dan ABA.
+     *
+     * @param  list<mixed>  $mainBindings
+     * @return array<string,mixed>
+     */
+    private function getKapRiskMetrics(string $tableName, bool $isHistoris, string $mainFilter, array $mainBindings, int $reqTahun, int $reqBulan, bool $includePpapDetails = true): array
+    {
+        $collateralCte = "
+            SELECT
+                j.nokontrak,
+                SUM(CAST(ISNULL(j.nomtaksasi, 0) AS DECIMAL(38,6))) AS collateral_weighted
+            FROM TOFJAMIN j
+            WHERE j.stsrec = 'A'
+            GROUP BY j.nokontrak
+        ";
+
+        $summaryRows = DB::connection($this->connection)->select("
+            WITH collateral AS ({$collateralCte}),
+            base AS (
+                SELECT
+                    a.nokontrak,
+                    a.colbaru,
+                    ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) AS os_pokok,
+                    ISNULL(CAST(a.ppap AS DECIMAL(38,6)), 0) AS ppap_system,
+                    ISNULL(c.collateral_weighted, ISNULL(CAST(a.htgagun AS DECIMAL(38,6)), 0)) AS collateral_weighted
+                FROM {$tableName} a
+                LEFT JOIN collateral c ON a.nokontrak = c.nokontrak
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+            ),
+            calc AS (
+                SELECT *,
+                    CASE
+                        WHEN colbaru = '2' THEN os_pokok * 0.25
+                        WHEN colbaru = '3' THEN os_pokok * 0.50
+                        WHEN colbaru = '4' THEN os_pokok * 0.75
+                        WHEN colbaru = '5' THEN os_pokok
+                        ELSE 0
+                    END AS apyd_all,
+                    CASE
+                        WHEN colbaru = '3' THEN os_pokok * 0.50
+                        WHEN colbaru = '4' THEN os_pokok * 0.75
+                        WHEN colbaru = '5' THEN os_pokok
+                        ELSE 0
+                    END AS apyd_tks,
+                    os_pokok - collateral_weighted AS net_exposure_agunan,
+                    CASE
+                        WHEN colbaru = '1' THEN (os_pokok - collateral_weighted) * 0
+                        WHEN colbaru = '2' THEN (os_pokok - collateral_weighted) * 0.25
+                        WHEN colbaru = '3' THEN (os_pokok - collateral_weighted) * 0.50
+                        WHEN colbaru = '4' THEN (os_pokok - collateral_weighted) * 0.75
+                        WHEN colbaru = '5' THEN os_pokok - collateral_weighted
+                        ELSE 0
+                    END AS ppap_wajib_dibentuk
+                FROM base
+            ),
+            aba_coll AS (
+                SELECT
+                    RIGHT(nosbb, 7) AS nosbb_key,
+                    MAX(coll) AS coll
+                FROM TOFABA
+                WHERE stsrec = 'A'
+                GROUP BY RIGHT(nosbb, 7)
+            ),
+            gl AS (
+                SELECT
+                    SUM(CASE
+                        WHEN nobb LIKE '50113%'
+                        THEN CAST(ISNULL(sahirrp, 0) AS DECIMAL(38,6)) ELSE 0
+                    END) AS antar_bank_aktiva_total,
+                    SUM(CASE
+                        WHEN nobb LIKE '50113%' AND ISNULL(ac.coll, '1') <> '5'
+                        THEN CAST(ISNULL(m.sahirrp, 0) AS DECIMAL(38,6)) ELSE 0
+                    END) AS antar_bank_aktiva_non_macet,
+                    SUM(CASE
+                        WHEN nobb LIKE '50113%' AND ac.coll = '5'
+                        THEN CAST(ISNULL(m.sahirrp, 0) AS DECIMAL(38,6)) ELSE 0
+                    END) AS antar_bank_aktiva_macet,
+                    SUM(CASE
+                        WHEN nobb LIKE '50113%' AND ac.coll = '3'
+                        THEN CAST(ISNULL(m.sahirrp, 0) AS DECIMAL(38,6)) * 0.50
+                        WHEN nobb LIKE '50113%' AND ac.coll = '4'
+                        THEN CAST(ISNULL(m.sahirrp, 0) AS DECIMAL(38,6)) * 0.75
+                        WHEN nobb LIKE '50113%' AND ac.coll = '5'
+                        THEN CAST(ISNULL(m.sahirrp, 0) AS DECIMAL(38,6))
+                        ELSE 0
+                    END) AS antar_bank_aktiva_apyd,
+                    SUM(CASE
+                        WHEN nobb LIKE '50113%' AND ac.coll IS NULL
+                        THEN CAST(ISNULL(m.sahirrp, 0) AS DECIMAL(38,6)) ELSE 0
+                    END) AS antar_bank_aktiva_unmapped
+                FROM MGL m
+                LEFT JOIN aba_coll ac ON RIGHT(m.nosbb, 7) = ac.nosbb_key
+            ),
+            summary AS (
+                SELECT
+                    COUNT(*) AS total_noa,
+                    SUM(os_pokok) AS total_pembiayaan,
+                    SUM(apyd_all) AS apyd_all,
+                    SUM(apyd_tks) AS apyd_financing_tks,
+                    SUM(collateral_weighted) AS agunan_berbobot,
+                    SUM(net_exposure_agunan) AS net_exposure_agunan,
+                    SUM(ppap_wajib_dibentuk) AS ppap_wajib_dibentuk_financing,
+                    SUM(ppap_system) AS ppap_system,
+                    SUM(CASE WHEN colbaru IN ('3','4','5') THEN os_pokok ELSE 0 END) AS npf_gross,
+                    SUM(CASE WHEN colbaru IN ('3','4','5') THEN net_exposure_agunan ELSE 0 END) AS net_exposure_npf,
+                    SUM(CASE WHEN colbaru IN ('3','4','5') THEN ppap_wajib_dibentuk ELSE 0 END) AS ppap_wd_npf,
+                    SUM(CASE WHEN colbaru IN ('3','4','5') THEN ppap_system ELSE 0 END) AS ppap_system_npf
+                FROM calc
+            )
+            SELECT
+                s.*,
+                CAST(ISNULL(g.antar_bank_aktiva_total, 0) AS DECIMAL(38,6)) AS antar_bank_aktiva_total,
+                CAST(ISNULL(g.antar_bank_aktiva_non_macet, 0) AS DECIMAL(38,6)) AS antar_bank_aktiva_lancar,
+                CAST(ISNULL(g.antar_bank_aktiva_macet, 0) AS DECIMAL(38,6)) AS antar_bank_aktiva_macet,
+                CAST(ISNULL(g.antar_bank_aktiva_apyd, 0) AS DECIMAL(38,6)) AS antar_bank_aktiva_apyd,
+                CAST(ISNULL(g.antar_bank_aktiva_unmapped, 0) AS DECIMAL(38,6)) AS antar_bank_aktiva_unmapped,
+                s.total_pembiayaan + CAST(ISNULL(g.antar_bank_aktiva_non_macet, 0) AS DECIMAL(38,6)) AS total_aktiva_produktif,
+                s.apyd_financing_tks + CAST(ISNULL(g.antar_bank_aktiva_apyd, 0) AS DECIMAL(38,6)) AS apyd,
+                s.ppap_wajib_dibentuk_financing + CAST(ISNULL(g.antar_bank_aktiva_non_macet, 0) AS DECIMAL(38,6)) AS ppap_wajib_dibentuk
+            FROM summary s CROSS JOIN gl g
+        ", $mainBindings);
+
+        $breakdownRows = DB::connection($this->connection)->select("
+            WITH collateral AS ({$collateralCte}),
+            base AS (
+                SELECT
+                    a.colbaru,
+                    ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) AS os_pokok,
+                    ISNULL(CAST(a.ppap AS DECIMAL(38,6)), 0) AS ppap_system,
+                    ISNULL(c.collateral_weighted, ISNULL(CAST(a.htgagun AS DECIMAL(38,6)), 0)) AS collateral_weighted
+                FROM {$tableName} a
+                LEFT JOIN collateral c ON a.nokontrak = c.nokontrak
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+            ),
+            calc AS (
+                SELECT *,
+                    CASE
+                        WHEN colbaru = '2' THEN os_pokok * 0.25
+                        WHEN colbaru = '3' THEN os_pokok * 0.50
+                        WHEN colbaru = '4' THEN os_pokok * 0.75
+                        WHEN colbaru = '5' THEN os_pokok
+                        ELSE 0
+                    END AS apyd,
+                    os_pokok - collateral_weighted AS net_exposure_agunan,
+                    CASE
+                        WHEN colbaru = '1' THEN (os_pokok - collateral_weighted) * 0
+                        WHEN colbaru = '2' THEN (os_pokok - collateral_weighted) * 0.25
+                        WHEN colbaru = '3' THEN (os_pokok - collateral_weighted) * 0.50
+                        WHEN colbaru = '4' THEN (os_pokok - collateral_weighted) * 0.75
+                        WHEN colbaru = '5' THEN os_pokok - collateral_weighted
+                        ELSE 0
+                    END AS ppap_wajib_dibentuk
+                FROM base
+            )
+            SELECT
+                colbaru,
+                COUNT(*) AS noa,
+                SUM(os_pokok) AS os_pokok,
+                SUM(apyd) AS apyd,
+                SUM(collateral_weighted) AS agunan_berbobot,
+                SUM(net_exposure_agunan) AS net_exposure_agunan,
+                SUM(ppap_wajib_dibentuk) AS ppap_wajib_dibentuk,
+                SUM(ppap_system) AS ppap_system
+            FROM calc
+            GROUP BY colbaru
+            ORDER BY colbaru
+        ", $mainBindings);
+
+        $contractRows = DB::connection($this->connection)->select("
+            WITH collateral AS ({$collateralCte}),
+            base AS (
+                SELECT
+                    a.nokontrak,
+                    a.nocif,
+                    LTRIM(RTRIM(a.nama)) AS nama,
+                    a.kdprd,
+                    ISNULL(p.ket, 'Tanpa Produk') AS produk,
+                    a.kdloc,
+                    ISNULL(cab.nama, '(Tanpa Cabang)') AS cabang,
+                    a.kdaoh,
+                    ISNULL(ao.nmao, '(Tanpa AO)') AS nama_ao,
+                    a.colbaru,
+                    ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) AS os_pokok,
+                    ISNULL(CAST(a.ppap AS DECIMAL(38,6)), 0) AS ppap_system,
+                    ISNULL(c.collateral_weighted, ISNULL(CAST(a.htgagun AS DECIMAL(38,6)), 0)) AS collateral_weighted
+                FROM {$tableName} a
+                LEFT JOIN collateral c ON a.nokontrak = c.nokontrak
+                LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
+                LEFT JOIN CABANG cab ON a.kdloc = cab.kdloc
+                LEFT JOIN AO ao ON a.kdaoh = ao.kdao
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+            ),
+            calc AS (
+                SELECT *,
+                    CASE
+                        WHEN colbaru = '2' THEN os_pokok * 0.25
+                        WHEN colbaru = '3' THEN os_pokok * 0.50
+                        WHEN colbaru = '4' THEN os_pokok * 0.75
+                        WHEN colbaru = '5' THEN os_pokok
+                        ELSE 0
+                    END AS apyd_all,
+                    CASE
+                        WHEN colbaru = '3' THEN os_pokok * 0.50
+                        WHEN colbaru = '4' THEN os_pokok * 0.75
+                        WHEN colbaru = '5' THEN os_pokok
+                        ELSE 0
+                    END AS apyd_tks,
+                    os_pokok - collateral_weighted AS net_exposure_agunan,
+                    CASE
+                        WHEN colbaru = '1' THEN (os_pokok - collateral_weighted) * 0
+                        WHEN colbaru = '2' THEN (os_pokok - collateral_weighted) * 0.25
+                        WHEN colbaru = '3' THEN (os_pokok - collateral_weighted) * 0.50
+                        WHEN colbaru = '4' THEN (os_pokok - collateral_weighted) * 0.75
+                        WHEN colbaru = '5' THEN os_pokok - collateral_weighted
+                        ELSE 0
+                    END AS ppap_wajib_dibentuk
+                FROM base
+            )
+            SELECT TOP 25 *,
+                ppap_system - ppap_wajib_dibentuk AS ppap_gap,
+                CASE
+                    WHEN ppap_wajib_dibentuk > 0 THEN ppap_system / NULLIF(ppap_wajib_dibentuk, 0) * 100
+                    ELSE 0
+                END AS ppap_coverage_to_wd
+            FROM calc
+            WHERE ppap_system - ppap_wajib_dibentuk < 0
+            ORDER BY ABS(ppap_system - ppap_wajib_dibentuk) DESC
+        ", $mainBindings);
+
+        $overReservedRows = DB::connection($this->connection)->select("
+            WITH collateral AS ({$collateralCte}),
+            base AS (
+                SELECT
+                    a.nokontrak,
+                    a.nocif,
+                    LTRIM(RTRIM(a.nama)) AS nama,
+                    a.kdprd,
+                    ISNULL(p.ket, 'Tanpa Produk') AS produk,
+                    a.kdloc,
+                    ISNULL(cab.nama, '(Tanpa Cabang)') AS cabang,
+                    a.kdaoh,
+                    ISNULL(ao.nmao, '(Tanpa AO)') AS nama_ao,
+                    a.colbaru,
+                    ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) AS os_pokok,
+                    ISNULL(CAST(a.ppap AS DECIMAL(38,6)), 0) AS ppap_system,
+                    ISNULL(c.collateral_weighted, ISNULL(CAST(a.htgagun AS DECIMAL(38,6)), 0)) AS collateral_weighted
+                FROM {$tableName} a
+                LEFT JOIN collateral c ON a.nokontrak = c.nokontrak
+                LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
+                LEFT JOIN CABANG cab ON a.kdloc = cab.kdloc
+                LEFT JOIN AO ao ON a.kdaoh = ao.kdao
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+            ),
+            calc AS (
+                SELECT *,
+                    os_pokok - collateral_weighted AS net_exposure_agunan,
+                    CASE
+                        WHEN colbaru = '1' THEN (os_pokok - collateral_weighted) * 0
+                        WHEN colbaru = '2' THEN (os_pokok - collateral_weighted) * 0.25
+                        WHEN colbaru = '3' THEN (os_pokok - collateral_weighted) * 0.50
+                        WHEN colbaru = '4' THEN (os_pokok - collateral_weighted) * 0.75
+                        WHEN colbaru = '5' THEN os_pokok - collateral_weighted
+                        ELSE 0
+                    END AS ppap_wajib_dibentuk
+                FROM base
+            )
+            SELECT TOP 15 *,
+                ppap_system - ppap_wajib_dibentuk AS ppap_gap,
+                CASE
+                    WHEN ppap_wajib_dibentuk > 0 THEN ppap_system / NULLIF(ppap_wajib_dibentuk, 0) * 100
+                    ELSE 0
+                END AS ppap_coverage_to_wd
+            FROM calc
+            WHERE ppap_system - ppap_wajib_dibentuk > 0
+            ORDER BY ppap_system - ppap_wajib_dibentuk DESC
+        ", $mainBindings);
+
+        $apydContributorRows = DB::connection($this->connection)->select("
+            WITH base AS (
+                SELECT
+                    a.nokontrak,
+                    a.nocif,
+                    LTRIM(RTRIM(a.nama)) AS nama,
+                    a.kdprd,
+                    ISNULL(p.ket, 'Tanpa Produk') AS produk,
+                    a.kdloc,
+                    ISNULL(cab.nama, '(Tanpa Cabang)') AS cabang,
+                    a.kdaoh,
+                    ISNULL(ao.nmao, '(Tanpa AO)') AS nama_ao,
+                    a.colbaru,
+                    ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) AS os_pokok
+                FROM {$tableName} a
+                LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
+                LEFT JOIN CABANG cab ON a.kdloc = cab.kdloc
+                LEFT JOIN AO ao ON a.kdaoh = ao.kdao
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+            ),
+            calc AS (
+                SELECT *,
+                    CASE
+                        WHEN colbaru = '3' THEN os_pokok * 0.50
+                        WHEN colbaru = '4' THEN os_pokok * 0.75
+                        WHEN colbaru = '5' THEN os_pokok
+                        ELSE 0
+                    END AS apyd_tks
+                FROM base
+            )
+            SELECT TOP 25 *
+            FROM calc
+            WHERE apyd_tks > 0
+            ORDER BY apyd_tks DESC
+        ", $mainBindings);
+
+        $abaRows = DB::connection($this->connection)->select("
+            WITH aba_coll AS (
+                SELECT
+                    RIGHT(nosbb, 7) AS nosbb_key,
+                    MAX(coll) AS coll,
+                    MAX(norek) AS norek,
+                    MAX(nmbank) AS nmbank,
+                    SUM(CAST(ISNULL(ppap, 0) AS DECIMAL(38,6))) AS ppap_aba
+                FROM TOFABA
+                WHERE stsrec = 'A'
+                GROUP BY RIGHT(nosbb, 7)
+            )
+            SELECT
+                m.nobb,
+                m.nosbb,
+                m.nmsbb,
+                m.sandibi,
+                ac.norek,
+                ac.nmbank,
+                ISNULL(ac.coll, 'UNMAPPED') AS coll,
+                CAST(ISNULL(m.sahirrp, 0) AS DECIMAL(38,6)) AS sahirrp,
+                CAST(ISNULL(ac.ppap_aba, 0) AS DECIMAL(38,6)) AS ppap_aba,
+                CASE
+                    WHEN ac.coll = '5' THEN 'Macet / dikecualikan dari Aktiva Produktif'
+                    WHEN ac.coll IN ('1','2','3','4') THEN 'Kolektibilitas ' + ac.coll
+                    ELSE 'Belum terpetakan TOFABA'
+                END AS prudential_status
+            FROM MGL m
+            LEFT JOIN aba_coll ac ON RIGHT(m.nosbb, 7) = ac.nosbb_key
+            WHERE m.nobb LIKE '50113%'
+              AND CAST(ISNULL(m.sahirrp, 0) AS DECIMAL(38,6)) <> 0
+            ORDER BY CAST(ISNULL(m.sahirrp, 0) AS DECIMAL(38,6)) DESC
+        ");
+
+        $dataQualityRows = DB::connection($this->connection)->select("
+            WITH collateral AS ({$collateralCte}),
+            base AS (
+                SELECT
+                    a.nokontrak,
+                    a.nocif,
+                    LTRIM(RTRIM(a.nama)) AS nama,
+                    ISNULL(p.ket, 'Tanpa Produk') AS produk,
+                    ISNULL(cab.nama, '(Tanpa Cabang)') AS cabang,
+                    ISNULL(ao.nmao, '(Tanpa AO)') AS nama_ao,
+                    a.colbaru,
+                    ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) AS os_pokok,
+                    ISNULL(CAST(a.ppap AS DECIMAL(38,6)), 0) AS ppap_system,
+                    ISNULL(c.collateral_weighted, 0) AS collateral_from_tofjamin,
+                    ISNULL(CAST(a.htgagun AS DECIMAL(38,6)), 0) AS collateral_from_toflmb,
+                    CASE
+                        WHEN c.nokontrak IS NULL THEN 0 ELSE 1
+                    END AS has_tofjamin
+                FROM {$tableName} a
+                LEFT JOIN collateral c ON a.nokontrak = c.nokontrak
+                LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
+                LEFT JOIN CABANG cab ON a.kdloc = cab.kdloc
+                LEFT JOIN AO ao ON a.kdaoh = ao.kdao
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+            ),
+            flagged AS (
+                SELECT *,
+                    CASE
+                        WHEN colbaru NOT IN ('1','2','3','4','5') OR colbaru IS NULL THEN 'Kolektibilitas Tidak Valid'
+                        WHEN os_pokok < 0 THEN 'Outstanding Negatif'
+                        WHEN ppap_system < 0 THEN 'PPAP Sistem Negatif'
+                        WHEN os_pokok > 0 AND ppap_system = 0 AND colbaru IN ('3','4','5') THEN 'PPAP Kosong untuk Kol 3-5'
+                        WHEN os_pokok > 0 AND has_tofjamin = 0 AND collateral_from_toflmb = 0 THEN 'Tidak Ada Agunan Terbaca'
+                        WHEN os_pokok > 0 AND (ISNULL(collateral_from_tofjamin, 0) > os_pokok * 5 OR ISNULL(collateral_from_toflmb, 0) > os_pokok * 5) THEN 'Agunan Sangat Tinggi terhadap OS'
+                        ELSE NULL
+                    END AS issue,
+                    CASE
+                        WHEN colbaru NOT IN ('1','2','3','4','5') OR colbaru IS NULL THEN 'danger'
+                        WHEN os_pokok < 0 OR ppap_system < 0 THEN 'danger'
+                        WHEN os_pokok > 0 AND ppap_system = 0 AND colbaru IN ('3','4','5') THEN 'danger'
+                        WHEN os_pokok > 0 AND has_tofjamin = 0 AND collateral_from_toflmb = 0 THEN 'warning'
+                        WHEN os_pokok > 0 AND (ISNULL(collateral_from_tofjamin, 0) > os_pokok * 5 OR ISNULL(collateral_from_toflmb, 0) > os_pokok * 5) THEN 'warning'
+                        ELSE 'safe'
+                    END AS severity
+                FROM base
+            )
+            SELECT TOP 50 *
+            FROM flagged
+            WHERE issue IS NOT NULL
+            ORDER BY
+                CASE severity WHEN 'danger' THEN 1 WHEN 'warning' THEN 2 ELSE 3 END,
+                ABS(os_pokok) DESC
+        ", $mainBindings);
+
+        $dataQualitySummaryRows = DB::connection($this->connection)->select("
+            WITH collateral AS ({$collateralCte}),
+            base AS (
+                SELECT
+                    a.nokontrak,
+                    a.colbaru,
+                    ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) AS os_pokok,
+                    ISNULL(CAST(a.ppap AS DECIMAL(38,6)), 0) AS ppap_system,
+                    ISNULL(c.collateral_weighted, 0) AS collateral_from_tofjamin,
+                    ISNULL(CAST(a.htgagun AS DECIMAL(38,6)), 0) AS collateral_from_toflmb,
+                    CASE
+                        WHEN c.nokontrak IS NULL THEN 0 ELSE 1
+                    END AS has_tofjamin
+                FROM {$tableName} a
+                LEFT JOIN collateral c ON a.nokontrak = c.nokontrak
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+            ),
+            flagged AS (
+                SELECT
+                    CASE
+                        WHEN colbaru NOT IN ('1','2','3','4','5') OR colbaru IS NULL THEN 'danger'
+                        WHEN os_pokok < 0 OR ppap_system < 0 THEN 'danger'
+                        WHEN os_pokok > 0 AND ppap_system = 0 AND colbaru IN ('3','4','5') THEN 'danger'
+                        WHEN os_pokok > 0 AND has_tofjamin = 0 AND collateral_from_toflmb = 0 THEN 'warning'
+                        WHEN os_pokok > 0 AND (ISNULL(collateral_from_tofjamin, 0) > os_pokok * 5 OR ISNULL(collateral_from_toflmb, 0) > os_pokok * 5) THEN 'warning'
+                        ELSE NULL
+                    END AS severity
+                FROM base
+            )
+            SELECT
+                COUNT(*) AS issue_count,
+                SUM(CASE WHEN severity = 'danger' THEN 1 ELSE 0 END) AS danger_count,
+                SUM(CASE WHEN severity = 'warning' THEN 1 ELSE 0 END) AS warning_count
+            FROM flagged
+            WHERE severity IS NOT NULL
+        ", $mainBindings);
+
+        $ppapRekapMetrics = $this->getPpapRekapGapMetrics($tableName, $isHistoris, $mainFilter, $mainBindings, $reqTahun, $reqBulan, $includePpapDetails);
+
+        $row = $summaryRows[0] ?? (object) [];
+        $totalAktivaProduktif = (float) ($row->total_aktiva_produktif ?? 0);
+        $apyd = (float) ($row->apyd ?? 0);
+        $ppapWajibDibentuk = (float) ($row->ppap_wajib_dibentuk ?? 0);
+        $ppapSystem = (float) ($row->ppap_system ?? 0);
+        $ppapRekapCurrent = (float) ($ppapRekapMetrics['current_ppap'] ?? 0);
+        $ppapRekapPrevious = (float) ($ppapRekapMetrics['previous_ppap'] ?? 0);
+        $ppapRekapGap = (float) ($ppapRekapMetrics['gap'] ?? 0);
+        $netExposureAgunan = (float) ($row->net_exposure_agunan ?? 0);
+
+        $kapRatio = $totalAktivaProduktif > 0 ? (1 - ($apyd / $totalAktivaProduktif)) * 100 : 0;
+        $apydRatio = $totalAktivaProduktif > 0 ? ($apyd / $totalAktivaProduktif) * 100 : 0;
+        $npfGrossRatio = (float) ($row->total_pembiayaan ?? 0) > 0 ? ((float) ($row->npf_gross ?? 0) / (float) ($row->total_pembiayaan ?? 0)) * 100 : 0;
+        $npfNettRatio = (float) ($row->total_pembiayaan ?? 0) > 0 ? (((float) ($row->npf_gross ?? 0) - (float) ($row->ppap_system_npf ?? 0)) / (float) ($row->total_pembiayaan ?? 0)) * 100 : 0;
+        $coveragePpapWd = $ppapWajibDibentuk > 0 ? ($ppapSystem / $ppapWajibDibentuk) * 100 : 0;
+        $collateralCoverage = $totalAktivaProduktif > 0 ? ((float) ($row->agunan_berbobot ?? 0) / $totalAktivaProduktif) * 100 : 0;
+        $netExposureRatio = $totalAktivaProduktif > 0 ? ($netExposureAgunan / $totalAktivaProduktif) * 100 : 0;
+        $systemVsWdGap = $ppapSystem - $ppapWajibDibentuk;
+        $shortfallCount = count($contractRows);
+        $apydContributorCount = count($apydContributorRows);
+        $abaMacet = (float) ($row->antar_bank_aktiva_macet ?? 0);
+        $abaUnmapped = (float) ($row->antar_bank_aktiva_unmapped ?? 0);
+        $dataQualitySummary = $dataQualitySummaryRows[0] ?? (object) [];
+        $dataQualityIssueCount = (int) ($dataQualitySummary->issue_count ?? 0);
+        $dataQualityDangerCount = (int) ($dataQualitySummary->danger_count ?? 0);
+        $dataQualityWarningCount = (int) ($dataQualitySummary->warning_count ?? 0);
+        $sourceReconciliation = [
+            [
+                'component' => 'Pembiayaan / Baki Debet',
+                'source_table' => $tableName,
+                'source_field' => 'osmdlc',
+                'basis' => "stsrec IN ('A','N'), stsacc <> 'W', filter cabang/segmen/periode aktif",
+                'amount' => (float) ($row->total_pembiayaan ?? 0),
+                'status' => (float) ($row->total_pembiayaan ?? 0) > 0 ? 'matched' : 'warning',
+                'note' => 'Menjadi basis total pembiayaan, denominator NPF, dan komponen Aktiva Produktif.',
+            ],
+            [
+                'component' => 'Agunan Dikuasai',
+                'source_table' => 'TOFJAMIN fallback '.$tableName,
+                'source_field' => 'TOFJAMIN.nomtaksasi / '.$tableName.'.htgagun',
+                'basis' => 'TOFJAMIN aktif dijumlahkan per nomor kontrak, fallback ke htgagun jika kontrak tidak punya baris TOFJAMIN',
+                'amount' => (float) ($row->agunan_berbobot ?? 0),
+                'status' => (float) ($row->agunan_berbobot ?? 0) > 0 ? 'matched' : 'warning',
+                'note' => 'Dipakai untuk menghitung jumlah setelah agunan dan PPAP WD.',
+            ],
+            [
+                'component' => 'PPAP Sistem',
+                'source_table' => $tableName,
+                'source_field' => 'ppap',
+                'basis' => "SUM(ppap) pada kontrak aktif sesuai filter",
+                'amount' => $ppapSystem,
+                'status' => $ppapSystem >= 0 ? 'matched' : 'danger',
+                'note' => 'Menjadi saldo cadangan pembanding untuk coverage terhadap PPAP WD dan rekonsiliasi pencadangan.',
+            ],
+            [
+                'component' => 'PPAP Template Bulan Berjalan',
+                'source_table' => $tableName.' + TOFJAMIN',
+                'source_field' => 'osmdlc, htgagun, colbaru, jnsjamin, jnsikat, goljamin',
+                'basis' => 'Kol1 0,5% OS; Kol2 3%, Kol3 10%, Kol4 50%, Kol5 100% atas shortfall OS terhadap nilai likuidasi agunan',
+                'amount' => $ppapRekapCurrent,
+                'status' => $ppapRekapCurrent >= 0 ? 'matched' : 'danger',
+                'note' => 'Menjadi PPAP bulan berjalan untuk membaca GAP PPAP bulanan.',
+            ],
+            [
+                'component' => 'PPAP Pembanding Bulan Sebelumnya',
+                'source_table' => (string) ($ppapRekapMetrics['previous_database'] ?? '-'),
+                'source_field' => 'TOFLMB.ppap',
+                'basis' => 'SUM(ppap) dari snapshot bulan sebelumnya dengan filter cabang/segmen yang sepadan',
+                'amount' => $ppapRekapPrevious,
+                'status' => ($ppapRekapMetrics['previous_available'] ?? false) ? 'matched' : 'warning',
+                'note' => 'Dipakai sebagai baseline GAP PPAP bulanan; kontrak yang sudah lunas tetap mempengaruhi penurunan cadangan.',
+            ],
+            [
+                'component' => 'Antar Bank Aktiva',
+                'source_table' => 'MGL + TOFABA',
+                'source_field' => 'MGL.sahirrp akun 50113%, TOFABA.coll',
+                'basis' => 'Saldo memakai MGL, klasifikasi kolektibilitas memakai TOFABA melalui RIGHT(nosbb,7)',
+                'amount' => (float) ($row->antar_bank_aktiva_total ?? 0),
+                'status' => ($abaMacet > 0 || $abaUnmapped > 0) ? 'warning' : 'matched',
+                'note' => 'ABA non-macet masuk Aktiva Produktif, ABA macet dikecualikan, ABA unmapped ditandai sebagai issue.',
+            ],
+            [
+                'component' => 'Aktiva Produktif',
+                'source_table' => $tableName.' + MGL/TOFABA',
+                'source_field' => 'total_pembiayaan + ABA non-macet',
+                'basis' => 'Total pembiayaan ditambah ABA non-macet berdasarkan klasifikasi subledger',
+                'amount' => $totalAktivaProduktif,
+                'status' => $totalAktivaProduktif > 0 ? 'matched' : 'danger',
+                'note' => 'Menjadi denominator KAP dan APYD ratio.',
+            ],
+            [
+                'component' => 'APYD',
+                'source_table' => $tableName.' + TOFABA',
+                'source_field' => 'colbaru / TOFABA.coll',
+                'basis' => 'Kol3 50%, Kol4 75%, Kol5 100%, ditambah APYD ABA sesuai kolektibilitas',
+                'amount' => $apyd,
+                'status' => $apyd >= 0 ? 'matched' : 'danger',
+                'note' => 'Menjadi pembilang utama rasio KAP.',
+            ],
+        ];
+
+        $recommendations = [];
+        if ($kapRatio < 90) {
+            $recommendations[] = 'Prioritas Manajemen Kualitas Aset: rasio KAP berada pada zona tekanan. Fokuskan agenda komite pembiayaan pada debitur Kol 3-5 penyumbang APYD terbesar, pembatasan ekspansi pada sektor/akad berisiko, dan target penyelesaian yang terukur per Account Officer.';
+        } elseif ($kapRatio < 95) {
+            $recommendations[] = 'Penguatan Early Warning: rasio KAP masih memerlukan pengawasan ketat. Perkuat monitoring Kol 2, lakukan review mingguan akun dengan tunggakan awal, dan pastikan rencana penagihan terdokumentasi sebelum terjadi migrasi ke NPF.';
+        } else {
+            $recommendations[] = 'Kualitas Aset Relatif Kuat: pertahankan disiplin early warning, pantau perubahan APYD bulanan, dan gunakan daftar contributor APYD sebagai watchlist agar tren kualitas tidak bergerak memburuk.';
+        }
+
+        if ($systemVsWdGap < 0) {
+            $recommendations[] = "Tindak Lanjut Pencadangan: terdapat {$shortfallCount} akun prioritas dengan PPAP sistem di bawah PPAP wajib dibentuk. Lakukan rekonsiliasi per kontrak, validasi agunan, dan siapkan memo penyesuaian cadangan untuk akun dengan gap terbesar.";
+        } else {
+            $recommendations[] = "Kecukupan Cadangan Agregat: PPAP sistem secara total masih menutup PPAP wajib dibentuk. Tetap review {$shortfallCount} akun shortfall terbesar karena surplus agregat dapat menutupi kekurangan pada kontrak individual.";
+        }
+
+        if ($ppapRekapGap > 0) {
+            $recommendations[] = 'Pergerakan PPAP Bulanan: kebutuhan PPAP bulan berjalan meningkat dibanding baseline bulan sebelumnya. Prioritaskan review kontrak yang naik kolektibilitasnya, validasi nilai likuidasi agunan, dan pastikan pembentukan cadangan sudah masuk rencana pencadangan periode berjalan.';
+        } elseif ($ppapRekapGap < 0) {
+            $recommendations[] = 'Pergerakan PPAP Bulanan: kebutuhan PPAP bulan berjalan menurun dibanding baseline bulan sebelumnya. Pastikan penurunan berasal dari pelunasan, perbaikan kolektibilitas, atau update agunan yang sah; hindari pelepasan cadangan tanpa bukti pendukung.';
+        } else {
+            $recommendations[] = 'Pergerakan PPAP Bulanan Stabil: tidak ada perubahan material kebutuhan PPAP terhadap baseline bulan sebelumnya. Tetap lakukan sampling kontrak Kol 2-5 untuk memastikan kualitas data agunan dan kolektibilitas tetap konsisten.';
+        }
+
+        if ($npfNettRatio > 5) {
+            $recommendations[] = 'Pengendalian NPF Net: rasio NPF Net berada di atas ambang internal yang perlu perhatian. Prioritaskan cure strategy untuk Kol 3, percepat penyelesaian Kol 4-5, dan tetapkan owner remedial per debitur utama.';
+        } else {
+            $recommendations[] = 'NPF Net Terkendali: pertahankan cadence monitoring dan gunakan tren migrasi kolektibilitas sebagai indikator dini sebelum rasio melewati batas toleransi.';
+        }
+
+        if ($netExposureRatio >= 50 || $netExposureAgunan > 0) {
+            $recommendations[] = 'Validasi Agunan dan Legalitas: jumlah setelah agunan masih perlu dikendalikan. Prioritaskan update taksasi, kelengkapan pengikatan, dan status eligible agunan pada akun dengan exposure terbesar.';
+        } else {
+            $recommendations[] = 'Coverage Agunan Mendukung: secara agregat agunan menutup baki debet pembiayaan. Tetap lakukan validasi kualitas hukum, umur taksasi, dan pengikatan agar nilai cover tetap dapat dipakai dalam penilaian prudential.';
+        }
+
+        if ($abaMacet > 0 || $abaUnmapped > 0) {
+            $recommendations[] = 'Kontrol Antar Bank Aktiva: terdapat ABA macet atau belum terpetakan kolektibilitasnya. Rekonsiliasi saldo MGL dengan subledger TOFABA dan pastikan klasifikasi kolektibilitas diperbarui sebelum pelaporan manajemen.';
+        } else {
+            $recommendations[] = 'Kontrol Antar Bank Aktiva Aman: seluruh saldo ABA yang masuk perhitungan telah terpetakan ke kolektibilitas subledger dan tidak terdapat ABA macet pada periode/filter ini.';
+        }
+
+        if ($apydContributorCount > 0) {
+            $recommendations[] = "Action List APYD: gunakan {$apydContributorCount} contributor APYD terbesar sebagai daftar kerja prioritas untuk remedial, penagihan intensif, validasi restrukturisasi, dan eskalasi ke komite risiko.";
+        }
+
+        return [
+            'methodology' => [
+                'kap_formula' => 'Rasio KAP = 1 - (APYD / Aktiva Produktif)',
+                'apyd_formula' => 'APYD = Kol3 50% + Kol4 75% + Kol5 100% + APYD ABA berdasarkan kolektibilitas subledger',
+                'ppap_wd_formula' => 'PPAP WD = (Baki Debet - Agunan Dikuasai) x tarif prudential: Kol1 0%, Kol2 25%, Kol3 50%, Kol4 75%, Kol5 100%',
+                'ppap_gap_formula' => 'GAP PPAP Bulanan = PPAP template bulan berjalan - PPAP snapshot bulan sebelumnya',
+                'net_exposure_formula' => 'Jumlah/Net Exposure = Baki Debet - Agunan Dikuasai, tanpa floor dan tanpa pembulatan',
+                'collateral_source' => 'Agunan dikuasai dihitung dari TOFJAMIN.nomtaksasi yang dijumlahkan per nomor kontrak',
+                'ppap_template_source' => 'PPAP template memakai TOFLMB.osmdlc, TOFLMB.htgagun, TOFLMB.colbaru, TOFLMB.goljamin, dan TOFJAMIN.jnsjamin/jnsikat untuk aturan agunan khusus',
+                'aba_source' => 'Antar Bank Aktiva = MGL.sahirrp akun 50113%; kolektibilitas ABA diambil dari TOFABA.coll melalui RIGHT(nosbb,7)',
+            ],
+            'summary' => [
+                'total_noa' => (int) ($row->total_noa ?? 0),
+                'total_aktiva_produktif' => $totalAktivaProduktif,
+                'total_pembiayaan' => (float) ($row->total_pembiayaan ?? 0),
+                'antar_bank_aktiva_total' => (float) ($row->antar_bank_aktiva_total ?? 0),
+                'antar_bank_aktiva_lancar' => (float) ($row->antar_bank_aktiva_lancar ?? 0),
+                'antar_bank_aktiva_macet' => (float) ($row->antar_bank_aktiva_macet ?? 0),
+                'antar_bank_aktiva_apyd' => (float) ($row->antar_bank_aktiva_apyd ?? 0),
+                'antar_bank_aktiva_unmapped' => (float) ($row->antar_bank_aktiva_unmapped ?? 0),
+                'apyd' => $apyd,
+                'apyd_all' => (float) ($row->apyd_all ?? 0),
+                'apyd_financing_tks' => (float) ($row->apyd_financing_tks ?? 0),
+                'apyd_ratio' => $apydRatio,
+                'kap_ratio' => $kapRatio,
+                'agunan_berbobot' => (float) ($row->agunan_berbobot ?? 0),
+                'net_exposure_agunan' => $netExposureAgunan,
+                'net_exposure_npf' => (float) ($row->net_exposure_npf ?? 0),
+                'net_exposure_ratio' => $netExposureRatio,
+                'collateral_coverage_ratio' => $collateralCoverage,
+                'npf_gross' => (float) ($row->npf_gross ?? 0),
+                'npf_gross_ratio' => $npfGrossRatio,
+                'npf_nett_ratio' => $npfNettRatio,
+                'ppap_wajib_dibentuk' => $ppapWajibDibentuk,
+                'ppap_wajib_dibentuk_financing' => (float) ($row->ppap_wajib_dibentuk_financing ?? 0),
+                'ppap_system' => $ppapSystem,
+                'ppap_rekap_current' => $ppapRekapCurrent,
+                'ppap_rekap_previous' => $ppapRekapPrevious,
+                'ppap_rekap_gap' => $ppapRekapGap,
+                'ppap_rekap_previous_available' => (bool) ($ppapRekapMetrics['previous_available'] ?? false),
+                'ppap_rekap_previous_database' => $ppapRekapMetrics['previous_database'] ?? null,
+                'ppap_gap' => $ppapRekapGap,
+                'ppap_system_vs_wd_gap' => $systemVsWdGap,
+                'ppap_coverage_to_wd' => $coveragePpapWd,
+                'ppap_wd_npf' => (float) ($row->ppap_wd_npf ?? 0),
+                'ppap_system_npf' => (float) ($row->ppap_system_npf ?? 0),
+            ],
+            'breakdown' => $breakdownRows,
+            'ppap_shortfall_accounts' => $contractRows,
+            'ppap_over_reserved_accounts' => $overReservedRows,
+            'ppap_gap_detail' => $ppapRekapMetrics['detail'] ?? ['rows' => [], 'summary' => []],
+            'apyd_contributors' => $apydContributorRows,
+            'aba_detail' => [
+                'rows' => $abaRows,
+                'reconciliation' => [
+                    'mgl_total' => (float) ($row->antar_bank_aktiva_total ?? 0),
+                    'classified_total' => (float) ($row->antar_bank_aktiva_lancar ?? 0) + (float) ($row->antar_bank_aktiva_macet ?? 0),
+                    'non_macet_total' => (float) ($row->antar_bank_aktiva_lancar ?? 0),
+                    'macet_total' => (float) ($row->antar_bank_aktiva_macet ?? 0),
+                    'unmapped_total' => (float) ($row->antar_bank_aktiva_unmapped ?? 0),
+                    'source_policy' => 'Saldo ABA memakai MGL akun 50113%; klasifikasi kolektibilitas memakai TOFABA.coll. Jika coll=5, saldo dikecualikan dari Aktiva Produktif.',
+                ],
+            ],
+            'source_reconciliation' => [
+                'rows' => $sourceReconciliation,
+                'summary' => [
+                    'total_components' => count($sourceReconciliation),
+                    'matched_count' => count(array_filter($sourceReconciliation, fn ($item) => ($item['status'] ?? '') === 'matched')),
+                    'warning_count' => count(array_filter($sourceReconciliation, fn ($item) => ($item['status'] ?? '') === 'warning')),
+                    'danger_count' => count(array_filter($sourceReconciliation, fn ($item) => ($item['status'] ?? '') === 'danger')),
+                    'policy' => 'Rekonsiliasi ini menunjukkan sumber tabel, field, basis filter, dan nominal final pembentuk rasio prudential.',
+                ],
+            ],
+            'data_quality' => [
+                'rows' => $dataQualityRows,
+                'summary' => [
+                    'issue_count' => $dataQualityIssueCount,
+                    'shown_count' => count($dataQualityRows),
+                    'danger_count' => $dataQualityDangerCount,
+                    'warning_count' => $dataQualityWarningCount,
+                    'safe_count' => 0,
+                    'policy' => 'Issue diperiksa dari kontrak aktif pada filter berjalan: kolektibilitas invalid, OS/PPAP negatif, PPAP kosong untuk Kol 3-5, agunan tidak terbaca, dan agunan ekstrem.',
+                ],
+            ],
+            'recommendations' => $recommendations,
+        ];
+    }
+
+    /**
+     * GAP PPAP bulanan mengikuti pola REKAP template:
+     * PPAP berjalan dihitung dari formula template, baseline memakai PPAP snapshot bulan sebelumnya.
+     *
+     * @param  list<mixed>  $mainBindings
+     * @return array<string,mixed>
+     */
+    private function getPpapRekapGapMetrics(string $tableName, bool $isHistoris, string $mainFilter, array $mainBindings, int $reqTahun, int $reqBulan, bool $includeDetails = true): array
+    {
+        $previousYear = $reqBulan === 1 ? $reqTahun - 1 : $reqTahun;
+        $previousMonth = $reqBulan === 1 ? 12 : $reqBulan - 1;
+        $previousDatabase = $this->resolveMonthlySnapshotDatabase($previousYear, $previousMonth);
+        $previousAvailable = $previousDatabase !== null && ! $isHistoris;
+        $previousTable = $previousAvailable
+            ? $this->quoteSqlServerIdentifier($previousDatabase).'.dbo.TOFLMB'
+            : null;
+
+        $currentRows = DB::connection($this->connection)->select("
+            WITH base AS (
+                SELECT
+                    a.nokontrak,
+                    a.colbaru,
+                    CAST(ISNULL(a.osmdlc, 0) AS DECIMAL(38,6)) AS os_pokok,
+                    CAST(ISNULL(a.htgagun, 0) AS DECIMAL(38,6)) AS htgagun,
+                    ISNULL(NULLIF(LTRIM(RTRIM(j.jnsjamin)), ''), ISNULL(NULLIF(LTRIM(RTRIM(a.jnsagun)), ''), '0')) AS jns_agunan,
+                    ISNULL(NULLIF(LTRIM(RTRIM(j.jnsikat)), ''), '0') AS jns_ikatan,
+                    ISNULL(NULLIF(LTRIM(RTRIM(a.goljamin)), ''), '0') AS gol_jamin
+                FROM {$tableName} a
+                OUTER APPLY (
+                    SELECT TOP 1 j.jnsjamin, j.jnsikat
+                    FROM TOFJAMIN j
+                    WHERE j.nokontrak = a.nokontrak AND j.stsrec = 'A'
+                    ORDER BY j.urut
+                ) j
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+            ),
+            liquidation AS (
+                SELECT *,
+                    CASE
+                        WHEN jns_agunan = '72' AND jns_ikatan <> '99' AND gol_jamin <> '874' THEN os_pokok * 0.75 * 0.50
+                        WHEN jns_agunan = '72' AND jns_ikatan <> '99' AND gol_jamin = '874' THEN os_pokok * 0.50
+                        WHEN jns_agunan = '72' AND jns_ikatan = '99' THEN 0
+                        ELSE htgagun
+                    END AS nilai_likuidasi
+                FROM base
+            ),
+            calc AS (
+                SELECT *,
+                    CASE
+                        WHEN colbaru = '1' THEN ROUND(os_pokok * 0.005, 0)
+                        WHEN nilai_likuidasi - os_pokok < 0 AND colbaru = '2' THEN ROUND((os_pokok - nilai_likuidasi) * 0.03, 0)
+                        WHEN nilai_likuidasi - os_pokok < 0 AND colbaru = '3' THEN ROUND((os_pokok - nilai_likuidasi) * 0.10, 0)
+                        WHEN nilai_likuidasi - os_pokok < 0 AND colbaru = '4' THEN ROUND((os_pokok - nilai_likuidasi) * 0.50, 0)
+                        WHEN nilai_likuidasi - os_pokok < 0 AND colbaru = '5' THEN ROUND((os_pokok - nilai_likuidasi) * 1.00, 0)
+                        ELSE 0
+                    END AS ppap_template
+                FROM liquidation
+            )
+            SELECT
+                COUNT(*) AS current_noa,
+                SUM(os_pokok) AS current_os,
+                SUM(ppap_template) AS current_ppap
+            FROM calc
+        ", $mainBindings);
+
+        $current = $currentRows[0] ?? (object) [];
+        $currentPpap = (float) ($current->current_ppap ?? 0);
+        $previousPpap = 0.0;
+        $previousNoa = 0;
+
+        if ($previousTable !== null) {
+            $previousRows = DB::connection($this->connection)->select("
+                SELECT
+                    COUNT(*) AS previous_noa,
+                    SUM(CAST(ISNULL(a.ppap, 0) AS DECIMAL(38,6))) AS previous_ppap
+                FROM {$previousTable} a
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+            ", $mainBindings);
+
+            $previous = $previousRows[0] ?? (object) [];
+            $previousPpap = (float) ($previous->previous_ppap ?? 0);
+            $previousNoa = (int) ($previous->previous_noa ?? 0);
+        }
+
+        $detail = ['rows' => [], 'summary' => []];
+
+        if ($includeDetails && $previousTable !== null) {
+            $detailRows = DB::connection($this->connection)->select("
+                WITH current_base AS (
+                    SELECT
+                        a.nokontrak,
+                        a.nocif,
+                        LTRIM(RTRIM(a.nama)) AS nama,
+                        a.kdprd,
+                        ISNULL(p.ket, 'Tanpa Produk') AS produk,
+                        a.kdloc,
+                        ISNULL(cab.nama, '(Tanpa Cabang)') AS cabang,
+                        a.kdaoh,
+                        ISNULL(ao.nmao, '(Tanpa AO)') AS nama_ao,
+                        a.colbaru,
+                        CAST(ISNULL(a.osmdlc, 0) AS DECIMAL(38,6)) AS os_pokok,
+                        CAST(ISNULL(a.htgagun, 0) AS DECIMAL(38,6)) AS htgagun,
+                        ISNULL(NULLIF(LTRIM(RTRIM(j.jnsjamin)), ''), ISNULL(NULLIF(LTRIM(RTRIM(a.jnsagun)), ''), '0')) AS jns_agunan,
+                        ISNULL(NULLIF(LTRIM(RTRIM(j.jnsikat)), ''), '0') AS jns_ikatan,
+                        ISNULL(NULLIF(LTRIM(RTRIM(a.goljamin)), ''), '0') AS gol_jamin
+                    FROM {$tableName} a
+                    LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
+                    LEFT JOIN CABANG cab ON a.kdloc = cab.kdloc
+                    LEFT JOIN AO ao ON a.kdaoh = ao.kdao
+                    OUTER APPLY (
+                        SELECT TOP 1 j.jnsjamin, j.jnsikat
+                        FROM TOFJAMIN j
+                        WHERE j.nokontrak = a.nokontrak AND j.stsrec = 'A'
+                        ORDER BY j.urut
+                    ) j
+                    WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+                ),
+                current_calc AS (
+                    SELECT *,
+                        CASE
+                            WHEN jns_agunan = '72' AND jns_ikatan <> '99' AND gol_jamin <> '874' THEN os_pokok * 0.75 * 0.50
+                            WHEN jns_agunan = '72' AND jns_ikatan <> '99' AND gol_jamin = '874' THEN os_pokok * 0.50
+                            WHEN jns_agunan = '72' AND jns_ikatan = '99' THEN 0
+                            ELSE htgagun
+                        END AS nilai_likuidasi
+                    FROM current_base
+                ),
+                current_ppap AS (
+                    SELECT *,
+                        CASE
+                            WHEN colbaru = '1' THEN ROUND(os_pokok * 0.005, 0)
+                            WHEN nilai_likuidasi - os_pokok < 0 AND colbaru = '2' THEN ROUND((os_pokok - nilai_likuidasi) * 0.03, 0)
+                            WHEN nilai_likuidasi - os_pokok < 0 AND colbaru = '3' THEN ROUND((os_pokok - nilai_likuidasi) * 0.10, 0)
+                            WHEN nilai_likuidasi - os_pokok < 0 AND colbaru = '4' THEN ROUND((os_pokok - nilai_likuidasi) * 0.50, 0)
+                            WHEN nilai_likuidasi - os_pokok < 0 AND colbaru = '5' THEN ROUND((os_pokok - nilai_likuidasi) * 1.00, 0)
+                            ELSE 0
+                        END AS ppap_current
+                    FROM current_calc
+                ),
+                previous_ppap AS (
+                    SELECT
+                        a.nokontrak,
+                        a.nocif,
+                        LTRIM(RTRIM(a.nama)) AS nama,
+                        a.kdprd,
+                        ISNULL(p.ket, 'Tanpa Produk') AS produk,
+                        a.kdloc,
+                        ISNULL(cab.nama, '(Tanpa Cabang)') AS cabang,
+                        a.kdaoh,
+                        ISNULL(ao.nmao, '(Tanpa AO)') AS nama_ao,
+                        a.colbaru AS col_previous,
+                        CAST(ISNULL(a.osmdlc, 0) AS DECIMAL(38,6)) AS os_previous,
+                        CAST(ISNULL(a.ppap, 0) AS DECIMAL(38,6)) AS ppap_previous
+                    FROM {$previousTable} a
+                    LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
+                    LEFT JOIN CABANG cab ON a.kdloc = cab.kdloc
+                    LEFT JOIN AO ao ON a.kdaoh = ao.kdao
+                    WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+                ),
+                combined AS (
+                    SELECT
+                        COALESCE(c.nokontrak, p.nokontrak) AS nokontrak,
+                        COALESCE(c.nocif, p.nocif) AS nocif,
+                        COALESCE(c.nama, p.nama) AS nama,
+                        COALESCE(c.kdprd, p.kdprd) AS kdprd,
+                        COALESCE(c.produk, p.produk) AS produk,
+                        COALESCE(c.kdloc, p.kdloc) AS kdloc,
+                        COALESCE(c.cabang, p.cabang) AS cabang,
+                        COALESCE(c.kdaoh, p.kdaoh) AS kdaoh,
+                        COALESCE(c.nama_ao, p.nama_ao) AS nama_ao,
+                        p.col_previous,
+                        c.colbaru AS col_current,
+                        ISNULL(p.os_previous, 0) AS os_previous,
+                        ISNULL(c.os_pokok, 0) AS os_current,
+                        ISNULL(c.nilai_likuidasi, 0) AS nilai_likuidasi,
+                        ISNULL(c.jns_agunan, '-') AS jns_agunan,
+                        ISNULL(c.jns_ikatan, '-') AS jns_ikatan,
+                        ISNULL(c.gol_jamin, '-') AS gol_jamin,
+                        ISNULL(p.ppap_previous, 0) AS ppap_previous,
+                        ISNULL(c.ppap_current, 0) AS ppap_current,
+                        ISNULL(c.ppap_current, 0) - ISNULL(p.ppap_previous, 0) AS ppap_gap,
+                        CASE
+                            WHEN c.nokontrak IS NULL THEN 'Lunas / Keluar Scope'
+                            WHEN p.nokontrak IS NULL THEN 'Baru / Masuk Scope'
+                            WHEN ISNULL(c.ppap_current, 0) - ISNULL(p.ppap_previous, 0) > 0 THEN 'Pembentukan'
+                            WHEN ISNULL(c.ppap_current, 0) - ISNULL(p.ppap_previous, 0) < 0 THEN 'Pengembalian'
+                            ELSE 'Stabil'
+                        END AS movement_status
+                    FROM current_ppap c
+                    FULL OUTER JOIN previous_ppap p ON c.nokontrak = p.nokontrak
+                )
+                SELECT *
+                FROM combined
+                WHERE ppap_gap <> 0
+                ORDER BY ABS(ppap_gap) DESC, nokontrak ASC
+            ", array_merge($mainBindings, $mainBindings));
+
+            $positiveGap = 0.0;
+            $negativeGap = 0.0;
+            $newCount = 0;
+            $exitCount = 0;
+            foreach ($detailRows as $detailRow) {
+                $gapValue = (float) ($detailRow->ppap_gap ?? 0);
+                if ($gapValue > 0) {
+                    $positiveGap += $gapValue;
+                } elseif ($gapValue < 0) {
+                    $negativeGap += $gapValue;
+                }
+
+                if (($detailRow->movement_status ?? '') === 'Baru / Masuk Scope') {
+                    $newCount++;
+                } elseif (($detailRow->movement_status ?? '') === 'Lunas / Keluar Scope') {
+                    $exitCount++;
+                }
+            }
+
+            $detail = [
+                'rows' => $detailRows,
+                'summary' => [
+                    'row_count' => count($detailRows),
+                    'positive_gap' => $positiveGap,
+                    'negative_gap' => $negativeGap,
+                    'net_gap' => $positiveGap + $negativeGap,
+                    'new_or_in_scope_count' => $newCount,
+                    'paid_off_or_out_scope_count' => $exitCount,
+                    'previous_database' => $previousDatabase,
+                ],
+            ];
+        }
+
+        return [
+            'current_ppap' => $currentPpap,
+            'current_os' => (float) ($current->current_os ?? 0),
+            'current_noa' => (int) ($current->current_noa ?? 0),
+            'previous_ppap' => $previousPpap,
+            'previous_noa' => $previousNoa,
+            'gap' => $currentPpap - $previousPpap,
+            'previous_database' => $previousDatabase,
+            'previous_available' => $previousAvailable,
+            'detail' => $detail,
+        ];
+    }
+
+    private function quoteSqlServerIdentifier(string $identifier): string
+    {
+        return '['.str_replace(']', ']]', $identifier).']';
+    }
+
+    /**
+     * Pembiayaan Kualitas Rendah mengikuti pola query operasional:
+     * Kol 2-5 memakai seluruh data EOM/snapshot, Kol 1 memakai kontrak yang masih valid dari TOFLMBHP terbaru.
+     *
+     * @param  list<mixed>  $mainBindings
+     * @return array{summary: array<string,mixed>, rows: list<object>, methodology: array<string,string>}
+     */
+    private function getPkrMetrics(string $tableName, bool $isHistoris, string $mainFilter, array $mainBindings, int $reqTahun, int $reqBulan): array
+    {
+        $periode = sprintf('%04d%02d', $reqTahun, $reqBulan);
+        $periodeSelect = $isHistoris ? 'e.periode' : "'{$periode}'";
+        $periodeFilter = $isHistoris ? ' AND e.periode = ?' : '';
+        $periodeBindings = $isHistoris ? [$periode] : [];
+        $filterWithoutPeriod = preg_replace('/\s+AND\s+a\.periode\s=\s\?/i', '', $mainFilter) ?? $mainFilter;
+        $filterForEom = str_replace('a.', 'e.', $filterWithoutPeriod).$periodeFilter;
+        $bindingsForEom = array_values(array_slice($mainBindings, 0, count($mainBindings) - count($periodeBindings)));
+        $queryBindings = array_merge($bindingsForEom, $periodeBindings, $bindingsForEom, $periodeBindings);
+
+        try {
+            $rows = DB::connection($this->connection)->select("
+                WITH DataTerbaru AS (
+                    SELECT
+                        hp.nokontrak,
+                        ROW_NUMBER() OVER(PARTITION BY hp.nokontrak ORDER BY LEFT(hp.inptgl, 8) DESC) AS rn
+                    FROM TOFLMB t
+                    INNER JOIN TOFLMBHP hp ON t.nokontrak = hp.nokontrak
+                    INNER JOIN MCIF c ON c.NOCIF = t.NOCIF
+                    WHERE hp.stsrec IN ('A','N') AND t.stsrec IN ('A','N')
+                ),
+                KontrakValid AS (
+                    SELECT nokontrak FROM DataTerbaru WHERE rn = 1
+                ),
+                QuerySemuaData AS (
+                    SELECT
+                        {$periodeSelect} AS periode,
+                        e.kdloc,
+                        t.segmen,
+                        s.ket,
+                        e.colbaru,
+                        SUM(CAST(ISNULL(e.osmdlc, 0) AS DECIMAL(38,6))) AS tot_osmdlc_awal,
+                        COUNT(*) AS tot_rec_awal
+                    FROM {$tableName} e
+                    INNER JOIN TOFLMB t ON e.nokontrak = t.nokontrak
+                    LEFT JOIN SEGMEN s ON t.segmen = s.kdseg
+                    WHERE e.stsrec IN ('A','N')
+                      AND e.pokpby NOT IN ('12','30','18')
+                      AND e.stsacc NOT IN ('W','C')
+                      AND e.ststrn = '*'
+                      {$filterForEom}
+                    GROUP BY e.kdloc, t.segmen, s.ket, e.colbaru".($isHistoris ? ', e.periode' : '')."
+                ),
+                QueryDataFilter AS (
+                    SELECT
+                        {$periodeSelect} AS periode,
+                        e.kdloc,
+                        t.segmen,
+                        s.ket,
+                        e.colbaru,
+                        SUM(CAST(ISNULL(e.osmdlc, 0) AS DECIMAL(38,6))) AS tot_osmdlc_filter,
+                        COUNT(e.nokontrak) AS tot_rec_filter
+                    FROM {$tableName} e
+                    INNER JOIN KontrakValid kv ON e.nokontrak = kv.nokontrak
+                    INNER JOIN TOFLMB t ON e.nokontrak = t.nokontrak
+                    LEFT JOIN SEGMEN s ON t.segmen = s.kdseg
+                    WHERE e.stsrec IN ('A','N')
+                      AND e.pokpby NOT IN ('12','30','18')
+                      AND e.stsacc NOT IN ('W','C')
+                      AND e.ststrn = '*'
+                      {$filterForEom}
+                    GROUP BY e.kdloc, t.segmen, s.ket, e.colbaru".($isHistoris ? ', e.periode' : '')."
+                )
+                SELECT
+                    COALESCE(q1.periode, q2.periode) AS periode,
+                    COALESCE(q1.kdloc, q2.kdloc) AS kdloc,
+                    COALESCE(q1.segmen, q2.segmen) AS segmen,
+                    COALESCE(q1.ket, q2.ket) AS ket,
+                    COALESCE(q1.colbaru, q2.colbaru) AS colbaru,
+                    ISNULL(q1.tot_osmdlc_awal, 0) AS osmdlc_semua_data,
+                    ISNULL(q1.tot_rec_awal, 0) AS rec_semua_data,
+                    CASE
+                        WHEN COALESCE(q1.colbaru, q2.colbaru) IN ('2','3','4','5') THEN ISNULL(q1.tot_osmdlc_awal, 0)
+                        ELSE ISNULL(q2.tot_osmdlc_filter, 0)
+                    END AS os_pkr,
+                    CASE
+                        WHEN COALESCE(q1.colbaru, q2.colbaru) IN ('2','3','4','5') THEN ISNULL(q1.tot_rec_awal, 0)
+                        ELSE ISNULL(q2.tot_rec_filter, 0)
+                    END AS noa_pkr,
+                    ISNULL(q1.tot_osmdlc_awal, 0) - (
+                        CASE
+                            WHEN COALESCE(q1.colbaru, q2.colbaru) IN ('2','3','4','5') THEN ISNULL(q1.tot_osmdlc_awal, 0)
+                            ELSE ISNULL(q2.tot_osmdlc_filter, 0)
+                        END
+                    ) AS selisih_osmdlc,
+                    ISNULL(q1.tot_rec_awal, 0) - (
+                        CASE
+                            WHEN COALESCE(q1.colbaru, q2.colbaru) IN ('2','3','4','5') THEN ISNULL(q1.tot_rec_awal, 0)
+                            ELSE ISNULL(q2.tot_rec_filter, 0)
+                        END
+                    ) AS selisih_rec
+                FROM QuerySemuaData q1
+                FULL OUTER JOIN QueryDataFilter q2
+                  ON q1.periode = q2.periode
+                 AND q1.kdloc = q2.kdloc
+                 AND q1.segmen = q2.segmen
+                 AND q1.colbaru = q2.colbaru
+                ORDER BY segmen ASC, kdloc ASC, colbaru ASC
+            ", $queryBindings);
+        } catch (\Throwable $exception) {
+            return [
+                'summary' => [
+                    'available' => false,
+                    'message' => 'Query PKR belum dapat dieksekusi pada database/filter aktif: '.$exception->getMessage(),
+                    'pkr_os' => 0,
+                    'pkr_noa' => 0,
+                    'pkr_ratio' => 0,
+                    'total_scope_os' => 0,
+                ],
+                'rows' => [],
+                'methodology' => [
+                    'formula' => 'PKR = Kol 2 + Kol 3 + Kol 4 + Kol 5; Kol 1 hanya dipakai untuk rekonsiliasi kontrak valid',
+                    'basis' => 'TOFLMBEOM/TOFLMB dengan filter aktif, pokpby NOT IN 12/30/18, stsacc bukan W/C, ststrn=*',
+                ],
+            ];
+        }
+
+        $totalScopeOs = 0.0;
+        $pkrOs = 0.0;
+        $pkrNoa = 0;
+        $watchKol2Os = 0.0;
+        $excludedLancarOs = 0.0;
+
+        foreach ($rows as $row) {
+            $col = (string) ($row->colbaru ?? '');
+            $totalScopeOs += (float) ($row->osmdlc_semua_data ?? 0);
+            if (in_array($col, ['2','3','4','5'], true)) {
+                $pkrOs += (float) ($row->os_pkr ?? 0);
+                $pkrNoa += (int) ($row->noa_pkr ?? 0);
+            }
+            if ($col === '2') {
+                $watchKol2Os += (float) ($row->os_pkr ?? 0);
+            }
+            if ($col === '1') {
+                $excludedLancarOs += (float) ($row->selisih_osmdlc ?? 0);
+            }
+        }
+
+        return [
+            'summary' => [
+                'available' => true,
+                'periode' => $periode,
+                'pkr_os' => $pkrOs,
+                'pkr_noa' => $pkrNoa,
+                'pkr_ratio' => $totalScopeOs > 0 ? ($pkrOs / $totalScopeOs) * 100 : 0,
+                'total_scope_os' => $totalScopeOs,
+                'watch_kol2_os' => $watchKol2Os,
+                'watch_kol2_ratio' => $totalScopeOs > 0 ? ($watchKol2Os / $totalScopeOs) * 100 : 0,
+                'excluded_lancar_os' => $excludedLancarOs,
+                'interpretation' => $this->interpretPkrRatio($totalScopeOs > 0 ? ($pkrOs / $totalScopeOs) * 100 : 0, $watchKol2Os),
+            ],
+            'rows' => $rows,
+            'methodology' => [
+                'formula' => 'PKR = Kol 2 + Kol 3 + Kol 4 + Kol 5 terhadap total scope pembiayaan',
+                'kol1_policy' => 'Kol 1 ditampilkan untuk rekonsiliasi; OS_PKR Kol 1 hanya kontrak valid dari TOFLMBHP terbaru',
+                'basis' => 'TOFLMBEOM/TOFLMB dengan filter aktif, pokpby NOT IN 12/30/18, stsacc bukan W/C, ststrn=*',
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string,mixed>  $kapMetrics
+     * @return array{rows: list<array<string,mixed>>, summary: array<string,mixed>}
+     */
+    private function buildKapWorksheetReconciliation(array $kapMetrics): array
+    {
+        $breakdown = $kapMetrics['breakdown'] ?? [];
+        $summary = $kapMetrics['summary'] ?? [];
+        $rows = [];
+        $rates = ['1' => '0%', '2' => '25%', '3' => '50%', '4' => '75%', '5' => '100%'];
+
+        foreach ($breakdown as $item) {
+            $col = (string) ($item->colbaru ?? '');
+            $rows[] = [
+                'section' => 'Pembiayaan',
+                'kolektibilitas' => $col,
+                'label' => $this->collectibilityName($col),
+                'noa' => (int) ($item->noa ?? 0),
+                'baki_debet' => (float) ($item->os_pokok ?? 0),
+                'agunan_dikuasai' => (float) ($item->agunan_berbobot ?? 0),
+                'jumlah_setelah_agunan' => (float) ($item->net_exposure_agunan ?? 0),
+                'tarif_ppap_wd' => $rates[$col] ?? '-',
+                'ppap_wajib_dibentuk' => (float) ($item->ppap_wajib_dibentuk ?? 0),
+                'ppap_system' => (float) ($item->ppap_system ?? 0),
+                'apyd' => in_array($col, ['3','4','5'], true) ? (float) ($item->apyd ?? 0) : 0,
+                'row_type' => 'detail',
+            ];
+        }
+
+        $rows[] = [
+            'section' => 'Pembiayaan',
+            'kolektibilitas' => 'subtotal',
+            'label' => 'Subtotal Pembiayaan',
+            'noa' => (int) ($summary['total_noa'] ?? 0),
+            'baki_debet' => (float) ($summary['total_pembiayaan'] ?? 0),
+            'agunan_dikuasai' => (float) ($summary['agunan_berbobot'] ?? 0),
+            'jumlah_setelah_agunan' => (float) ($summary['net_exposure_agunan'] ?? 0),
+            'tarif_ppap_wd' => '-',
+            'ppap_wajib_dibentuk' => (float) ($summary['ppap_wajib_dibentuk_financing'] ?? 0),
+            'ppap_system' => (float) ($summary['ppap_system'] ?? 0),
+            'apyd' => (float) ($summary['apyd_financing_tks'] ?? 0),
+            'row_type' => 'subtotal',
+        ];
+
+        $rows[] = [
+            'section' => 'Antar Bank Aktiva',
+            'kolektibilitas' => 'aba',
+            'label' => 'ABA Non-Macet',
+            'noa' => null,
+            'baki_debet' => (float) ($summary['antar_bank_aktiva_lancar'] ?? 0),
+            'agunan_dikuasai' => 0,
+            'jumlah_setelah_agunan' => (float) ($summary['antar_bank_aktiva_lancar'] ?? 0),
+            'tarif_ppap_wd' => '-',
+            'ppap_wajib_dibentuk' => 0,
+            'ppap_system' => 0,
+            'apyd' => (float) ($summary['antar_bank_aktiva_apyd'] ?? 0),
+            'row_type' => 'detail',
+        ];
+
+        if ((float) ($summary['antar_bank_aktiva_macet'] ?? 0) > 0) {
+            $rows[] = [
+                'section' => 'Antar Bank Aktiva',
+                'kolektibilitas' => 'aba-macet',
+                'label' => 'ABA Macet Dikecualikan',
+                'noa' => null,
+                'baki_debet' => (float) ($summary['antar_bank_aktiva_macet'] ?? 0),
+                'agunan_dikuasai' => 0,
+                'jumlah_setelah_agunan' => 0,
+                'tarif_ppap_wd' => '-',
+                'ppap_wajib_dibentuk' => 0,
+                'ppap_system' => 0,
+                'apyd' => 0,
+                'row_type' => 'adjustment',
+            ];
+        }
+
+        $rows[] = [
+            'section' => 'Total Worksheet',
+            'kolektibilitas' => 'total',
+            'label' => 'Total Aktiva Produktif',
+            'noa' => (int) ($summary['total_noa'] ?? 0),
+            'baki_debet' => (float) ($summary['total_aktiva_produktif'] ?? 0),
+            'agunan_dikuasai' => (float) ($summary['agunan_berbobot'] ?? 0),
+            'jumlah_setelah_agunan' => (float) ($summary['net_exposure_agunan'] ?? 0) + (float) ($summary['antar_bank_aktiva_lancar'] ?? 0),
+            'tarif_ppap_wd' => '-',
+            'ppap_wajib_dibentuk' => (float) ($summary['ppap_wajib_dibentuk'] ?? 0),
+            'ppap_system' => (float) ($summary['ppap_system'] ?? 0),
+            'apyd' => (float) ($summary['apyd'] ?? 0),
+            'row_type' => 'total',
+        ];
+
+        return [
+            'rows' => $rows,
+            'summary' => [
+                'row_count' => count($rows),
+                'policy' => 'Rekonsiliasi worksheet menyatukan pembiayaan per kolektibilitas, ABA non-macet, pengecualian ABA macet, dan total Aktiva Produktif.',
+            ],
+        ];
+    }
+
+    private function collectibilityName(string $col): string
+    {
+        return [
+            '1' => 'Kol 1 - Lancar',
+            '2' => 'Kol 2 - DPK',
+            '3' => 'Kol 3 - Kurang Lancar',
+            '4' => 'Kol 4 - Diragukan',
+            '5' => 'Kol 5 - Macet',
+        ][$col] ?? 'Kol '.$col;
+    }
+
+    private function interpretMiapbRatio(float $ratio, float $denominator): string
+    {
+        if ($denominator <= 0) {
+            return 'Aset bermasalah sudah tertutup PPAP bermasalah pada denominator MIAPB; tetap validasi kualitas PPAP per debitur besar.';
+        }
+
+        if ($ratio >= 200) {
+            return 'Modal inti sangat kuat terhadap aset bermasalah neto setelah PPAP; risiko penyerapan kerugian relatif terkendali.';
+        }
+
+        if ($ratio >= 100) {
+            return 'Modal inti masih menutup aset bermasalah neto, namun perlu pemantauan bila NPF atau gap PPAP meningkat.';
+        }
+
+        return 'Modal inti lebih rendah dari aset bermasalah neto; perlu rencana penyehatan kualitas, penguatan cadangan, dan kontrol ekspansi berisiko.';
+    }
+
+    private function interpretAydaRatio(float $ratio, float $amount): string
+    {
+        if ($amount <= 0) {
+            return 'Tidak ada AYDA terbaca pada saldo GL berbasis mapping saat ini.';
+        }
+
+        if ($ratio <= 1) {
+            return 'AYDA masih kecil terhadap total pembiayaan, tetapi perlu tetap dipantau sebagai aset bermasalah non-pembiayaan.';
+        }
+
+        if ($ratio <= 3) {
+            return 'AYDA mulai material; pastikan rencana penyelesaian, valuasi, dan umur kepemilikan termonitor.';
+        }
+
+        return 'AYDA tinggi terhadap portofolio pembiayaan; perlu action plan penyelesaian aset dan eskalasi manajemen risiko.';
+    }
+
+    private function interpretPkrRatio(float $ratio, float $kol2Os): string
+    {
+        if ($ratio <= 10) {
+            return 'PKR relatif rendah; fokus utama menjaga Kol 2 agar tidak bermigrasi ke NPF.';
+        }
+
+        if ($ratio <= 25) {
+            return 'PKR berada pada area perhatian; Kol 2 dan Kol 3 perlu daftar kerja remedial mingguan.';
+        }
+
+        return 'PKR tinggi; perlu konsolidasi collection, restrukturisasi selektif, dan pembatasan ekspansi pada segmen berisiko.';
+    }
+
+    /**
+     * Trend prudential bulanan berbasis snapshot database yang tersedia.
+     *
+     * @param  list<mixed>  $mainBindings
+     * @return array{trend: list<array<string,mixed>>, meta: array<string,mixed>}
+     */
+    private function getKapPrudentialTrend(int $reqTahun, int $reqBulan, string $mainFilter, array $mainBindings, ?string $restoreDatabase): array
+    {
+        $monthNames = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
+            7 => 'Jul', 8 => 'Ags', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des',
+        ];
+        $activePeriod = $this->getCurrentPeriodInternal();
+        $currentYear = (int) $activePeriod['year'];
+        $currentMonth = (int) $activePeriod['month'];
+        $lastMonth = max(1, min(12, $reqBulan));
+        $trend = [];
+        $available = 0;
+        $missing = 0;
+
+        try {
+            for ($month = 1; $month <= $lastMonth; $month++) {
+                $database = $this->resolveMonthlySnapshotDatabase($reqTahun, $month);
+                $isCurrentRuntime = $database === null && $reqTahun === $currentYear && $month === $currentMonth;
+
+                if ($database !== null) {
+                    app(MciConnectionService::class)->switchToDatabase($database);
+                } elseif ($isCurrentRuntime && $restoreDatabase !== null) {
+                    app(MciConnectionService::class)->switchToDatabase($restoreDatabase);
+                    $database = $restoreDatabase;
+                } else {
+                    $missing++;
+                    $trend[] = [
+                        'tahun' => $reqTahun,
+                        'bulan' => $month,
+                        'label' => $monthNames[$month] ?? (string) $month,
+                        'source_database' => null,
+                        'available' => false,
+                        'message' => 'Database snapshot belum tersedia',
+                    ];
+                    continue;
+                }
+
+                $metrics = $this->getKapRiskMetrics('TOFLMB', false, $mainFilter, $mainBindings, $reqTahun, $month, false);
+                $summary = $metrics['summary'] ?? [];
+                $available++;
+
+                $trend[] = [
+                    'tahun' => $reqTahun,
+                    'bulan' => $month,
+                    'label' => $monthNames[$month] ?? (string) $month,
+                    'source_database' => $database,
+                    'available' => true,
+                    'kap_ratio' => (float) ($summary['kap_ratio'] ?? 0),
+                    'apyd' => (float) ($summary['apyd'] ?? 0),
+                    'apyd_ratio' => (float) ($summary['apyd_ratio'] ?? 0),
+                    'ppap_wajib_dibentuk' => (float) ($summary['ppap_wajib_dibentuk'] ?? 0),
+                    'ppap_system' => (float) ($summary['ppap_system'] ?? 0),
+                    'ppap_rekap_current' => (float) ($summary['ppap_rekap_current'] ?? 0),
+                    'total_ppap_bulanan' => (float) ($summary['ppap_rekap_current'] ?? 0),
+                    'ppap_gap' => (float) ($summary['ppap_gap'] ?? 0),
+                    'ppap_coverage_to_wd' => (float) ($summary['ppap_coverage_to_wd'] ?? 0),
+                    'net_exposure_agunan' => (float) ($summary['net_exposure_agunan'] ?? 0),
+                    'net_exposure_ratio' => (float) ($summary['net_exposure_ratio'] ?? 0),
+                    'total_aktiva_produktif' => (float) ($summary['total_aktiva_produktif'] ?? 0),
+                    'total_pembiayaan' => (float) ($summary['total_pembiayaan'] ?? 0),
+                    'aba_macet' => (float) ($summary['antar_bank_aktiva_macet'] ?? 0),
+                    'aba_unmapped' => (float) ($summary['antar_bank_aktiva_unmapped'] ?? 0),
+                    'shortfall_count' => count($metrics['ppap_shortfall_accounts'] ?? []),
+                    'recommendation_count' => count($metrics['recommendations'] ?? []),
+                ];
+            }
+        } finally {
+            if ($restoreDatabase !== null) {
+                app(MciConnectionService::class)->switchToDatabase($restoreDatabase);
+            }
+        }
+
+        return [
+            'trend' => $this->appendKapTrendDeltas($trend),
+            'meta' => [
+                'requested_year' => $reqTahun,
+                'requested_month' => $reqBulan,
+                'available_months' => $available,
+                'missing_months' => $missing,
+                'source_policy' => 'Trend memakai snapshot database bulanan yang tersedia. Bulan tanpa database ditandai unavailable dan tidak dipaksakan dari data lain.',
+            ],
+        ];
+    }
+
+    /**
+     * @param  list<array<string,mixed>>  $trend
+     * @return list<array<string,mixed>>
+     */
+    private function appendKapTrendDeltas(array $trend): array
+    {
+        $previous = null;
+        foreach ($trend as $index => $row) {
+            if (! ($row['available'] ?? false)) {
+                $trend[$index]['kap_delta'] = null;
+                $trend[$index]['apyd_delta'] = null;
+                $trend[$index]['ppap_gap_delta'] = null;
+                $trend[$index]['net_exposure_delta'] = null;
+                continue;
+            }
+
+            if ($previous === null) {
+                $trend[$index]['kap_delta'] = 0;
+                $trend[$index]['apyd_delta'] = 0;
+                $trend[$index]['ppap_gap_delta'] = 0;
+                $trend[$index]['net_exposure_delta'] = 0;
+            } else {
+                $trend[$index]['kap_delta'] = (float) ($row['kap_ratio'] ?? 0) - (float) ($previous['kap_ratio'] ?? 0);
+                $trend[$index]['apyd_delta'] = (float) ($row['apyd'] ?? 0) - (float) ($previous['apyd'] ?? 0);
+                $trend[$index]['ppap_gap_delta'] = (float) ($row['ppap_gap'] ?? 0) - (float) ($previous['ppap_gap'] ?? 0);
+                $trend[$index]['net_exposure_delta'] = (float) ($row['net_exposure_agunan'] ?? 0) - (float) ($previous['net_exposure_agunan'] ?? 0);
+            }
+
+            $previous = $row;
+        }
+
+        return $trend;
+    }
+
+    /**
+     * @param  array<string,mixed>  $kapMetrics
+     * @param  list<array<string,mixed>>  $trend
+     * @param  array<string,mixed>  $trendMeta
+     * @return array{items: list<array<string,mixed>>, summary: array<string,mixed>}
+     */
+    private function buildKapAnomalyDetector(array $kapMetrics, array $trend, array $trendMeta): array
+    {
+        $summary = $kapMetrics['summary'] ?? [];
+        $items = [];
+        $availableTrend = array_values(array_filter($trend, fn ($row) => (bool) ($row['available'] ?? false)));
+        $last = ! empty($availableTrend) ? $availableTrend[count($availableTrend) - 1] : null;
+
+        if ((int) ($trendMeta['missing_months'] ?? 0) > 0) {
+            $items[] = [
+                'severity' => 'warning',
+                'title' => 'Snapshot Bulanan Belum Lengkap',
+                'metric' => 'Data Trend',
+                'value' => (int) ($trendMeta['missing_months'] ?? 0),
+                'message' => 'Ada bulan dalam rentang filter yang belum memiliki database snapshot, sehingga trend menampilkan gap secara eksplisit.',
+                'action' => 'Pastikan database bulan tersebut sudah tersedia dan mapping environment MCI_DB_* sudah terisi.',
+            ];
+        }
+
+        if ($last !== null && (float) ($last['kap_delta'] ?? 0) < -1) {
+            $items[] = [
+                'severity' => (float) ($last['kap_delta'] ?? 0) < -3 ? 'danger' : 'warning',
+                'title' => 'Rasio KAP Menurun',
+                'metric' => 'KAP MoM',
+                'value' => (float) ($last['kap_delta'] ?? 0),
+                'message' => 'Rasio KAP turun dibanding bulan snapshot sebelumnya, mengindikasikan tekanan kualitas aktiva produktif.',
+                'action' => 'Review contributor APYD terbesar, migrasi Kol 2 ke Kol 3-5, dan validitas agunan akun besar.',
+            ];
+        }
+
+        if ($last !== null && (float) ($last['apyd_delta'] ?? 0) > 0) {
+            $items[] = [
+                'severity' => (float) ($last['apyd_ratio'] ?? 0) >= 7.5 ? 'danger' : 'warning',
+                'title' => 'APYD Meningkat',
+                'metric' => 'APYD MoM',
+                'value' => (float) ($last['apyd_delta'] ?? 0),
+                'message' => 'APYD naik dibanding bulan sebelumnya, artinya portofolio yang diberi bobot risiko meningkat.',
+                'action' => 'Tetapkan daftar kerja remedial untuk debitur Kol 3-5 dan pantau aging tunggakan mingguan.',
+            ];
+        }
+
+        if ((float) ($summary['ppap_system_vs_wd_gap'] ?? 0) < 0) {
+            $items[] = [
+                'severity' => 'danger',
+                'title' => 'PPAP Sistem di Bawah PPAP WD',
+                'metric' => 'Gap Sistem vs WD',
+                'value' => (float) ($summary['ppap_system_vs_wd_gap'] ?? 0),
+                'message' => 'PPAP sistem belum menutup PPAP wajib dibentuk secara prudential pada posisi bulan aktif.',
+                'action' => 'Lakukan rekonsiliasi kontrak shortfall, validasi agunan, dan siapkan adjustment cadangan bila diperlukan.',
+            ];
+        }
+
+        if ((bool) ($summary['ppap_rekap_previous_available'] ?? false) && abs((float) ($summary['ppap_gap'] ?? 0)) > 0) {
+            $items[] = [
+                'severity' => (float) ($summary['ppap_gap'] ?? 0) > 0 ? 'warning' : 'safe',
+                'title' => (float) ($summary['ppap_gap'] ?? 0) > 0 ? 'PPAP Bulanan Meningkat' : 'PPAP Bulanan Menurun',
+                'metric' => 'Gap PPAP Bulanan',
+                'value' => (float) ($summary['ppap_gap'] ?? 0),
+                'message' => (float) ($summary['ppap_gap'] ?? 0) > 0
+                    ? 'Kebutuhan PPAP template bulan berjalan lebih tinggi dibanding snapshot bulan sebelumnya.'
+                    : 'Kebutuhan PPAP template bulan berjalan lebih rendah dibanding snapshot bulan sebelumnya.',
+                'action' => (float) ($summary['ppap_gap'] ?? 0) > 0
+                    ? 'Validasi kontrak penyumbang kenaikan, perubahan kolektibilitas, dan nilai likuidasi agunan.'
+                    : 'Pastikan penurunan didukung pelunasan, perbaikan kolektibilitas, atau update agunan yang terdokumentasi.',
+            ];
+        }
+
+        if ((float) ($summary['net_exposure_agunan'] ?? 0) > 0 && (float) ($summary['net_exposure_ratio'] ?? 0) >= 25) {
+            $items[] = [
+                'severity' => (float) ($summary['net_exposure_ratio'] ?? 0) >= 50 ? 'danger' : 'warning',
+                'title' => 'Net Exposure Setelah Agunan Tinggi',
+                'metric' => 'Net Exposure Ratio',
+                'value' => (float) ($summary['net_exposure_ratio'] ?? 0),
+                'message' => 'Jumlah setelah agunan masih besar terhadap Aktiva Produktif, sehingga kualitas agunan dan pengikatan perlu dipastikan.',
+                'action' => 'Prioritaskan update nilai taksasi, status pengikatan, dan kelengkapan dokumen agunan debitur eksposur besar.',
+            ];
+        }
+
+        if ((float) ($summary['antar_bank_aktiva_macet'] ?? 0) > 0 || (float) ($summary['antar_bank_aktiva_unmapped'] ?? 0) > 0) {
+            $items[] = [
+                'severity' => 'warning',
+                'title' => 'Anomali Klasifikasi ABA',
+                'metric' => 'ABA',
+                'value' => (float) ($summary['antar_bank_aktiva_macet'] ?? 0) + (float) ($summary['antar_bank_aktiva_unmapped'] ?? 0),
+                'message' => 'Terdapat ABA macet atau belum terpetakan kolektibilitasnya dari subledger.',
+                'action' => 'Rekonsiliasi MGL akun 50113 dengan TOFABA dan lengkapi mapping kolektibilitas per rekening.',
+            ];
+        }
+
+        if (empty($items)) {
+            $items[] = [
+                'severity' => 'safe',
+                'title' => 'Tidak Ada Anomali Material',
+                'metric' => 'Prudential Check',
+                'value' => 0,
+                'message' => 'Tidak terdeteksi tekanan material dari KAP, APYD, PPAP gap, net exposure, maupun ABA pada filter aktif.',
+                'action' => 'Pertahankan monitoring bulanan dan gunakan trend sebagai baseline early warning periode berikutnya.',
+            ];
+        }
+
+        $severityRank = ['danger' => 3, 'warning' => 2, 'safe' => 1];
+        usort($items, fn ($a, $b) => ($severityRank[$b['severity']] ?? 0) <=> ($severityRank[$a['severity']] ?? 0));
+
+        return [
+            'items' => $items,
+            'summary' => [
+                'danger_count' => count(array_filter($items, fn ($item) => ($item['severity'] ?? '') === 'danger')),
+                'warning_count' => count(array_filter($items, fn ($item) => ($item['severity'] ?? '') === 'warning')),
+                'safe_count' => count(array_filter($items, fn ($item) => ($item['severity'] ?? '') === 'safe')),
+                'available_trend_months' => count($availableTrend),
+                'missing_trend_months' => (int) ($trendMeta['missing_months'] ?? 0),
+            ],
+        ];
+    }
+
+    /**
+     * Model CKPN berbasis rujukan PSAK 414/CKPN Best Practice.
+     *
+     * Prinsip:
+     * - Produk yang dihitung: Murabahah, Qard, Multijasa/Hawalah sebagai piutang.
+     * - Produk yang dikecualikan: Mudharabah, Musyarakah/MMQ karena bukan debt-type financial asset.
+     * - EAD = Outstanding pokok - margin ditangguhkan.
+     * - Individual = debitur rank 25 besar dan minimal Kol 2 (indikasi penurunan nilai/SICR).
+     * - CKPN Individual = max(EAD - agunan neto setelah biaya penjualan 5%, 0).
+     * - CKPN Kolektif = PD x LGD x EAD kolektif.
+     *
+     * @param  list<mixed>  $mainBindings
+     * @return array<string,mixed>
+     */
+    private function getCkpnModelAnalytics(
+        string $tableName,
+        bool $isHistoris,
+        string $mainFilter,
+        array $mainBindings,
+        int $reqTahun,
+        int $reqBulan
+    ): array {
+        $eligibleProductCondition = "
+            (
+                p.kdcol IN ('10', '30')
+                OR UPPER(ISNULL(p.ket, '')) LIKE '%MURABAHAH%'
+                OR UPPER(ISNULL(p.ket, '')) LIKE '%QORD%'
+                OR UPPER(ISNULL(p.ket, '')) LIKE '%QARD%'
+                OR UPPER(ISNULL(p.ket, '')) LIKE '%MULTIJASA%'
+                OR UPPER(ISNULL(p.ket, '')) LIKE '%HAWALAH%'
+                OR UPPER(ISNULL(p.ket, '')) LIKE '%ISTISHNA%'
+            )
+            AND UPPER(ISNULL(p.ket, '')) NOT LIKE '%MUSYARAKAH%'
+            AND UPPER(ISNULL(p.ket, '')) NOT LIKE '%MUDHARABAH%'
+        ";
+
+        $period = sprintf('%04d%02d', $reqTahun, $reqBulan);
+        $collateralCte = $isHistoris
+            ? "
+                SELECT
+                    a.nokontrak,
+                    CAST(ISNULL(a.htgagun, 0) AS DECIMAL(38,6)) * 0.95 AS collateral_net,
+                    CAST(ISNULL(a.htgagun, 0) AS DECIMAL(38,6)) AS collateral_gross
+                FROM {$tableName} a
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+            "
+            : "
+                SELECT
+                    j.nokontrak,
+                    SUM(
+                        CASE
+                            WHEN sj.stsbobotjam = 'H' THEN CAST(ISNULL(j.nilaiagunbi, 0) AS DECIMAL(38,6)) * (CAST(ISNULL(sj.bobotjam, 0) AS DECIMAL(18,6)) / 100.0)
+                            WHEN sj.stsbobotjam = 'P' THEN CAST(ISNULL(j.nompasar, 0) AS DECIMAL(38,6)) * (CAST(ISNULL(sj.bobotjam, 0) AS DECIMAL(18,6)) / 100.0)
+                            WHEN sj.stsbobotjam = 'T' THEN CAST(ISNULL(j.nomtaksasi, 0) AS DECIMAL(38,6)) * (CAST(ISNULL(sj.bobotjam, 0) AS DECIMAL(18,6)) / 100.0)
+                            ELSE CAST(ISNULL(j.nilaiagunbi, 0) AS DECIMAL(38,6))
+                        END
+                    ) * 0.95 AS collateral_net,
+                    SUM(CAST(ISNULL(j.nilaiagunbi, 0) AS DECIMAL(38,6))) AS collateral_gross
+                FROM TOFJAMIN j
+                LEFT JOIN SETUPJAM sj ON j.jnsjamin = sj.kdjam
+                WHERE j.stsrec = 'A'
+                GROUP BY j.nokontrak
+            ";
+        $bindingsWithCollateral = $isHistoris ? array_merge($mainBindings, $mainBindings) : $mainBindings;
+
+        $currentCkpnRows = DB::connection($this->connection)->select("
+            WITH collateral AS ({$collateralCte}),
+            base AS (
+                SELECT
+                    a.nokontrak,
+                    a.nocif,
+                    LTRIM(RTRIM(a.nama)) AS nama,
+                    a.kdprd,
+                    ISNULL(p.ket, 'Tanpa Produk') AS produk,
+                    ISNULL(p.kdcol, '') AS kdcol,
+                    a.colbaru,
+                    ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) AS os_pokok,
+                    ISNULL(CAST(a.osmgnc AS DECIMAL(38,6)), 0) AS margin_ditangguhkan,
+                    CASE
+                        WHEN ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) - ISNULL(CAST(a.osmgnc AS DECIMAL(38,6)), 0) > 0
+                        THEN ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) - ISNULL(CAST(a.osmgnc AS DECIMAL(38,6)), 0)
+                        ELSE 0
+                    END AS ead,
+                    ISNULL(CAST(a.ppap AS DECIMAL(38,6)), 0) AS ppap_system,
+                    ISNULL(CAST(a.ckpn AS DECIMAL(38,6)), 0) AS ckpn_system,
+                    ISNULL(c.collateral_gross, ISNULL(CAST(a.htgagun AS DECIMAL(38,6)), 0)) AS collateral_gross,
+                    ISNULL(c.collateral_net, ISNULL(CAST(a.htgagun AS DECIMAL(38,6)), 0) * 0.95) AS collateral_net,
+                    CASE WHEN {$eligibleProductCondition} THEN 1 ELSE 0 END AS is_eligible,
+                    ROW_NUMBER() OVER (ORDER BY ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) DESC) AS exposure_rank
+                FROM {$tableName} a
+                LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
+                LEFT JOIN collateral c ON a.nokontrak = c.nokontrak
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+            ),
+            classified AS (
+                SELECT *,
+                    CASE
+                        WHEN is_eligible = 1 AND exposure_rank <= 25 AND colbaru IN ('2','3','4','5') THEN 'individual'
+                        WHEN is_eligible = 1 THEN 'collective'
+                        ELSE 'excluded'
+                    END AS ckpn_bucket,
+                    CASE
+                        WHEN is_eligible = 1 AND exposure_rank <= 25 AND colbaru IN ('2','3','4','5')
+                        THEN CASE WHEN ead - collateral_net > 0 THEN ead - collateral_net ELSE 0 END
+                        ELSE 0
+                    END AS individual_ckpn
+                FROM base
+            )
+            SELECT
+                SUM(CASE WHEN is_eligible = 1 THEN os_pokok ELSE 0 END) AS eligible_os,
+                SUM(CASE WHEN is_eligible = 0 THEN os_pokok ELSE 0 END) AS excluded_os,
+                SUM(CASE WHEN is_eligible = 1 THEN ead ELSE 0 END) AS eligible_ead,
+                SUM(CASE WHEN ckpn_bucket = 'individual' THEN ead ELSE 0 END) AS individual_ead,
+                SUM(CASE WHEN ckpn_bucket = 'collective' THEN ead ELSE 0 END) AS collective_ead,
+                SUM(individual_ckpn) AS individual_ckpn,
+                SUM(CASE WHEN is_eligible = 1 THEN ppap_system ELSE 0 END) AS eligible_ppap_system,
+                SUM(ppap_system) AS total_ppap_system,
+                SUM(ckpn_system) AS total_ckpn_system,
+                SUM(CASE WHEN is_eligible = 1 THEN 1 ELSE 0 END) AS eligible_noa,
+                SUM(CASE WHEN is_eligible = 0 THEN 1 ELSE 0 END) AS excluded_noa,
+                SUM(CASE WHEN ckpn_bucket = 'individual' THEN 1 ELSE 0 END) AS individual_noa,
+                SUM(CASE WHEN ckpn_bucket = 'collective' THEN 1 ELSE 0 END) AS collective_noa,
+                SUM(CASE WHEN is_eligible = 1 THEN CASE WHEN ead - collateral_net > 0 THEN ead - collateral_net ELSE 0 END ELSE 0 END) AS collateral_shortfall,
+                SUM(CASE WHEN is_eligible = 1 THEN collateral_net ELSE 0 END) AS eligible_collateral_net
+            FROM classified
+        ", $bindingsWithCollateral);
+
+        $current = $currentCkpnRows[0] ?? (object) [];
+
+        $lgdCollateralShortfall = (float) ($current->eligible_ead ?? 0) > 0
+            ? ((float) ($current->collateral_shortfall ?? 0) / (float) ($current->eligible_ead ?? 0))
+            : 0.0;
+
+        $pdRows = DB::connection($this->connection)->select("
+            WITH hist AS (
+                SELECT
+                    periode,
+                    nokontrak,
+                    kdprd,
+                    colbaru,
+                    CAST(osmdlc AS DECIMAL(38,6)) AS osmdlc,
+                    LAG(colbaru) OVER (PARTITION BY nokontrak ORDER BY periode) AS prev_col,
+                    LAG(CAST(osmdlc AS DECIMAL(38,6))) OVER (PARTITION BY nokontrak ORDER BY periode) AS prev_os
+                FROM TOFLMBEOM
+                WHERE periode <= ?
+                  AND periode >= CONVERT(VARCHAR(6), DATEADD(MONTH, -12, CONVERT(date, ? + '01')), 112)
+                  AND stsrec IN ('A', 'N') AND stsacc <> 'W'
+                  AND kdprd IN ('50','51','56','58','59','64')
+            ),
+            paired AS (
+                SELECT * FROM hist WHERE prev_col IS NOT NULL AND prev_os IS NOT NULL AND prev_os > 0
+            )
+            SELECT
+                CASE WHEN SUM(CASE WHEN prev_col IN ('1','2') THEN prev_os ELSE 0 END) > 0
+                    THEN SUM(CASE WHEN prev_col IN ('1','2') AND colbaru IN ('3','4','5') THEN osmdlc ELSE 0 END)
+                         / NULLIF(SUM(CASE WHEN prev_col IN ('1','2') THEN prev_os ELSE 0 END), 0)
+                    ELSE 0 END AS pd_net_flow,
+                CASE WHEN SUM(CASE WHEN prev_col IN ('1','2','3','4') THEN prev_os ELSE 0 END) > 0
+                    THEN SUM(CASE WHEN prev_col IN ('1','2','3','4') AND colbaru = '5' THEN osmdlc ELSE 0 END)
+                         / NULLIF(SUM(CASE WHEN prev_col IN ('1','2','3','4') THEN prev_os ELSE 0 END), 0)
+                    ELSE 0 END AS pd_migration,
+                COUNT(*) AS transition_count,
+                MIN(periode) AS observation_start,
+                MAX(periode) AS observation_end
+            FROM paired
+        ", [$period, $period]);
+
+        $pd = $pdRows[0] ?? (object) [];
+        $pdNetFlow = (float) ($pd->pd_net_flow ?? 0);
+        $pdMigration = (float) ($pd->pd_migration ?? 0);
+        $selectedPd = max($pdNetFlow, $pdMigration);
+
+        $collectiveCkpn = (float) ($current->collective_ead ?? 0) * $selectedPd * $lgdCollateralShortfall;
+        $modelCkpn = (float) ($current->individual_ckpn ?? 0) + $collectiveCkpn;
+        $systemBaseline = (float) ($current->eligible_ppap_system ?? 0);
+
+        $stageRows = DB::connection($this->connection)->select("
+            WITH base AS (
+                SELECT
+                    CASE
+                        WHEN a.colbaru = '1' THEN 'Stage 1'
+                        WHEN a.colbaru = '2' THEN 'Stage 2'
+                        WHEN a.colbaru IN ('3','4','5') THEN 'Stage 3'
+                        ELSE 'Unmapped'
+                    END AS stage_name,
+                    a.colbaru,
+                    ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) AS os_pokok,
+                    CASE
+                        WHEN ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) - ISNULL(CAST(a.osmgnc AS DECIMAL(38,6)), 0) > 0
+                        THEN ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) - ISNULL(CAST(a.osmgnc AS DECIMAL(38,6)), 0)
+                        ELSE 0
+                    END AS ead,
+                    ISNULL(CAST(a.ppap AS DECIMAL(38,6)), 0) AS ppap_system
+                FROM {$tableName} a
+                LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+                  AND {$eligibleProductCondition}
+            )
+            SELECT stage_name, colbaru, COUNT(*) AS noa, SUM(os_pokok) AS os_pokok, SUM(ead) AS ead, SUM(ppap_system) AS ppap_system
+            FROM base
+            GROUP BY stage_name, colbaru
+            ORDER BY colbaru
+        ", $mainBindings);
+
+        $individualRows = DB::connection($this->connection)->select("
+            WITH collateral AS ({$collateralCte}),
+            base AS (
+                SELECT
+                    a.nokontrak, a.nocif, LTRIM(RTRIM(a.nama)) AS nama, a.colbaru,
+                    ISNULL(p.ket, 'Tanpa Produk') AS produk,
+                    ISNULL(cab.nama, '(Tanpa Cabang)') AS cabang,
+                    ISNULL(ao.nmao, '(Tanpa AO)') AS nama_ao,
+                    ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) AS os_pokok,
+                    ISNULL(CAST(a.osmgnc AS DECIMAL(38,6)), 0) AS margin_ditangguhkan,
+                    CASE
+                        WHEN ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) - ISNULL(CAST(a.osmgnc AS DECIMAL(38,6)), 0) > 0
+                        THEN ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) - ISNULL(CAST(a.osmgnc AS DECIMAL(38,6)), 0)
+                        ELSE 0
+                    END AS ead,
+                    ISNULL(c.collateral_net, ISNULL(CAST(a.htgagun AS DECIMAL(38,6)), 0) * 0.95) AS collateral_net,
+                    ISNULL(CAST(a.ppap AS DECIMAL(38,6)), 0) AS ppap_system,
+                    CASE WHEN {$eligibleProductCondition} THEN 1 ELSE 0 END AS is_eligible,
+                    ROW_NUMBER() OVER (ORDER BY ISNULL(CAST(a.osmdlc AS DECIMAL(38,6)), 0) DESC) AS exposure_rank
+                FROM {$tableName} a
+                LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
+                LEFT JOIN collateral c ON a.nokontrak = c.nokontrak
+                LEFT JOIN CABANG cab ON a.kdloc = cab.kdloc
+                LEFT JOIN AO ao ON a.kdaoh = ao.kdao
+                WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+            )
+            SELECT TOP 25 *,
+                CASE WHEN ead - collateral_net > 0 THEN ead - collateral_net ELSE 0 END AS ckpn_model
+            FROM base
+            WHERE exposure_rank <= 25
+              AND colbaru IN ('2','3','4','5')
+              AND is_eligible = 1
+            ORDER BY exposure_rank
+        ", $bindingsWithCollateral);
+
+        $productRows = DB::connection($this->connection)->select("
+            SELECT
+                ISNULL(p.ket, 'Tanpa Produk') AS produk,
+                CASE WHEN {$eligibleProductCondition} THEN 'eligible' ELSE 'excluded' END AS ckpn_scope,
+                COUNT(*) AS noa,
+                SUM(CAST(a.osmdlc AS DECIMAL(38,6))) AS os_pokok,
+                SUM(CAST(a.ppap AS DECIMAL(38,6))) AS ppap_system
+            FROM {$tableName} a
+            LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
+            WHERE a.stsrec IN ('A', 'N') AND a.stsacc <> 'W' {$mainFilter}
+            GROUP BY p.ket, p.kdcol
+            ORDER BY ckpn_scope, os_pokok DESC
+        ", $mainBindings);
+
+        return [
+            'methodology' => [
+                'standard' => 'PSAK 414 / CKPN Best Practice — debt-type syariah financial assets',
+                'ead_formula' => 'EAD = Outstanding Pokok - Margin Ditangguhkan',
+                'individual_rule' => 'Rank 25 besar dan Kol 2-5',
+                'individual_formula' => 'max(EAD - Agunan Neto, 0)',
+                'collective_formula' => 'PD x LGD x EAD Kolektif',
+                'selling_cost_pct' => 5,
+                'eligible_products' => 'Murabahah, Qard/Qord, Piutang Multijasa/Hawalah, Istishna',
+                'excluded_products' => 'Mudharabah, Musyarakah/MMQ, Ijarah non-piutang',
+            ],
+            'parameters' => [
+                'pd_net_flow' => $pdNetFlow * 100,
+                'pd_migration' => $pdMigration * 100,
+                'selected_pd' => $selectedPd * 100,
+                'lgd_collateral_shortfall' => $lgdCollateralShortfall * 100,
+                'weighted_lgd' => $lgdCollateralShortfall * 100,
+                'transition_count' => (int) ($pd->transition_count ?? 0),
+                'observation_start' => $pd->observation_start ?? null,
+                'observation_end' => $pd->observation_end ?? null,
+            ],
+            'summary' => [
+                'eligible_noa' => (int) ($current->eligible_noa ?? 0),
+                'excluded_noa' => (int) ($current->excluded_noa ?? 0),
+                'individual_noa' => (int) ($current->individual_noa ?? 0),
+                'collective_noa' => (int) ($current->collective_noa ?? 0),
+                'eligible_os' => (float) ($current->eligible_os ?? 0),
+                'excluded_os' => (float) ($current->excluded_os ?? 0),
+                'eligible_ead' => (float) ($current->eligible_ead ?? 0),
+                'individual_ead' => (float) ($current->individual_ead ?? 0),
+                'collective_ead' => (float) ($current->collective_ead ?? 0),
+                'individual_ckpn' => (float) ($current->individual_ckpn ?? 0),
+                'collective_ckpn' => $collectiveCkpn,
+                'model_ckpn' => $modelCkpn,
+                'system_ppap' => $systemBaseline,
+                'total_ppap_system' => (float) ($current->total_ppap_system ?? 0),
+                'gap_vs_system' => $modelCkpn - $systemBaseline,
+                'coverage_model_to_ead' => (float) ($current->eligible_ead ?? 0) > 0 ? ($modelCkpn / (float) ($current->eligible_ead ?? 0)) * 100 : 0,
+                'system_coverage_to_ead' => (float) ($current->eligible_ead ?? 0) > 0 ? ($systemBaseline / (float) ($current->eligible_ead ?? 0)) * 100 : 0,
+                'eligible_collateral_net' => (float) ($current->eligible_collateral_net ?? 0),
+                'collateral_shortfall' => (float) ($current->collateral_shortfall ?? 0),
+            ],
+            'stage_breakdown' => $stageRows,
+            'individual_debtors' => $individualRows,
+            'product_scope' => $productRows,
+        ];
+    }
+
+    /**
+     * Rasio FDR berbasis komponen pembiayaan, DPK, modal inti, dan kewajiban bank lain:
+     * - FDR    = Total Pembiayaan / (DPK + Modal Inti + Kewajiban Bank Lain)
+     * - FDR v2 = Total Pembiayaan / DPK
+     *
+     * Mapping utama:
+     * - Total Pembiayaan: TOFLMB/TOFLMBEOM.osmdlc aktif.
+     * - DPK: Tabungan Wadiah + Tabungan Mudharabah + Deposito Mudharabah.
+     * - Kewajiban Bank Lain: KBL + KBL Tab Mudharabah + KBL Dep <= 3 Bulan + KBL Dep > 3 Bulan.
+     * - Modal Inti: modal dasar/cadangan + laba tahun lalu + laba berjalan yang diperhitungkan - AYDA.
+     *
+     * @return array{fdr: float, fdr_v2: float, components: array<string, float>}
+     */
+    private function getTksFdrMetrics(string $tableName, ?string $periode): array
+    {
+        $periodeFilter = '';
+        $bindings = [];
+
+        if ($periode !== null) {
+            $periodeFilter = ' AND periode = ?';
+            $bindings[] = $periode;
+        }
+
+        $rows = DB::connection($this->connection)->select("
+            WITH pembiayaan AS (
+                SELECT SUM(CAST(osmdlc AS DECIMAL(38,6))) AS total_pembiayaan
+                FROM {$tableName}
+                WHERE stsrec IN ('A', 'N') AND stsacc <> 'W' {$periodeFilter}
+            ),
+            gl AS (
+                SELECT
+                    SUM(CASE
+                        WHEN nobb IN ('5012200000', '5012310000')
+                        THEN CAST(sahirrp AS DECIMAL(38,6)) ELSE 0
+                    END) AS tabungan,
+                    SUM(CASE
+                        WHEN nobb = '5012320000'
+                        THEN CAST(sahirrp AS DECIMAL(38,6)) ELSE 0
+                    END) AS deposito,
+                    SUM(CASE
+                        WHEN nobb IN ('5012500000', '5012510000', '5012521000', '5012522000')
+                        THEN CAST(sahirrp AS DECIMAL(38,6)) ELSE 0
+                    END) AS kewajiban_bank_lain,
+                    SUM(CASE
+                        WHEN nosbb IN ('5013100001', '5013100002', '5013100003', '5013100005', '5013100006', '5013300001', '5013300002')
+                        THEN CAST(sahirrp AS DECIMAL(38,6)) ELSE 0
+                    END) AS modal_dasar_dan_cadangan,
+                    SUM(CASE
+                        WHEN nobb = '5013510000'
+                        THEN CAST(sahirrp AS DECIMAL(38,6)) ELSE 0
+                    END) AS laba_tahun_lalu,
+                    SUM(CASE
+                        WHEN nobb = '5013520000'
+                        THEN CAST(sahirrp AS DECIMAL(38,6)) ELSE 0
+                    END) AS laba_tahun_berjalan,
+                    SUM(CASE
+                        WHEN nmsbb LIKE '%AYDA%'
+                        THEN CAST(sahirrp AS DECIMAL(38,6)) ELSE 0
+                    END) AS ayda_pengurang
+                FROM MGL
+            ),
+            components AS (
+                SELECT
+                    p.total_pembiayaan,
+                    g.tabungan,
+                    g.deposito,
+                    (g.tabungan + g.deposito) AS dpk,
+                    g.kewajiban_bank_lain,
+                    g.ayda_pengurang,
+                    (
+                        g.modal_dasar_dan_cadangan
+                        + g.laba_tahun_lalu
+                        + CASE
+                            WHEN g.laba_tahun_berjalan > 0 THEN g.laba_tahun_berjalan * 0.5
+                            ELSE g.laba_tahun_berjalan
+                          END
+                        - g.ayda_pengurang
+                    ) AS modal_inti
+                FROM pembiayaan p CROSS JOIN gl g
+            )
+            SELECT
+                total_pembiayaan,
+                tabungan,
+                deposito,
+                dpk,
+                kewajiban_bank_lain,
+                ayda_pengurang,
+                modal_inti,
+                CASE
+                    WHEN (dpk + modal_inti + kewajiban_bank_lain) <> 0
+                    THEN total_pembiayaan / NULLIF(dpk + modal_inti + kewajiban_bank_lain, 0) * 100
+                    ELSE 0
+                END AS fdr,
+                CASE
+                    WHEN dpk <> 0 THEN total_pembiayaan / NULLIF(dpk, 0) * 100
+                    ELSE 0
+                END AS fdr_v2
+            FROM components
+        ", $bindings);
+
+        $row = $rows[0] ?? null;
+
+        return [
+            'fdr' => (float) ($row->fdr ?? 0),
+            'fdr_v2' => (float) ($row->fdr_v2 ?? 0),
+            'components' => [
+                'total_pembiayaan' => (float) ($row->total_pembiayaan ?? 0),
+                'tabungan' => (float) ($row->tabungan ?? 0),
+                'deposito' => (float) ($row->deposito ?? 0),
+                'dpk' => (float) ($row->dpk ?? 0),
+                'kewajiban_bank_lain' => (float) ($row->kewajiban_bank_lain ?? 0),
+                'ayda_pengurang' => (float) ($row->ayda_pengurang ?? 0),
+                'modal_inti' => (float) ($row->modal_inti ?? 0),
+            ],
+        ];
+    }
+
     /**
      * Dapatkan daftar pembiayaan yang sudah atau akan jatuh tempo (bulan ini / lewat).
      */

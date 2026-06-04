@@ -20,7 +20,7 @@ const currentPath = computed(() => {
 const navItems = [
   { title: 'Dashboard', subtitle: 'Executive Overview', icon: 'ri-dashboard-2-line', href: '/' },
 
-  // ========== PEMBIAYAAN (18 halaman, 8 grup) ==========
+  // ========== PEMBIAYAAN (17 halaman, 8 grup) ==========
   { 
     title: 'Pembiayaan', 
     subtitle: 'Financing Module', 
@@ -65,8 +65,7 @@ const navItems = [
 
       // G8: PERFORMANCE
       { type: 'subheader', title: 'PERFORMANCE' },
-      { title: 'Repayment Rate', icon: 'ri-speed-line', href: '/financing/repayment-rate' },
-      { title: 'Repayment (Baru)', icon: 'ri-speed-up-line', href: '/financing/repayment-rate-new' },
+      { title: 'Repayment Rate', icon: 'ri-speed-up-line', href: '/financing/repayment-rate-new' },
     ]
   },
 

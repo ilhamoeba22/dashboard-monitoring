@@ -31,6 +31,8 @@ class FinancingController extends Controller
                 'ao' => $request->query('ao'),
                 'kol' => $request->query('kol'),
                 'type' => $request->query('type'),
+                'tahun' => $request->query('tahun'),
+                'bulan' => $request->query('bulan'),
             ];
 
             $perPage = (int) $request->query('per_page', '50');
@@ -47,11 +49,18 @@ class FinancingController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $data, // Berisi links & meta bawaan CursorPaginator
+                'period_meta' => $this->repository->getLastNominativePeriodMeta(),
             ]);
         } catch (\Throwable $e) {
+            \Log::error('FinancingController::nominative error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memuat data nominatif pembiayaan',
+                'debug' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ], 500);
         }
     }
@@ -188,6 +197,8 @@ class FinancingController extends Controller
         try {
             $groupBy = (string) $request->query('group_by', 'cabang');
             $cabang  = (string) $request->query('cabang', '');
+            $tahun   = (int) $request->query('tahun', 0);
+            $bulan   = (int) $request->query('bulan', 0);
 
             $validGroups = ['cabang', 'wilayah', 'ao', 'produk', 'segmen', 'sekon'];
             if (! in_array($groupBy, $validGroups, true)) {
@@ -198,7 +209,7 @@ class FinancingController extends Controller
                 ], 422);
             }
 
-            $result = $this->repository->getRekapMaster($groupBy, $cabang);
+            $result = $this->repository->getRekapMaster($groupBy, $cabang, $tahun, $bulan);
 
             return response()->json([
                 'success' => true,

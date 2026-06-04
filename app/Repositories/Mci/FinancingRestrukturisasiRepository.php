@@ -6,6 +6,7 @@ namespace App\Repositories\Mci;
 
 use App\Repositories\Interfaces\FinancingRestrukturisasiRepositoryInterface;
 use App\Services\Mci\MciBaseRepository;
+use App\Services\Mci\MciConnectionService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -19,9 +20,17 @@ use Illuminate\Support\Facades\DB;
  */
 class FinancingRestrukturisasiRepository extends MciBaseRepository implements FinancingRestrukturisasiRepositoryInterface
 {
+    /** @var array<string, mixed> */
+    private array $lastPeriodMeta = [];
+
     protected function getTableName(): string
     {
         return 'TOFLMBHP';
+    }
+
+    public function getLastPeriodMeta(): array
+    {
+        return $this->lastPeriodMeta;
     }
 
     // =========================================================================
@@ -39,10 +48,16 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
     {
         $start  = microtime(true);
         $memory = memory_get_usage(true);
+        $periodContext = $this->resolvePeriodContext($filters);
+        $periode = (string) $periodContext['requested_period'];
 
-        $cacheKey = 'financing:restrukturisasi:list:' . md5(serialize($filters));
+        $cacheKey = 'financing:restrukturisasi:list:' . md5(serialize($filters).json_encode($periodContext));
 
-        $result = $this->remember($cacheKey, function () use ($filters): array {
+        if (! $periodContext['period_available']) {
+            return collect([]);
+        }
+
+        $result = $this->remember($cacheKey, function () use ($filters, $periode): array {
             $query = DB::connection($this->connection)
                 ->table('TOFLMBHP as a')
                 ->leftJoin('TOFLMB as b', 'a.nokontrak', '=', 'b.nokontrak')
@@ -54,6 +69,11 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
                     'b.nocif',
                     DB::raw('LTRIM(RTRIM(a.nokontrak)) as nokontrak'),
                     'a.ke',
+                    DB::raw("ISNULL((
+                        SELECT MAX(CASE WHEN ISNUMERIC(ISNULL(hp.ke, 0)) = 1 THEN CAST(hp.ke AS INT) ELSE 0 END)
+                        FROM TOFLMBHP hp
+                        WHERE LTRIM(RTRIM(hp.nokontrak)) = LTRIM(RTRIM(a.nokontrak))
+                    ), 0) as total_restrukturisasi"),
                     DB::raw('LTRIM(RTRIM(b.nama)) as nama'),
                     
                     DB::raw("CASE WHEN ISDATE(NULLIF(LTRIM(RTRIM(a.tglakado)),'')) = 1 THEN CONVERT(VARCHAR(10), CONVERT(DATE, LTRIM(RTRIM(a.tglakado)), 112), 105) ELSE '-' END as tglakad_lama"),
@@ -94,6 +114,11 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
                 ->where('b.stsrec', 'A')
                 ->where('b.stsacc', '<>', 'W');
 
+            $query->where(function ($q) use ($periode) {
+                $q->whereRaw("LEFT(LTRIM(RTRIM(ISNULL(a.tglakadn, ''))), 6) = ?", [$periode])
+                    ->orWhereRaw("LEFT(LTRIM(RTRIM(ISNULL(a.inptgl, ''))), 6) = ?", [$periode]);
+            });
+
             if (!empty($filters['cabang'])) {
                 $query->where(DB::raw('LTRIM(RTRIM(f.ket))'), 'LIKE', '%' . $filters['cabang'] . '%');
             }
@@ -109,6 +134,7 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
                     'nocif'           => trim((string) ($row->nocif ?? '')),
                     'nokontrak'       => trim((string) ($row->nokontrak ?? '')),
                     'ke'              => (int) ($row->ke ?? 0),
+                    'total_restrukturisasi' => (int) ($row->total_restrukturisasi ?? $row->ke ?? 0),
                     'nama'            => (string) ($row->nama ?? ''),
                     'tglakad_lama'    => (string) ($row->tglakad_lama ?? '-'),
                     'jw_lama'         => (int) ($row->jw_lama ?? 0),
@@ -173,6 +199,53 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
             'kol_memburuk'    => $memburuk,
             'kol_tetap'       => $tetap,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    private function resolvePeriodContext(array $filters): array
+    {
+        $active = $this->getCurrentPeriodInternal();
+        $reqTahun = isset($filters['tahun']) && (int) $filters['tahun'] > 0 ? (int) $filters['tahun'] : (int) $active['year'];
+        $reqBulan = isset($filters['bulan']) && (int) $filters['bulan'] > 0 ? max(1, min(12, (int) $filters['bulan'])) : (int) $active['month'];
+        $periode = sprintf('%04d%02d', $reqTahun, $reqBulan);
+        $isHistorical = ($reqTahun !== (int) $active['year'] || $reqBulan !== (int) $active['month']);
+        $snapshotDb = $isHistorical ? $this->resolveMonthlySnapshotDatabase($reqTahun, $reqBulan) : null;
+        $periodAvailable = true;
+
+        if ($snapshotDb !== null) {
+            app(MciConnectionService::class)->switchToDatabase($snapshotDb);
+        } elseif ($isHistorical) {
+            $periodAvailable = false;
+        }
+
+        $sourceDb = $snapshotDb
+            ?: DB::connection($this->connection)->selectOne('SELECT DB_NAME() as database_name')->database_name ?? null;
+
+        $this->lastPeriodMeta = [
+            'requested_period' => $periode,
+            'active_period' => (string) $active['period'],
+            'is_historical' => $isHistorical,
+            'period_available' => $periodAvailable,
+            'source_table' => 'TOFLMBHP',
+            'source_database' => $sourceDb,
+            'message' => $periodAvailable
+                ? null
+                : "Database snapshot untuk periode {$periode} belum dikonfigurasi.",
+        ];
+
+        return $this->lastPeriodMeta;
+    }
+
+    private function resolveMonthlySnapshotDatabase(int $year, int $month): ?string
+    {
+        $monthPrefixes = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGT', 'SEP', 'OKT', 'NOV', 'DES'];
+        $yearSuffix = substr((string) $year, -2);
+        $database = env('MCI_DB_'.$monthPrefixes[$month - 1].$yearSuffix);
+
+        return is_string($database) && $database !== '' ? $database : null;
     }
 
 

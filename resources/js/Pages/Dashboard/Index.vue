@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { Head } from '@inertiajs/vue3'
 import DefaultLayout from '@/layouts/default.vue'
 import '@/assets/css/financing-shared.css'
-import { formatExactNumber, formatExactRupiah } from '@/utils/money'
+import { formatExactNumber, formatExactRupiah, formatBanking6, formatTruncatedPercentage } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -15,15 +15,17 @@ const all = ref(null)
 async function load() {
   loading.value = true
   error.value = null
-
   try {
-    const response = await fetch('/api/v1/dashboard/metrics')
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-
-    const payload = await response.json()
-    all.value = payload.data
-  } catch (exception) {
-    error.value = exception.message
+    const res = await fetch('/api/v1/dashboard/metrics')
+    const json = await res.json()
+    if (json.success) {
+      all.value = json.data
+    } else {
+      error.value = json.message
+    }
+  } catch (err) {
+    console.error('Failed to load dashboard metrics:', err)
+    error.value = 'Koneksi ke server terputus'
   } finally {
     loading.value = false
   }
@@ -42,9 +44,9 @@ const periodeLabel = computed(() => {
   return `${months[periode.month] ?? '-'} ${periode.year ?? ''}`
 })
 
-const fmt = (value) => formatExactRupiah(value, '—')
-const num = (value) => formatExactNumber(value, '—')
-const pct = (value) => value !== null && value !== undefined ? `${Number(value).toFixed(2)}%` : '—'
+const fmt = (n) => formatBanking6(n) // Gunakan aturan 6 digit (skala jutaan) tanpa pembulatan
+const num = (n) => formatExactNumber(n, '—')
+const pct = (value) => value !== null && value !== undefined ? formatTruncatedPercentage(value) : '—'
 
 const growthColor = (growth) => {
   if (!growth) return 'medium-emphasis'
@@ -62,30 +64,28 @@ const growthIcon = (growth) => {
 
 const managementCards = computed(() => [
   { label: 'NPF Ratio', value: f.value.total_os > 0 ? pct((f.value.total_npf / f.value.total_os) * 100) : '—', icon: 'ri-error-warning-line', variant: 'danger', hint: 'Target ≤ 5%' },
-  { label: 'Outstanding OS', value: fmt(f.value.total_os), icon: 'ri-bank-line', variant: 'info', hint: 'Total pembiayaan aktif' },
-  { label: 'Outstanding NPF', value: fmt(f.value.total_npf), icon: 'ri-shield-check-line', variant: 'warning', hint: 'Pembiayaan bermasalah' },
-  { label: 'Saldo Tabungan', value: fmt(s.value.total_saldo), icon: 'ri-piggy-bank-line', variant: 'success', hint: 'Dana tabungan' },
-  { label: 'Saldo Deposito', value: fmt(d.value.total_saldo), icon: 'ri-safe-2-line', variant: 'purple', hint: 'Dana deposito' },
-  { label: 'Bagi Hasil', value: fmt(d.value.total_baghas), icon: 'ri-money-dollar-circle-line', variant: 'info', hint: 'Bagi hasil deposito' },
+  { label: 'Outstanding OS (Jt)', value: fmt(f.value.total_os), icon: 'ri-bank-line', variant: 'info', hint: 'Total pembiayaan aktif' },
+  { label: 'Outstanding NPF (Jt)', value: fmt(f.value.total_npf), icon: 'ri-shield-check-line', variant: 'warning', hint: 'Pembiayaan bermasalah' },
+  { label: 'Saldo Tabungan (Jt)', value: fmt(s.value.total_saldo), icon: 'ri-piggy-bank-line', variant: 'success', hint: 'Dana tabungan' },
+  { label: 'Saldo Deposito (Jt)', value: fmt(d.value.total_saldo), icon: 'ri-safe-2-line', variant: 'purple', hint: 'Dana deposito' },
+  { label: 'Bagi Hasil (Jt)', value: fmt(d.value.total_baghas), icon: 'ri-money-dollar-circle-line', variant: 'info', hint: 'Bagi hasil deposito' },
 ])
 
 const financingCards = computed(() => [
-  { label: 'Outstanding Pembiayaan', value: fmt(f.value.total_os), growth: f.value.growth, icon: 'ri-bank-line', variant: 'info', hint: 'Total O/S aktif' },
-  { label: 'Outstanding NPF', value: fmt(f.value.total_npf), growth: f.value.npf_growth, icon: 'ri-error-warning-line', variant: 'warning', hint: 'Nominal bermasalah' },
+  { label: 'Outstanding Pembiayaan (Jt)', value: fmt(f.value.total_os), growth: f.value.growth, icon: 'ri-bank-line', variant: 'info', hint: 'Total O/S aktif' },
+  { label: 'Outstanding NPF (Jt)', value: fmt(f.value.total_npf), growth: f.value.npf_growth, icon: 'ri-error-warning-line', variant: 'warning', hint: 'Nominal bermasalah' },
   { label: 'NPF Ratio', value: f.value.total_os > 0 ? pct((f.value.total_npf / f.value.total_os) * 100) : '—', icon: 'ri-percent-line', variant: 'danger', hint: 'Rasio kualitas aset' },
   { label: 'Rekening Aktif', value: num(f.value.total_noa), growth: f.value.noa_growth, icon: 'ri-file-list-3-line', variant: 'purple', hint: 'Total NOA' },
-  { label: 'Marketing Aktif', value: num(f.value.total_ao), growth: f.value.ao_growth, icon: 'ri-user-star-line', variant: 'success', hint: 'AO aktif' },
 ])
 
 const savingCards = computed(() => [
-  { label: 'Total Saldo Tabungan', value: fmt(s.value.total_saldo), growth: s.value.growth, icon: 'ri-money-dollar-circle-line', variant: 'info', hint: 'Saldo tabungan' },
+  { label: 'Total Saldo Tabungan (Jt)', value: fmt(s.value.total_saldo), growth: s.value.growth, icon: 'ri-money-dollar-circle-line', variant: 'info', hint: 'Saldo tabungan' },
   { label: 'Total NOA Tabungan', value: num(s.value.total_noa), growth: s.value.noa_growth, icon: 'ri-file-list-3-line', variant: 'purple', hint: 'Rekening aktif' },
-  { label: 'Total AO Aktif', value: num(s.value.total_ao), growth: s.value.ao_growth, icon: 'ri-user-star-line', variant: 'warning', hint: 'Marketing aktif' },
 ])
 
 const depositCards = computed(() => [
-  { label: 'Total Saldo Deposito', value: fmt(d.value.total_saldo), growth: d.value.growth, icon: 'ri-safe-2-line', variant: 'info', hint: 'Saldo deposito' },
-  { label: 'Total Bagi Hasil', value: fmt(d.value.total_baghas), growth: d.value.baghas_growth, icon: 'ri-money-dollar-circle-line', variant: 'warning', hint: 'Nominal bagi hasil' },
+  { label: 'Total Saldo Deposito (Jt)', value: fmt(d.value.total_saldo), growth: d.value.growth, icon: 'ri-safe-2-line', variant: 'info', hint: 'Saldo deposito' },
+  { label: 'Total Bagi Hasil (Jt)', value: fmt(d.value.total_baghas), growth: d.value.baghas_growth, icon: 'ri-money-dollar-circle-line', variant: 'warning', hint: 'Nominal bagi hasil' },
   { label: 'Total NOA', value: `${num(d.value.total_noa)} Rekening`, growth: d.value.noa_growth, icon: 'ri-file-list-3-line', variant: 'purple', hint: 'Rekening deposito' },
 ])
 
@@ -128,7 +128,7 @@ const chartPlaceholders = {
               <h1 class="fin-hero__title">Executive Dashboard</h1>
               <p class="fin-hero__subtitle">Ringkasan performa bank: pembiayaan, tabungan, deposito, dan rasio kesehatan utama.</p>
               <div class="fin-hero__badges">
-                <span class="fin-badge fin-badge--primary">Periode {{ periodeLabel }}</span>
+                <span class="fin-badge fin-badge--teal">Periode {{ periodeLabel }}</span>
                 <span class="fin-badge fin-badge--success">BPRS HIK MCI</span>
                 <span class="fin-badge" :class="error ? 'fin-badge--danger' : 'fin-badge--info'">
                   {{ error ? 'Offline' : 'Data Aktif' }}
@@ -195,7 +195,7 @@ const chartPlaceholders = {
                     </div>
                   </div>
                   <div v-if="loading" class="bg-surface-variant rounded" style="height: 30px; width: 75%;"></div>
-                  <div v-else class="kpi-card__value">{{ card.value }}</div>
+                  <div v-else class="kpi-card__value" :class="card.value.length > 15 ? 'text-h5' : ''">{{ card.value }}</div>
                   <div class="kpi-card__sub">{{ card.hint }}</div>
                 </div>
               </div>
@@ -216,7 +216,7 @@ const chartPlaceholders = {
                     </div>
                   </div>
                   <div v-if="loading" class="bg-surface-variant rounded" style="height: 30px; width: 75%;"></div>
-                  <div v-else class="kpi-card__value">{{ card.value }}</div>
+                  <div v-else class="kpi-card__value" :class="card.value.length > 15 ? 'text-h5' : ''">{{ card.value }}</div>
                   <div v-if="card.growth" class="kpi-card__status-pill" :class="`text-${growthColor(card.growth)}`">
                     <v-icon :icon="growthIcon(card.growth)" size="14" />
                     {{ card.growth.value }} MoM
@@ -234,7 +234,7 @@ const chartPlaceholders = {
                   <div class="pa-4 border-b border-slate-100">
                     <div class="content-card__title">{{ chart.title }}</div>
                   </div>
-                  <div class="content-card__body d-flexbody d-flex align-center justify-center" style="height: 220px;">
+                  <div class="content-card__body d-flex align-center justify-center" style="height: 220px;">
                     <div class="text-center text-medium-emphasis">
                       <v-icon :icon="chart.icon" size="44" />
                       <div class="text-caption mt-2">{{ chart.text }}</div>
@@ -248,18 +248,18 @@ const chartPlaceholders = {
 
         <v-window-item value="tabungan">
           <div class="content-card__body pa-5">
-            <div class="kpi-cards-grid">
+            <div class="kpi-cards-grid grid-2">
               <div v-for="card in savingCards" :key="card.label" :class="['kpi-card', `kpi-card--${card.variant}`]">
-                <div class="kpi-card__accent" :style="`background: var(--fin-${card.variant === 'success' ? 'success' : card.variant === 'warning' ? 'warning' : card.variant === 'purple' ? 'purple' : 'info'});`"></div>
+                <div class="kpi-card__accent" :style="`background: var(--fin-${card.variant});`"></div>
                 <div class="kpi-card__inner">
                   <div class="kpi-card__header">
                     <div class="kpi-card__label">{{ card.label }}</div>
-                    <div :class="['kpi-card__icon', `fin-icon-${card.variant === 'success' ? 'green' : card.variant === 'warning' ? 'amber' : 'blue'}`]">
+                    <div :class="['kpi-card__icon', `fin-icon-${card.variant === 'success' ? 'green' : 'blue'}`]">
                       <v-icon :icon="card.icon" />
                     </div>
                   </div>
                   <div v-if="loading" class="bg-surface-variant rounded" style="height: 30px; width: 75%;"></div>
-                  <div v-else class="kpi-card__value">{{ card.value }}</div>
+                  <div v-else class="kpi-card__value" :class="card.value.length > 15 ? 'text-h5' : ''">{{ card.value }}</div>
                   <div v-if="card.growth" class="kpi-card__status-pill" :class="`text-${growthColor(card.growth)}`">
                     <v-icon :icon="growthIcon(card.growth)" size="14" />
                     {{ card.growth.value }} MoM
@@ -268,30 +268,12 @@ const chartPlaceholders = {
                 </div>
               </div>
             </div>
-
-            <v-divider class="mb-6"></v-divider>
-
-            <v-row>
-              <v-col v-for="(chart, index) in chartPlaceholders.tabungan" :key="chart.title" cols="12" :md="index === 1 || index === 3 ? 9 : 3">
-                <div class="content-card h-100">
-                  <div class="pa-4 border-b border-slate-100">
-                    <div class="content-card__title">{{ chart.title }}</div>
-                  </div>
-                  <div class="content-card__body d-flex align-center justify-center" style="height: 220px;">
-                    <div class="text-center text-medium-emphasis">
-                      <v-icon :icon="chart.icon" size="44" />
-                      <div class="text-caption mt-2">{{ chart.text }}</div>
-                    </div>
-                  </div>
-                </div>
-              </v-col>
-            </v-row>
           </div>
         </v-window-item>
 
         <v-window-item value="deposito">
           <div class="content-card__body pa-5">
-            <div class="kpi-cards-grid">
+            <div class="kpi-cards-grid grid-3">
               <div v-for="card in depositCards" :key="card.label" :class="['kpi-card', `kpi-card--${card.variant}`]">
                 <div class="kpi-card__accent" :style="`background: var(--fin-${card.variant === 'success' ? 'success' : card.variant === 'warning' ? 'warning' : card.variant === 'purple' ? 'purple' : 'info'});`"></div>
                 <div class="kpi-card__inner">
@@ -302,7 +284,7 @@ const chartPlaceholders = {
                     </div>
                   </div>
                   <div v-if="loading" class="bg-surface-variant rounded" style="height: 30px; width: 75%;"></div>
-                  <div v-else class="kpi-card__value">{{ card.value }}</div>
+                  <div v-else class="kpi-card__value text-truncate" :class="card.value.length > 15 ? 'text-h5' : ''">{{ card.value }}</div>
                   <div v-if="card.growth" class="kpi-card__status-pill" :class="`text-${growthColor(card.growth)}`">
                     <v-icon :icon="growthIcon(card.growth)" size="14" />
                     {{ card.growth.value }} MoM
@@ -311,29 +293,21 @@ const chartPlaceholders = {
                 </div>
               </div>
             </div>
-
-            <v-divider class="mb-6"></v-divider>
-
-            <v-row>
-              <v-col v-for="(chart, index) in chartPlaceholders.deposito" :key="chart.title" cols="12" :md="index === 1 || index === 3 ? 9 : 3">
-                <div class="content-card h-100">
-                  <div class="pa-4 border-b border-slate-100">
-                    <div class="content-card__title">{{ chart.title }}</div>
-                  </div>
-                  <div class="content-card__body d-flex align-center justify-center" style="height: 220px;">
-                    <div class="text-center text-medium-emphasis">
-                      <v-icon :icon="chart.icon" size="44" />
-                      <div class="text-caption mt-2">{{ chart.text }}</div>
-                    </div>
-                  </div>
-                </div>
-              </v-col>
-            </v-row>
           </div>
         </v-window-item>
       </v-window>
     </div>
   </div>
 </template>
-/template>
-late>
+
+<style scoped>
+.fin-page { background: #f8fafc; min-height: 100vh; }
+.grid-2 { grid-template-columns: repeat(2, 1fr) !important; }
+.grid-3 { grid-template-columns: repeat(3, 1fr) !important; }
+.text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kpi-card__value {
+    word-break: break-all;
+    line-height: 1.1;
+    margin-top: 4px;
+}
+</style>

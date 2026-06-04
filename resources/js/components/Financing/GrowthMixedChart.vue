@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { formatExactRupiah, formatTruncatedPercentage, formatScale } from '@/utils/money'
 
 const props = defineProps({
   data: {
@@ -35,12 +36,6 @@ const chartSeriesData = computed(() => {
   })
 
   // 2. Calculate MoM/YoY Growth for the Total Line
-  const growth = []
-  props.data.forEach(item => {
-    // Note: We use average growth across categories or recalculate based on total?
-    // Enterprise Standard: Recalculate based on TOTAL sum to get the accurate portfolio growth %
-  })
-
   const totalGrowth = []
   props.periods.forEach((p, idx) => {
     // To get accurate Total Growth %, we need the total yoy_base sum
@@ -60,7 +55,7 @@ const chartSeriesData = computed(() => {
 
   return {
     labels: labels,
-    nominals: nominals.map(v => v / 1e9), // Convert to Miliar
+    nominals: nominals,
     growth: totalGrowth
   }
 })
@@ -123,11 +118,11 @@ const chartOptions = computed(() => ({
   yaxis: [
     {
       title: {
-        text: 'Total O/S (Miliar)',
+        text: 'Total O/S',
         style: { color: '#10B981', fontWeight: 600 }
       },
       labels: {
-        formatter: (val) => `Rp ${val.toFixed(0)}M`,
+        formatter: (val) => formatScale(val, 1e9, ' M'),
         style: { colors: '#94a3b8' }
       }
     },
@@ -138,7 +133,7 @@ const chartOptions = computed(() => ({
         style: { color: '#F59E0B', fontWeight: 600 }
       },
       labels: {
-        formatter: (val) => `${val}%`,
+        formatter: (val) => formatTruncatedPercentage(val),
         style: { colors: '#94a3b8' }
       }
     }
@@ -150,7 +145,7 @@ const chartOptions = computed(() => ({
     y: {
       formatter: function (y, { seriesIndex }) {
         if (typeof y !== "undefined") {
-          return seriesIndex === 0 ? `Rp ${y.toFixed(2)} Miliar` : `${y}% Growth`
+          return seriesIndex === 0 ? formatExactRupiah(y) : formatTruncatedPercentage(y)
         }
         return y
       }

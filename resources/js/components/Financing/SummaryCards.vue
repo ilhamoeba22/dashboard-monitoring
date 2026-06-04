@@ -1,45 +1,23 @@
 <script setup>
 /**
- * SummaryCards - Premium Dashboard Metric Cards
- * 
- * Desain: Materio Vuetify Style
- * - Emerald Green (#059669) untuk primary metrics
- * - Gold (#D97706) untuk accent/positive trends
- * - Clean typography dengan Plus Jakarta Sans headings
- * - Subtle elevation dan rounded corners
+ * SummaryCards Component - STRICT BANKING VERSION
+ * Displays main metrics without any rounding or abbreviations in the final value.
+ * Layout uses responsive typography to handle long unrounded strings.
  */
 
 import { computed } from 'vue'
-import { formatExactRupiah, formatExactNumber } from '@/utils/money'
+import { formatExactRupiah, formatExactNumber, formatTruncatedPercentage } from '@/utils/money'
 
 const props = defineProps({
   data: {
     type: Object,
-    required: true
+    required: true,
+    default: () => ({ summary: {} })
   }
 })
 
-// Theme Colors (Emerald Green + Gold)
-const themeColors = {
-  primary: '#059669',     // Emerald Green
-  secondary: '#D97706',   // Gold
-  success: '#10B981',
-  error: '#EF4444',
-  warning: '#F59E0B'
-}
-
-// Cards configuration
+// Configuration for cards
 const cards = computed(() => [
-  {
-    id: 'noa',
-    title: 'Total Rekening',
-    value: props.data?.summary?.total_noa ?? 0,
-    format: 'number',
-    subtitle: 'Akad pembiayaan aktif',
-    icon: 'ri-file-list-3-line',
-    color: 'primary',
-    trend: null
-  },
   {
     id: 'os',
     title: 'Total Outstanding',
@@ -47,28 +25,34 @@ const cards = computed(() => [
     format: 'currency',
     subtitle: 'Portofolio pembiayaan',
     icon: 'ri-money-dollar-circle-line',
-    color: 'success',
-    trend: null
+    color: 'success'
+  },
+  {
+    id: 'noa',
+    title: 'Jumlah Nasabah (NOA)',
+    value: props.data?.summary?.total_noa ?? 0,
+    format: 'number',
+    subtitle: 'Rekening aktif berjalan',
+    icon: 'ri-group-line',
+    color: 'primary'
   },
   {
     id: 'npf',
-    title: 'NPF Ratio',
-    value: props.data?.summary?.npf_persen ?? 0,
-    format: 'percent',
-    subtitle: `${props.data?.summary?.npf_noa ?? 0} rekening bermasalah`,
-    icon: 'ri-alert-line',
-    color: 'error',
-    isNegative: true // Lower is better
+    title: 'Outstanding NPF',
+    value: props.data?.summary?.total_npf ?? 0,
+    format: 'currency',
+    subtitle: `${props.data?.summary?.npf_noa ?? 0} rekening macet`,
+    icon: 'ri-error-warning-line',
+    color: 'error'
   },
   {
-    id: 'kolek',
-    title: 'Avg Kolektibilitas',
-    value: props.data?.summary?.avg_kolek ?? 0,
-    format: 'decimal',
-    subtitle: 'Kolektibilitas rata-rata',
-    icon: 'ri-bar-chart-box-line',
-    color: 'warning',
-    isNegative: true
+    id: 'npf_ratio',
+    title: 'Rasio NPF',
+    value: props.data?.summary?.npf_persen ?? 0,
+    format: 'percent',
+    subtitle: 'Kualitas aset makro',
+    icon: 'ri-percent-line',
+    color: 'warning'
   }
 ])
 
@@ -78,24 +62,16 @@ function formatValue(value, format) {
   
   switch (format) {
     case 'number':
-      return parseInt(value).toLocaleString('id-ID')
+      return formatExactNumber(value, '—')
     case 'currency':
-      const num = parseFloat(value)
-      if (Math.abs(num) >= 1e9) return `${(num / 1e9).toFixed(2)} M`
-      if (Math.abs(num) >= 1e6) return `${(num / 1e6).toFixed(1)} Jt`
-      return num.toLocaleString('id-ID')
+      return formatExactRupiah(value, '—')
     case 'percent':
-      return `${parseFloat(value).toFixed(2)}%`
+      return formatTruncatedPercentage(value)
     case 'decimal':
-      return parseFloat(value).toFixed(2)
+      return `${value}`
     default:
       return value
   }
-}
-
-// Get currency prefix
-function getCurrencyPrefix(format) {
-  return format === 'currency' ? 'Rp ' : ''
 }
 
 // Get color class based on card config
@@ -108,13 +84,10 @@ function getCardColor(card) {
   }
   return colorMap[card.color] || 'primary'
 }
-
-// Get icon size
-const iconSize = '22px'
 </script>
 
 <template>
-  <v-row class="mb-2">
+  <v-row class="summary-cards">
     <v-col
       v-for="card in cards"
       :key="card.id"
@@ -124,92 +97,58 @@ const iconSize = '22px'
     >
       <v-card
         elevation="0"
-        :style="{
-          border: '1px solid rgba(var(--v-border-color), 0.08)',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          position: 'relative'
-        }"
-        class="h-100 transition-swing"
+        border
+        class="content-card h-100"
+        :class="`content-card--${getCardColor(card)}`"
       >
-        <!-- Background accent stripe -->
-        <div
-          :style="{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '4px',
-            background: `linear-gradient(90deg, rgb(var(--v-theme-${card.color})) 0%, transparent 100%)`
-          }"
-        />
+        <div class="content-card__accent-top" :class="`bg-${card.color}`"></div>
         
-        <v-card-text class="pa-5">
-          <div class="d-flex align-start justify-space-between">
-            <!-- Content -->
-            <div class="flex-grow-1 pe-4">
-              <!-- Label -->
-              <p 
-                class="text-body-2 text-medium-emphasis mb-2 font-weight-medium"
-                style="font-size: 12px; letter-spacing: 0.5px; text-transform: uppercase;"
-              >
-                {{ card.title }}
-              </p>
-              
-              <!-- Value -->
-              <h2 
-                class="text-h4 font-weight-bold mb-2"
-                :style="{ 
-                  color: `rgb(var(--v-theme-${card.color}))`,
-                  fontFamily: 'Plus Jakarta Sans, sans-serif',
-                  lineHeight: 1.2
-                }"
-              >
-                {{ getCurrencyPrefix(card.format) }}{{ formatValue(card.value, card.format) }}
-              </h2>
-              
-              <!-- Subtitle -->
-              <p class="text-caption text-medium-emphasis mb-0">
-                {{ card.subtitle }}
-              </p>
-            </div>
-            
-            <!-- Icon Container -->
-            <div
-              :style="{
-                width: '52px',
-                height: '52px',
-                borderRadius: '12px',
-                background: `rgba(var(--v-theme-${card.color}), 0.12)`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }"
+        <div class="content-card__header pb-2">
+          <div>
+            <div class="content-card__title">{{ card.title }}</div>
+            <div class="content-card__subtitle">{{ card.subtitle }}</div>
+          </div>
+          <div class="content-card__icon" :class="`fin-icon-${card.color === 'success' ? 'green' : card.color === 'error' ? 'red' : card.color === 'warning' ? 'amber' : 'blue'}`">
+            <v-icon :icon="card.icon" size="24" />
+          </div>
+        </div>
+
+        <div class="content-card__body pt-0">
+          <div class="d-flex align-end">
+            <!-- font-size dynamic based on string length to avoid overflow -->
+            <div 
+              class="font-weight-black text-slate-800 tracking-tight"
+              :class="formatValue(card.value, card.format).length > 15 ? 'text-h5' : 'text-h4'"
             >
-              <v-icon
-                :icon="card.icon"
-                :size="iconSize"
-                :color="card.color"
-              />
+              {{ formatValue(card.value, card.format) }}
             </div>
           </div>
-        </v-card-text>
+        </div>
       </v-card>
     </v-col>
   </v-row>
 </template>
 
 <style scoped>
-.transition-swing {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.summary-cards {
+  margin-top: -12px;
 }
 
-.transition-swing:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.12) !important;
+.content-card {
+    transition: all 0.3s ease;
+}
+.content-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.08) !important;
 }
 
-:deep(.v-card-text) {
-  padding: 20px;
+.bg-primary { background: #3b82f6 !important; }
+.bg-success { background: #10b981 !important; }
+.bg-error   { background: #ef4444 !important; }
+.bg-warning { background: #f59e0b !important; }
+
+.tracking-tight {
+  letter-spacing: -0.025em !important;
+  word-break: break-all;
 }
 </style>

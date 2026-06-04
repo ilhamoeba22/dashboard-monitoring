@@ -14,10 +14,21 @@ export const useTunggakanStore = defineStore('tunggakan', () => {
   
   const errorJatuhTempo = ref(null)
   const errorCollMonitoring = ref(null)
+  const periodMeta = ref({
+    requested_period: null,
+    active_period: null,
+    is_historical: false,
+    period_available: true,
+    source_table: 'TOFLMB',
+    source_database: null,
+    message: null,
+  })
   
   // Filters
   const selectedCabang = ref('Semua Cabang')
   const selectedAo = ref('Semua AO')
+  const selectedTahun = ref(null)
+  const selectedBulan = ref(null)
   
   // Getters untuk UI Jatuh Tempo
   const totalJatuhTempo = computed(() => jatuhTempoData.value.length)
@@ -60,11 +71,19 @@ export const useTunggakanStore = defineStore('tunggakan', () => {
       const params = new URLSearchParams()
       if (selectedCabang.value !== 'Semua Cabang') params.append('cabang', selectedCabang.value)
       if (selectedAo.value !== 'Semua AO') params.append('ao', selectedAo.value)
+      if (selectedTahun.value) params.append('tahun', selectedTahun.value)
+      if (selectedBulan.value) params.append('bulan', selectedBulan.value)
         
       const response = await fetch(`${API}/jatuh-tempo?${params.toString()}`)
       const json = await response.json()
       
       if (json.success) {
+        periodMeta.value = json.period_meta || periodMeta.value
+        const requested = String(periodMeta.value?.requested_period || '')
+        if (requested.length === 6) {
+          selectedTahun.value = Number(requested.slice(0, 4))
+          selectedBulan.value = Number(requested.slice(4, 6))
+        }
         jatuhTempoData.value = json.data
       } else {
         throw new Error(json.error || 'Gagal memuat data jatuh tempo')
@@ -113,9 +132,10 @@ export const useTunggakanStore = defineStore('tunggakan', () => {
 
   return {
     jatuhTempoData, collMonitoringData,
+    periodMeta,
     loadingJatuhTempo, loadingCollMonitoring,
     errorJatuhTempo, errorCollMonitoring,
-    selectedCabang, selectedAo,
+    selectedCabang, selectedAo, selectedTahun, selectedBulan,
     totalJatuhTempo, totalTagihanPokok, totalTagihanMargin, saldoStatus,
     totalCollMonitoring, totalOsProyeksiBerisiko,
     fetchJatuhTempo, fetchCollMonitoring,

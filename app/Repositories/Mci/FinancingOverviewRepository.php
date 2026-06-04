@@ -195,7 +195,7 @@ class FinancingOverviewRepository
             'total_mdlawal' => (float) ($row->total_mdlawal ?? 0),
             'total_ppap' => (float) ($row->total_ppap ?? 0),
             'npf_noa' => (int) ($npfRow->npf_noa ?? 0),
-            'npf_osmdlc' => $npfOsmdlc,
+            'total_npf' => $npfOsmdlc,
             'npf_persen' => $npfPersen,
             'avg_kolek' => (float) ($row->avg_kolek ?? 0),
         ];
@@ -497,7 +497,7 @@ class FinancingOverviewRepository
                 SELECT 
                     LEFT(periode, 6) as periode,
                     SUM(CAST(osmdlc AS DECIMAL(18,2))) as total_nominal,
-                    SUM(CASE WHEN colbaru IN ('3','4','5') THEN CAST(osmdlc AS DECIMAL(18,2)) ELSE 0 END) as total_npf,
+                    SUM(CASE WHEN colbarU IN ('3','4','5') THEN CAST(osmdlc AS DECIMAL(18,2)) ELSE 0 END) as total_npf,
                     COUNT(nokontrak) as total_noa
                 FROM TOFLMBEOM
                 $where

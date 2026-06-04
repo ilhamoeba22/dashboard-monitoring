@@ -29,16 +29,29 @@ class FinancingGrowthRepository
 
     public function getGrowthTrend(string $dimension = 'ao'): array
     {
-        // 1. Get Absolute Active Period from TANGGAL table (User Standard)
-        $sysDateRow = DB::connection($this->connection)->table('TANGGAL')
-            ->select('tgl')->orderBy('tgl', 'desc')->first();
+        // 1. Get Absolute Active Period
+        $activeDb = $this->mciService->getActiveDatabase();
+        $dbDate = $this->mciService->parseDatabaseDate($activeDb);
         
-        $tgl_sistem = $sysDateRow ? (string)$sysDateRow->tgl : Carbon::now()->format('Ymd');
+        // Fallback to TANGGAL table
+        if (!$dbDate) {
+            $sysDateRow = DB::connection($this->connection)->table('TANGGAL')
+                ->select('tgl')->orderBy('tgl', 'desc')->first();
+            
+            if ($sysDateRow && strlen((string)$sysDateRow->tgl) === 8) {
+                $tgl = (string)$sysDateRow->tgl;
+                // Standard format is dmY (e.g. 30042026)
+                $dbDate = Carbon::createFromFormat('dmY', $tgl);
+            }
+        }
+
+        // Final fallback to system date
+        $dbDate = $dbDate ?: Carbon::now();
         
-        // Format: YYYYMM (e.g., 202605)
-        $currentPeriod = substr($tgl_sistem, 4, 4) . substr($tgl_sistem, 2, 2);
-        $currentYear = substr($currentPeriod, 0, 4);
-        $activeMonth = (int) substr($currentPeriod, 4, 2);
+        $currentPeriod = $dbDate->format('Ym');
+        $currentYear = $dbDate->format('Y');
+        $activeMonth = (int) $dbDate->format('m');
+        $tgl_sistem = $dbDate->format('dmY');
         
         // YoY Base: Jan Previous Year
         $yoyBasePeriod = ((int)$currentYear - 1) . '01';
@@ -98,6 +111,7 @@ class FinancingGrowthRepository
                 FROM TOFLMBEOM a
                 $joinEom
                 WHERE (LEFT(CONVERT(VARCHAR(6), a.periode), 4) = ? OR CONVERT(VARCHAR(6), a.periode) = ?)
+                AND CONVERT(VARCHAR(6), a.periode) <> '$currentPeriod'
                 AND a.stsrec = 'A'
                 AND a.stsacc <> 'W'
             )
@@ -163,14 +177,14 @@ class FinancingGrowthRepository
         }
 
         // Format metadata for header
-        $carbon = Carbon::createFromFormat('Ymd', $tglSistem);
+        $carbon = Carbon::createFromFormat('dmY', $tglSistem);
         $periodLabel = $carbon->translatedFormat('F Y');
 
         return [
             'matrix' => $matrix,
             'periods' => collect($validPeriods)->map(fn($p, $i) => [
                 'key' => $p,
-                'label' => Carbon::createFromFormat('Ym', $p)->translatedFormat('M'),
+                'label' => Carbon::createFromFormat('Ym', $p)->startOfMonth()->translatedFormat('M'),
                 'index' => $i + 1
             ])->toArray(),
             'current_period_label' => $periodLabel

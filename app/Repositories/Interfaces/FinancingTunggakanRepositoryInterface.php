@@ -13,7 +13,14 @@ interface FinancingTunggakanRepositoryInterface
      * @param string|null $kdaoh Filter by AO (optional)
      * @return array
      */
-    public function getJatuhTempoList(?string $kdloc = null, ?string $kdaoh = null): array;
+    public function getJatuhTempoList(?string $kdloc = null, ?string $kdaoh = null, int $tahun = 0, int $bulan = 0): array;
+
+    /**
+     * Metadata periode dari query jatuh tempo terakhir.
+     *
+     * @return array<string, mixed>
+     */
+    public function getLastPeriodMeta(): array;
 
     /**
      * Get end-of-month projection for collectibility changes (Coll Monitoring).

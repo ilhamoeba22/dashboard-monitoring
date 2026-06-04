@@ -24,6 +24,13 @@ interface FinancingRestrukturisasiRepositoryInterface
     public function getRestrukturisasiSummary(array $filters = []): array;
 
     /**
+     * Metadata periode dari query restrukturisasi terakhir.
+     *
+     * @return array<string, mixed>
+     */
+    public function getLastPeriodMeta(): array;
+
+    /**
      * Dapatkan daftar kontrak Top-Up bulan berjalan.
      *
      * @param  array<string, mixed>  $filters  (ao_baru)

@@ -28,6 +28,9 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
 
     private MciConnectionService $mciService;
 
+    /** @var array<string, mixed> */
+    private array $lastPeriodMeta = [];
+
     private const CACHE_TTL = 60; // 60 seconds
 
     public function __construct(MciConnectionService $mciService)
@@ -35,15 +38,22 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
         $this->mciService = $mciService;
     }
 
+    public function getLastPeriodMeta(): array
+    {
+        return $this->lastPeriodMeta;
+    }
+
     /**
      * Execute raw query — wajib panggil getConnection() dulu agar
      * SQL Server switch ke database aktif (snapshot bulan berjalan).
      */
-    private function executeRaw(string $sql, array $params = []): array
+    private function executeRaw(string $sql, array $params = [], bool $forceActive = true): array
     {
         try {
             // WAJIB: Force switch ke database aktif sebelum query
-            $this->mciService->getConnection();
+            if ($forceActive) {
+                $this->mciService->getConnection();
+            }
 
             return DB::connection($this->connection)->select($sql, $params);
         } catch (\Throwable $e) {
@@ -60,22 +70,19 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
      * Rumus saldo tabungan: sahirrp - (saldoblok + minsaldo)
      * Rumus tunggakan real-time: SUM(tagmdl - byrmdl) WHERE stsbyr != 'L'
      */
-    public function getJatuhTempoList(?string $kdloc = null, ?string $kdaoh = null): array
+    public function getJatuhTempoList(?string $kdloc = null, ?string $kdaoh = null, int $tahun = 0, int $bulan = 0): array
     {
-        $activeDb  = $this->mciService->getActiveDatabase();
-        $cacheKey  = 'financing.tunggakan.jatuhtempo.' . md5($activeDb . ($kdloc ?? 'ALL') . ($kdaoh ?? 'ALL'));
+        $periodContext = $this->resolvePeriodContext($tahun, $bulan);
+        if (! $periodContext['period_available']) {
+            return [];
+        }
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($kdloc, $kdaoh) {
-            // 1. Ambil tanggal sistem dari SQL Server (bukan PHP now())
-            $tglRow = $this->executeRaw("SELECT TOP 1 tgl FROM TANGGAL");
-            if (empty($tglRow)) {
-                throw new \Exception("Data TANGGAL sistem tidak ditemukan di SQL Server.");
-            }
+        $activeDb  = (string) ($periodContext['source_database'] ?? $this->mciService->getActiveDatabase());
+        $cacheKey  = 'financing.tunggakan.jatuhtempo.' . md5($activeDb . ($periodContext['requested_period'] ?? '') . ($kdloc ?? 'ALL') . ($kdaoh ?? 'ALL'));
 
-            // tgl dari TANGGAL: format ddmmYYYY (e.g. '01052026')
-            $tglSys = $tglRow[0]->tgl;
-            $month  = substr($tglSys, 2, 2); // '05'
-            $year   = substr($tglSys, 4, 4); // '2026'
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($kdloc, $kdaoh, $periodContext) {
+            $year = substr((string) $periodContext['requested_period'], 0, 4);
+            $month = substr((string) $periodContext['requested_period'], 4, 2);
 
             // 2. Build WHERE clause + params
             // tglexp format: YYYYMMDD (e.g. '20280701') → tahun=substr(1,4), bulan=substr(5,2)
@@ -148,8 +155,60 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
                 ORDER BY a.tglexp ASC, c.nmao ASC, CAST(a.colbaru AS INT) DESC
             ";
 
-            return $this->executeRaw($sql, $params);
+            return $this->executeRaw($sql, $params, false);
         });
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function resolvePeriodContext(int $tahun = 0, int $bulan = 0): array
+    {
+        $this->mciService->getConnection();
+        $tglRow = DB::connection($this->connection)->selectOne('SELECT TOP 1 tgl FROM TANGGAL');
+        $tglRaw = is_object($tglRow) ? (string) ($tglRow->tgl ?? '') : '';
+        $activeYear = strlen($tglRaw) === 8 ? (int) substr($tglRaw, 4, 4) : (int) date('Y');
+        $activeMonth = strlen($tglRaw) === 8 ? (int) substr($tglRaw, 2, 2) : (int) date('m');
+        $activePeriod = sprintf('%04d%02d', $activeYear, $activeMonth);
+
+        $reqTahun = $tahun > 0 ? $tahun : $activeYear;
+        $reqBulan = $bulan > 0 ? max(1, min(12, $bulan)) : $activeMonth;
+        $periode = sprintf('%04d%02d', $reqTahun, $reqBulan);
+        $isHistorical = ($reqTahun !== $activeYear || $reqBulan !== $activeMonth);
+        $snapshotDb = $isHistorical ? $this->resolveMonthlySnapshotDatabase($reqTahun, $reqBulan) : null;
+        $periodAvailable = true;
+
+        if ($snapshotDb !== null) {
+            $this->mciService->switchToDatabase($snapshotDb);
+        } elseif ($isHistorical) {
+            $periodAvailable = false;
+        }
+
+        $sourceDb = $snapshotDb
+            ?: DB::connection($this->connection)->selectOne('SELECT DB_NAME() as database_name')->database_name ?? null;
+
+        $this->lastPeriodMeta = [
+            'requested_period' => $periode,
+            'active_period' => $activePeriod,
+            'is_historical' => $isHistorical,
+            'period_available' => $periodAvailable,
+            'source_table' => 'TOFLMB',
+            'source_database' => $sourceDb,
+            'message' => $periodAvailable
+                ? null
+                : "Database snapshot untuk periode {$periode} belum dikonfigurasi.",
+        ];
+
+        return $this->lastPeriodMeta;
+    }
+
+    private function resolveMonthlySnapshotDatabase(int $year, int $month): ?string
+    {
+        $monthPrefixes = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGT', 'SEP', 'OKT', 'NOV', 'DES'];
+        $yearSuffix = substr((string) $year, -2);
+        $database = env('MCI_DB_'.$monthPrefixes[$month - 1].$yearSuffix);
+
+        return is_string($database) && $database !== '' ? $database : null;
     }
 
     /**

@@ -14,12 +14,31 @@ const {
   jatuhTempoData,
   loadingJatuhTempo,
   selectedCabang,
+  selectedTahun,
+  selectedBulan,
+  periodMeta,
   totalJatuhTempo,
   totalTagihanPokok,
   saldoStatus
 } = storeToRefs(store)
 
 const cabangs = ref([])
+const monthOptions = [
+  { title: 'Januari', value: 1 }, { title: 'Februari', value: 2 }, { title: 'Maret', value: 3 },
+  { title: 'April', value: 4 }, { title: 'Mei', value: 5 }, { title: 'Juni', value: 6 },
+  { title: 'Juli', value: 7 }, { title: 'Agustus', value: 8 }, { title: 'September', value: 9 },
+  { title: 'Oktober', value: 10 }, { title: 'November', value: 11 }, { title: 'Desember', value: 12 },
+]
+const yearOptions = computed(() => {
+  const current = new Date().getFullYear()
+  return [current, current - 1, current - 2, current - 3, current - 4]
+})
+const activePeriodLabel = computed(() => {
+  if (!selectedTahun.value || !selectedBulan.value) return 'Periode aktif CBS'
+  const month = monthOptions.find(item => item.value === selectedBulan.value)?.title || '-'
+  return `${month} ${selectedTahun.value}`
+})
+const periodUnavailable = computed(() => periodMeta.value?.period_available === false)
 
 // ─── Pagination Logic ─────────────────────────────────────────
 const currentPage = ref(1)
@@ -144,7 +163,7 @@ onMounted(() => {
   store.fetchJatuhTempo()
 })
 
-watch(selectedCabang, () => store.fetchJatuhTempo())
+watch([selectedCabang, selectedTahun, selectedBulan], () => store.fetchJatuhTempo())
 </script>
 
 <template>
@@ -170,6 +189,34 @@ watch(selectedCabang, () => store.fetchJatuhTempo())
           </div>
           
           <div class="fin-filter-bar">
+            <v-select
+              v-model="selectedTahun"
+              :items="yearOptions"
+              label="Tahun"
+              variant="solo"
+              density="compact"
+              flat
+              hide-details
+              rounded="lg"
+              bg-color="white"
+              prepend-inner-icon="ri-calendar-line"
+              style="min-width: 120px; max-width: 140px;"
+            ></v-select>
+            <v-select
+              v-model="selectedBulan"
+              :items="monthOptions"
+              item-title="title"
+              item-value="value"
+              label="Bulan"
+              variant="solo"
+              density="compact"
+              flat
+              hide-details
+              rounded="lg"
+              bg-color="white"
+              prepend-inner-icon="ri-calendar-event-line"
+              style="min-width: 150px; max-width: 180px;"
+            ></v-select>
             <v-select
               v-model="selectedCabang"
               :items="['Semua Cabang', ...cabangs.map(c => c.nama)]"
@@ -255,6 +302,18 @@ watch(selectedCabang, () => store.fetchJatuhTempo())
         </v-card>
       </v-col>
     </v-row>
+
+    <v-alert
+      v-if="periodUnavailable && !loadingJatuhTempo"
+      type="warning"
+      variant="tonal"
+      border="start"
+      rounded="lg"
+      class="mb-6"
+    >
+      <div class="font-weight-bold mb-1">Periode {{ activePeriodLabel }} belum tersedia</div>
+      <div class="text-body-2">{{ periodMeta.message || 'Database snapshot periode ini belum tersedia.' }}</div>
+    </v-alert>
 
     <!-- 3. Main Data Grid -->
     <div class="content-card">

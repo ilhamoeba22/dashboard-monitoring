@@ -1,5 +1,5 @@
 ﻿<script setup>
-import { ref, watch, onMounted } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { Head } from '@inertiajs/vue3'
 import DefaultLayout from '@/layouts/default.vue'
 import * as XLSX from 'xlsx'
@@ -26,6 +26,14 @@ const page = ref(1)
 const itemsPerPage = ref(15) // Default to 15
 const totalItems = ref(0)
 const serverItems = ref([])
+const periodMeta = ref({
+  requested_period: null,
+  active_period: null,
+  is_historical: false,
+  period_available: true,
+  source_table: 'TOFLMB',
+  message: null,
+})
 
 const rowsPerPageOptions = [
   { title: '15 Baris', value: 15 },
@@ -37,8 +45,35 @@ const rowsPerPageOptions = [
 // Enterprise Filters
 const filterCabang = ref('Semua Cabang')
 const filterKol = ref('Semua Kol')
+const filterTahun = ref(null)
+const filterBulan = ref(null)
 const cabangOptions = ref(['Semua Cabang']) 
 const kolOptions = ['Semua Kol', '1 - Lancar', '2 - DPK', '3 - Kurang Lancar', '4 - Diragukan', '5 - Macet']
+const yearOptions = computed(() => {
+  const current = new Date().getFullYear()
+  return [current, current - 1, current - 2, current - 3, current - 4]
+})
+const monthOptions = [
+  { title: 'Januari', value: 1 }, { title: 'Februari', value: 2 }, { title: 'Maret', value: 3 },
+  { title: 'April', value: 4 }, { title: 'Mei', value: 5 }, { title: 'Juni', value: 6 },
+  { title: 'Juli', value: 7 }, { title: 'Agustus', value: 8 }, { title: 'September', value: 9 },
+  { title: 'Oktober', value: 10 }, { title: 'November', value: 11 }, { title: 'Desember', value: 12 }
+]
+const activePeriodLabel = computed(() => {
+  if (!filterTahun.value || !filterBulan.value) return 'Periode aktif CBS'
+  const month = monthOptions.find(item => item.value === filterBulan.value)?.title || '-'
+  return `${month} ${filterTahun.value}`
+})
+const periodUnavailable = computed(() => periodMeta.value?.period_available === false)
+const periodUnavailableMessage = computed(() => {
+  if (!periodUnavailable.value) return ''
+  const active = String(periodMeta.value?.active_period || '')
+  const activeYear = active.slice(0, 4)
+  const activeMonth = monthOptions.find(item => item.value === Number(active.slice(4, 6)))?.title || active.slice(4, 6)
+
+  return periodMeta.value?.message
+    || `Data periode ${activePeriodLabel.value} belum tersedia. Periode database aktif saat ini ${activeMonth} ${activeYear}.`
+})
 
 // Fetch Metadata
 async function fetchCabangs() {
@@ -51,6 +86,18 @@ async function fetchCabangs() {
     }
   } catch (error) {
     console.error('Gagal memuat list cabang:', error)
+  }
+}
+
+function syncFiltersFromPeriodMeta(meta) {
+  const requested = String(meta?.requested_period || '')
+  if (requested.length !== 6) return
+
+  const year = Number(requested.slice(0, 4))
+  const month = Number(requested.slice(4, 6))
+  if (Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12) {
+    filterTahun.value = year
+    filterBulan.value = month
   }
 }
 
@@ -67,6 +114,8 @@ async function loadItems(options) {
       per_page: ipp,
       type: 'sindikasi'
     })
+    if (filterTahun.value) params.append('tahun', filterTahun.value)
+    if (filterBulan.value) params.append('bulan', filterBulan.value)
     
     if (s) params.append('search', s)
     if (filterCabang.value && filterCabang.value !== 'Semua Cabang') {
@@ -80,6 +129,8 @@ async function loadItems(options) {
     const json = await response.json()
 
     if (json.success) {
+      periodMeta.value = json.period_meta || periodMeta.value
+      syncFiltersFromPeriodMeta(periodMeta.value)
       serverItems.value = json.data.data
       totalItems.value = json.data.total
       page.value = p
@@ -110,6 +161,8 @@ async function fetchAllDataForExport() {
       page: 1,
       per_page: 10000,
     })
+    if (filterTahun.value) params.append('tahun', filterTahun.value)
+    if (filterBulan.value) params.append('bulan', filterBulan.value)
     if (param) params.append('type', param)
     if (search.value) params.append('search', search.value)
     if (filterCabang.value !== 'Semua Cabang') params.append('cabang', filterCabang.value)
@@ -117,6 +170,10 @@ async function fetchAllDataForExport() {
 
     const response = await fetch(`/api/v1/financing/nominative?${params}`)
     const json = await response.json()
+    if (json.period_meta?.period_available === false) {
+      alert(json.period_meta.message || `Data periode ${activePeriodLabel.value} belum tersedia di database.`)
+      return []
+    }
     return json.success ? json.data.data : []
   } catch (error) {
     console.error('Export Error:', error)
@@ -138,7 +195,11 @@ const getDynamicFileName = (ext) => {
     kolLabel = `_KOL-${String(filterKol.value).charAt(0)}`
   }
   
-  return `Data_Nominatif_${title}${kolLabel}_${dateStr}_${timeStr}.${ext}`
+  const requestedPeriod = String(periodMeta.value?.requested_period || '')
+  const periodLabel = filterTahun.value && filterBulan.value
+    ? `${filterTahun.value}${String(filterBulan.value).padStart(2, '0')}`
+    : (requestedPeriod || 'periode-aktif')
+  return `Data_Nominatif_${title}_${periodLabel}${kolLabel}_${dateStr}_${timeStr}.${ext}`
 }
 
 const exportExcel = async () => {
@@ -212,7 +273,7 @@ const exportPDF = async () => {
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   doc.text(`Dicetak pada : ${d.toLocaleString('id-ID')} WIB`, 14, 38)
-  doc.text(`Filter Aktif : Cabang [${filterCabang.value}] | Kolektibilitas [${filterKol.value}]`, 14, 43)
+  doc.text(`Filter Aktif : Periode [${activePeriodLabel.value}] | Cabang [${filterCabang.value}] | Kolektibilitas [${filterKol.value}]`, 14, 43)
   
   doc.setDrawColor(226, 232, 240)
   doc.setLineWidth(0.5)
@@ -255,7 +316,7 @@ const updateSearch = debounce(() => {
 
 watch(search, updateSearch)
 
-watch([filterCabang, filterKol], () => {
+watch([filterCabang, filterKol, filterTahun, filterBulan], () => {
   page.value = 1
   loadItems({ page: 1, itemsPerPage: itemsPerPage.value })
 })
@@ -266,6 +327,7 @@ watch(itemsPerPage, (newVal) => {
 })
 
 function formatCurrency(v) {
+  if (v === null || v === undefined || v === '') return '-'
   return formatExactRupiah(v)
 }
 
@@ -362,7 +424,7 @@ onMounted(() => {
   <div class="fin-page px-4 pt-0">
     <Head title="Nominatif Sindikasi" />
 
-    <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
     <div class="fin-hero mb-6">
       <div class="fin-hero__deco"></div>
       <div class="fin-hero__inner">
@@ -372,9 +434,10 @@ onMounted(() => {
           </div>
           <div class="fin-hero__meta">
             <h1 class="fin-hero__title">Nominatif Sindikasi</h1>
-            <p class="fin-hero__subtitle">Daftar rincian nasabah pembiayaan sindikasi aktif</p>
+            <p class="fin-hero__subtitle">Daftar rincian nasabah pembiayaan sindikasi berdasarkan periode terpilih</p>
             <div class="fin-hero__badges">
-              <span class="fin-badge fin-badge--teal" style="background: rgba(2, 132, 199, 0.2); color: #7dd3fc; border-color: rgba(2, 132, 199, 0.3);">ðŸ¤ Sindikasi Bank</span>
+              <span class="fin-badge fin-badge--teal" style="background: rgba(2, 132, 199, 0.2); color: #7dd3fc; border-color: rgba(2, 132, 199, 0.3);">🤝 Sindikasi Bank</span>
+              <span class="fin-badge fin-badge--blue" style="background: rgba(59, 130, 246, 0.18); color: #bfdbfe; border-color: rgba(147, 197, 253, 0.28);">📅 {{ activePeriodLabel }}</span>
             </div>
           </div>
         </div>
@@ -401,8 +464,33 @@ onMounted(() => {
               class="bg-white text-xs"
             />
             <v-select
+              v-model="filterTahun"
+              :items="yearOptions"
+              label="Tahun"
+              variant="outlined"
+              density="compact"
+              hide-details
+              rounded="lg"
+              class="text-xs bg-white"
+              style="width: 120px;"
+            />
+            <v-select
+              v-model="filterBulan"
+              :items="monthOptions"
+              item-title="title"
+              item-value="value"
+              label="Bulan"
+              variant="outlined"
+              density="compact"
+              hide-details
+              rounded="lg"
+              class="text-xs bg-white"
+              style="width: 155px;"
+            />
+            <v-select
               v-model="filterCabang"
               :items="cabangOptions"
+              label="Cabang"
               variant="outlined"
               density="compact"
               hide-details
@@ -413,6 +501,7 @@ onMounted(() => {
             <v-select
               v-model="filterKol"
               :items="kolOptions"
+              label="Kolektibilitas"
               variant="outlined"
               density="compact"
               hide-details
@@ -434,8 +523,24 @@ onMounted(() => {
           </div>
         </div>
 
+        <v-alert
+          v-if="periodUnavailable && !loading"
+          type="warning"
+          variant="tonal"
+          border="start"
+          rounded="lg"
+          class="mb-4"
+        >
+          <div class="font-weight-bold mb-1">Periode belum tersedia</div>
+          <div class="text-body-2">
+            {{ periodUnavailableMessage }}
+            Silakan pilih bulan/tahun lain yang sudah tersedia di database.
+          </div>
+        </v-alert>
+
         <!-- Data Table -->
         <v-data-table-server
+          v-if="!periodUnavailable"
           v-model:page="page"
           v-model:items-per-page="itemsPerPage"
           :headers="headers"

@@ -33,6 +33,8 @@ class FinancingRestrukturisasiController extends Controller
             $filters = [
                 'cabang' => $request->query('cabang'),
                 'ao'     => $request->query('ao'),
+                'tahun'  => $request->query('tahun'),
+                'bulan'  => $request->query('bulan'),
             ];
 
             $data    = $this->repository->getRestrukturisasi($filters);
@@ -42,6 +44,7 @@ class FinancingRestrukturisasiController extends Controller
                 'success' => true,
                 'data'    => $data->values(),
                 'summary' => $summary,
+                'period_meta' => $this->repository->getLastPeriodMeta(),
                 'meta'    => [
                     'total'        => $data->count(),
                     'generated_at' => now()->toIso8601String(),

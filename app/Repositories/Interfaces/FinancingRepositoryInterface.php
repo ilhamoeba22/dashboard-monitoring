@@ -19,6 +19,13 @@ interface FinancingRepositoryInterface
     public function getNominative(array $filters = [], int $perPage = 50): Paginator|CursorPaginator;
 
     /**
+     * Metadata periode dari query nominatif terakhir.
+     *
+     * @return array<string, mixed>
+     */
+    public function getLastNominativePeriodMeta(): array;
+
+    /**
      * Dapatkan daftar nama AO yang unik.
      */
     public function getUniqueAos(): Collection;
@@ -51,7 +58,7 @@ interface FinancingRepositoryInterface
      * @param  string  $cabang   Filter kode cabang (opsional, kosong = semua)
      * @return array{rows: Collection, totals: array<string,mixed>, meta: array<string,mixed>}
      */
-    public function getRekapMaster(string $groupBy = 'cabang', string $cabang = ''): array;
+    public function getRekapMaster(string $groupBy = 'cabang', string $cabang = '', int $tahun = 0, int $bulan = 0): array;
 
     /**
      * Analisis Kualitas Aset & Risiko (Aging, Risk Concentration, Coverage).

@@ -5,14 +5,14 @@ import DefaultLayout from '@/layouts/default.vue'
 import axios from 'axios'
 import VueApexCharts from 'vue3-apexcharts'
 import '@/assets/css/financing-shared.css'
-import { formatExactNumber, formatExactRupiah } from '@/utils/money'
+import { formatExactRupiah, formatTruncatedPercentage } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
 // ─── State Management ────────────────────────────────────────
 const isLoading    = ref(true)
 const selectedYear = ref(new Date().getFullYear())
-const selectedMonth = ref(new Date().getMonth() + 1) // Default ke bulan saat ini (Mingguan)
+const selectedMonth = ref(new Date().getMonth() + 1)
 const emptyMsg     = ref('')
 
 const isDrawerOpen = ref(false)
@@ -58,12 +58,13 @@ const scorecards = computed(() => analyticsData.value.scorecards)
 const chartData  = computed(() => analyticsData.value.pacing_chart)
 const leaderboard = computed(() => analyticsData.value.leaderboard)
 
-const pacingColor = computed(() => {
-  const p = scorecards.value.pacing_pct
-  if (p >= 100) return '#10B981' // Hijau
-  if (p >= 80) return '#F59E0B'  // Kuning
-  return '#EF4444'               // Merah
-})
+const getProgressColor = (pct) => {
+  if (pct >= 100) return '#10B981' // Success (Emerald)
+  if (pct >= 80) return '#F59E0B'  // Warning (Amber)
+  return '#EF4444'               // Error (Rose)
+}
+
+const pacingColor = computed(() => getProgressColor(scorecards.value.pacing_pct))
 
 // ─── Chart Options ───────────────────────────────────────────
 const chartOpts = computed(() => ({
@@ -73,19 +74,11 @@ const chartOpts = computed(() => ({
     toolbar: { show: false },
     zoom: { enabled: false },
     animations: { enabled: true, easing: 'easeinout', speed: 600 },
-    dropShadow: {
-      enabled: true,
-      color: '#000',
-      top: 10,
-      left: 0,
-      blur: 8,
-      opacity: 0.05
-    }
   },
   plotOptions: {
-    bar: { columnWidth: '50%', borderRadius: 6, borderRadiusApplication: 'end' }
+    bar: { columnWidth: '45%', borderRadius: 6, borderRadiusApplication: 'end' }
   },
-  colors: ['#06B6D4', '#64748B'],
+  colors: ['#06B6D4', '#94a3b8'],
   dataLabels: { enabled: false },
   stroke: {
     curve: 'smooth',
@@ -103,8 +96,8 @@ const chartOpts = computed(() => ({
     gradient: {
       type: 'vertical',
       shadeIntensity: 1,
-      opacityFrom: 0.9,
-      opacityTo: 0.6,
+      opacityFrom: 0.85,
+      opacityTo: 0.5,
       stops: [0, 100]
     }
   },
@@ -112,27 +105,33 @@ const chartOpts = computed(() => ({
     categories: chartData.value.categories,
     axisBorder: { show: false },
     axisTicks: { show: false },
-    labels: { style: { fontSize: '12px', fontWeight: 600 } }
+    labels: { style: { fontSize: '11px', fontWeight: 600, colors: '#64748B' } }
   },
   yaxis: {
-    labels: { formatter: v => v !== null ? formatExactRupiah(v) : '' }
+    labels: { 
+        formatter: v => formatExactRupiah(v),
+        style: { colors: '#94a3b8' }
+    },
+    title: { text: 'Nominal Rupiah', style: { color: '#94a3b8', fontSize: '11px' } }
   },
   legend: {
     position: 'top', horizontalAlign: 'right',
-    markers: { shape: 'circle', size: 6 },
-    fontWeight: 700, fontSize: '13px'
+    markers: { shape: 'circle', size: 6, radius: 12 },
+    fontWeight: 700, fontSize: '12px',
+    labels: { colors: '#334155' }
   },
   tooltip: {
     shared: true,
     intersect: false,
-    y: { formatter: v => v !== null ? formatExactRupiah(v, '-') : '-' }
+    theme: 'light',
+    y: { formatter: v => v !== null ? formatExactRupiah(v) : '-' }
   },
   grid: { borderColor: '#F1F5F9', strokeDashArray: 4 }
 }))
 
 const chartSeries = computed(() => [
   { name: 'Pencairan Riil', type: 'bar', data: chartData.value.realisasi },
-  { name: 'Target Pencairan', type: 'line', data: chartData.value.target }
+  { name: 'Target RBB', type: 'line', data: chartData.value.target }
 ])
 
 const aoChartSeries = computed(() => {
@@ -144,8 +143,8 @@ const aoChartSeries = computed(() => {
 })
 
 // ─── Helpers ─────────────────────────────────────────────────
-const formatM = (val) => formatExactRupiah(val)
-const formatRp = (val) => formatExactNumber(val)
+const formatFull = (val) => formatExactRupiah(val)
+const pct = (val) => formatTruncatedPercentage(val)
 
 const getStatusColor = (status) => {
   if (status === 'overachieved') return 'success'
@@ -157,12 +156,6 @@ const getStatusLabel = (status) => {
   if (status === 'overachieved') return 'Overachieved'
   if (status === 'on-track') return 'On-Track'
   return 'Underperforming'
-}
-
-const getProgressColor = (pct) => {
-  if (pct >= 100) return 'success'
-  if (pct >= 70) return 'warning'
-  return 'error'
 }
 
 // ─── API Fetch ───────────────────────────────────────────────
@@ -201,7 +194,7 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
 
 <template>
   <div class="fin-page px-4 pt-0">
-    <Head title="Monitoring Target vs Realisasi (RBB)" />
+    <Head title="Target Management (RBB)" />
 
     <!-- ── HERO HEADER ─────────────────────────────────────────── -->
     <div class="fin-hero mb-6">
@@ -213,13 +206,14 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
               <v-icon icon="ri-focus-3-line" size="26" color="white" />
             </div>
             <div class="fin-hero__meta">
-              <h1 class="fin-hero__title">Monitoring Target vs Realisasi (RBB)</h1>
+              <h1 class="fin-hero__title">Target Management (RBB)</h1>
               <p class="fin-hero__subtitle">
-                Analisis pergerakan pembiayaan terhadap Rencana Bisnis Bank.
+                Sinkronisasi real-time performa penyaluran terhadap Rencana Bisnis Bank.
               </p>
               <div class="fin-hero__badges">
+                <span class="fin-badge fin-badge--teal">🏦 Islamic Banking</span>
                 <span class="fin-badge fin-badge--success">
-                  <span class="pulse-dot mr-1"></span> Real-time Sync
+                  <span class="pulse-dot mr-1"></span> Active Monitor
                 </span>
               </div>
             </div>
@@ -270,9 +264,6 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
         <v-col cols="12">
           <v-skeleton-loader type="image" height="420" rounded="xl" />
         </v-col>
-        <v-col cols="12">
-          <v-skeleton-loader type="table" height="350" rounded="xl" />
-        </v-col>
       </v-row>
     </template>
 
@@ -293,37 +284,43 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
       <!-- 2. EXECUTIVE SCORECARDS -->
       <v-row class="mb-6">
         <v-col cols="12" sm="6" lg="3">
-          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
-            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
-              <v-icon icon="ri-focus-3-line" size="120" color="#3b82f6" />
-            </div>
-            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
-              <div class="d-flex justify-space-between align-start">
-                <div>
-                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TARGET ANNUAL (RBB)</p>
-                  <h2 class="fin-money-exact mb-2" style="color: #3b82f6;">Rp {{ formatRp(scorecards.total_target_annual) }}</h2>
-                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Plafon penyaluran tahun ini</p>
+          <v-tooltip location="top" offset="10">
+            <template #activator="{ props }">
+              <v-card v-bind="props" class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+                  <v-icon icon="ri-focus-3-line" size="120" color="#3b82f6" />
                 </div>
-              </div>
-            </v-card-text>
-          </v-card>
+                <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+                  <div>
+                    <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TARGET ANNUAL (RBB)</p>
+                    <h2 class="font-weight-black mb-2 target-money-exact" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif;">{{ formatFull(scorecards.total_target_annual) }}</h2>
+                    <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Plafon penyaluran tahunan</p>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </template>
+            <span>Detail: {{ formatFull(scorecards.total_target_annual) }}</span>
+          </v-tooltip>
         </v-col>
 
         <v-col cols="12" sm="6" lg="3">
-          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
-            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
-              <v-icon icon="ri-check-double-line" size="120" color="#10b981" />
-            </div>
-            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
-              <div class="d-flex justify-space-between align-start">
-                <div>
-                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">REALISASI (YTD)</p>
-                  <h2 class="fin-money-exact mb-2" style="color: #10b981;">Rp {{ formatRp(scorecards.total_realisasi) }}</h2>
-                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Total pencairan berjalan</p>
+          <v-tooltip location="top" offset="10">
+            <template #activator="{ props }">
+              <v-card v-bind="props" class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+                  <v-icon icon="ri-check-double-line" size="120" color="#10b981" />
                 </div>
-              </div>
-            </v-card-text>
-          </v-card>
+                <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+                  <div>
+                    <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">REALISASI (YTD)</p>
+                    <h2 class="font-weight-black mb-2 target-money-exact" style="color: #10b981; font-family: 'Plus Jakarta Sans', sans-serif;">{{ formatFull(scorecards.total_realisasi) }}</h2>
+                    <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Total pencairan berjalan</p>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </template>
+            <span>Detail: {{ formatFull(scorecards.total_realisasi) }}</span>
+          </v-tooltip>
         </v-col>
 
         <v-col cols="12" sm="6" lg="3">
@@ -332,44 +329,46 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
               <v-icon icon="ri-dashboard-3-line" size="120" :color="pacingColor" />
             </div>
             <v-card-text class="pa-5" style="position: relative; z-index: 1;">
-              <div class="d-flex justify-space-between align-start">
-                <div>
-                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">PACING / PENCAPAIAN</p>
-                  <h2 class="text-h4 font-weight-bold mb-2"
-                      :style="{ color: pacingColor, fontFamily: 'Plus Jakarta Sans, sans-serif', lineHeight: 1.2 }">
-                    {{ scorecards.pacing_pct }}%
-                  </h2>
-                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Status performa saat ini</p>
-                </div>
+              <div>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">PACING / PENCAPAIAN</p>
+                <h2 class="text-h4 font-weight-black mb-2" :style="{ color: pacingColor, fontFamily: 'Plus Jakarta Sans, sans-serif', lineHeight: 1.2 }">
+                  {{ pct(scorecards.pacing_pct) }}
+                </h2>
+                <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Status performa YTD</p>
               </div>
             </v-card-text>
           </v-card>
         </v-col>
 
         <v-col cols="12" sm="6" lg="3">
-          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
-            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
-              <v-icon icon="ri-flag-2-line" size="120" color="#8b5cf6" />
-            </div>
-            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
-              <div class="d-flex justify-space-between align-start">
-                <div>
-                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">SISA TARGET</p>
-                  <h2 class="fin-money-exact mb-2" style="color: #8b5cf6;">Rp {{ formatRp(scorecards.gap_miliar) }}</h2>
-                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Kekurangan pencairan</p>
+          <v-tooltip location="top" offset="10">
+            <template #activator="{ props }">
+              <v-card v-bind="props" class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
+                  <v-icon icon="ri-flag-2-line" size="120" color="#8b5cf6" />
                 </div>
-              </div>
-            </v-card-text>
-          </v-card>
+                <v-card-text class="pa-5" style="position: relative; z-index: 1;">
+                  <div>
+                    <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">SISA TARGET</p>
+                    <h2 class="font-weight-black mb-2 target-money-exact" style="color: #8b5cf6; font-family: 'Plus Jakarta Sans', sans-serif;">{{ formatFull(Math.abs(scorecards.gap_miliar)) }}</h2>
+                    <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Kekurangan pencairan</p>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </template>
+            <span>Detail: {{ formatFull(scorecards.gap_miliar) }}</span>
+          </v-tooltip>
         </v-col>
       </v-row>
 
       <!-- 3. DUAL-LINE PACING CHART -->
-      <v-row class="mb-5">
+      <v-row class="mb-6">
         <v-col cols="12">
-          <v-card elevation="0" border rounded="xl" class="pa-6">
+          <v-card elevation="0" border rounded="xl" class="pa-6 content-card">
             <div class="d-flex align-center gap-2 mb-6">
-              <v-icon icon="ri-bar-chart-box-line" color="primary" />
+              <div class="fin-icon-blue pa-2 rounded-lg">
+                <v-icon icon="ri-bar-chart-box-line" color="info" size="20" />
+              </div>
               <h2 class="text-h6 font-weight-black text-slate-800 mb-0">Trend Pencairan vs RBB Tahunan</h2>
             </div>
             <VueApexCharts type="bar" height="400" :options="chartOpts" :series="chartSeries" />
@@ -395,45 +394,49 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
               <table class="fin-table fin-vtable leaderboard-table">
                 <thead>
                   <tr>
-                    <th class="text-center font-weight-bold text-slate-400 text-uppercase" style="width: 80px">Rank</th>
-                    <th class="text-left font-weight-bold text-slate-400 text-uppercase">Account Officer</th>
-                    <th class="text-right font-weight-bold text-slate-400 text-uppercase">Target YTD</th>
-                    <th class="text-right font-weight-bold text-slate-400 text-uppercase">Pencairan</th>
-                    <th class="text-left font-weight-bold text-slate-400 text-uppercase" style="min-width: 250px">Pencapaian (%)</th>
-                    <th class="text-center font-weight-bold text-slate-400 text-uppercase" style="width: 140px">Status</th>
+                    <th class="text-center font-weight-black text-slate-400 text-uppercase" style="width: 80px">Rank</th>
+                    <th class="text-left font-weight-black text-slate-400 text-uppercase">Account Officer</th>
+                    <th class="text-right font-weight-black text-slate-400 text-uppercase">Target YTD (Rp)</th>
+                    <th class="text-right font-weight-black text-slate-400 text-uppercase">Realisasi (Rp)</th>
+                    <th class="text-left font-weight-black text-slate-400 text-uppercase" style="min-width: 250px">Pencapaian (%)</th>
+                    <th class="text-center font-weight-black text-slate-400 text-uppercase" style="width: 140px">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(ao, idx) in leaderboard" :key="ao.kdao" @click="openAODetail(ao)" class="cursor-pointer">
+                  <tr v-for="(ao, idx) in leaderboard" :key="ao.kdao" @click="openAODetail(ao)" class="cursor-pointer transition-swing">
                     <td class="text-center">
                       <v-icon v-if="idx === 0" icon="ri-medal-fill" size="24" color="amber-darken-1" />
                       <v-icon v-else-if="idx === 1" icon="ri-medal-fill" size="24" color="blue-grey-lighten-1" />
                       <v-icon v-else-if="idx === 2" icon="ri-medal-fill" size="24" color="deep-orange-darken-1" />
-                      <span v-else class="font-weight-bold text-slate-400">#{{ idx + 1 }}</span>
+                      <span v-else class="font-weight-black text-slate-400">#{{ idx + 1 }}</span>
                     </td>
                     <td>
                       <div class="d-flex align-center gap-3 py-2">
-                        <v-avatar size="40" :color="idx === 0 ? 'warning' : 'primary'" variant="tonal" class="font-weight-bold text-subtitle-2">
+                        <v-avatar size="40" :color="idx === 0 ? 'warning' : 'primary'" variant="tonal" class="font-weight-black text-subtitle-2">
                           {{ ao.name.substring(0, 2).toUpperCase() }}
                         </v-avatar>
                         <div>
-                          <div class="font-weight-bold text-slate-800 text-body-2 group-hover:text-primary transition-colors">{{ ao.name }}</div>
-                          <div class="text-caption text-slate-500">{{ ao.kdao }}</div>
+                          <div class="font-weight-black text-slate-800 text-body-2 group-hover:text-primary">{{ ao.name }}</div>
+                          <div class="text-caption text-slate-400 font-weight-bold">{{ ao.kdao }}</div>
                         </div>
                       </div>
                     </td>
-                    <td class="text-right font-weight-medium text-slate-600"><span class="fin-money-exact fin-money-exact--dense">Rp {{ formatRp(ao.target_ytd) }}</span></td>
-                    <td class="text-right font-weight-black text-slate-800"><span class="fin-money-exact fin-money-exact--dense">Rp {{ formatRp(ao.realisasi) }}</span></td>
+                    <td class="text-right font-weight-bold text-slate-600">
+                        {{ formatFull(ao.target_ytd).replace('Rp ', '') }}
+                    </td>
+                    <td class="text-right font-weight-black text-slate-900">
+                        {{ formatFull(ao.realisai || ao.realisasi).replace('Rp ', '') }}
+                    </td>
                     <td>
                       <div class="d-flex flex-column justify-center pr-4">
                         <div class="d-flex justify-space-between mb-1">
-                          <span class="text-caption font-weight-bold text-slate-700">{{ ao.pct }}%</span>
+                          <span class="text-caption font-weight-black" :style="{ color: getProgressColor(ao.pct) }">{{ pct(ao.pct) }}</span>
                         </div>
                         <div class="position-relative mt-1">
-                          <div style="background: #f1f5f9; border-radius: 4px; height: 10px; width: 100%; position: relative; overflow: hidden;">
+                          <div style="background: #f1f5f9; border-radius: 100px; height: 8px; width: 100%; position: relative; overflow: hidden;">
                             <div 
-                              :style="{ width: Math.min(ao.pct, 100) + '%', background: getProgressColor(ao.pct) === 'success' ? '#10b981' : (getProgressColor(ao.pct) === 'warning' ? '#f59e0b' : '#ef4444') }"
-                              style="height: 100%; border-radius: 4px; transition: width 1s ease-in-out;"
+                              :style="{ width: Math.min(ao.pct, 100) + '%', background: getProgressColor(ao.pct) }"
+                              style="height: 100%; border-radius: 100px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);"
                             ></div>
                           </div>
                           <!-- Bullet Chart Target Marker (100% YTD) -->
@@ -442,7 +445,7 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
                               <div 
                                 v-bind="props"
                                 class="position-absolute" 
-                                style="top: -3px; bottom: -3px; width: 3px; background-color: #334155; right: 0; z-index: 1; border-radius: 2px;"
+                                style="top: -4px; bottom: -4px; width: 3px; background-color: #334155; right: 0; z-index: 1; border-radius: 4px;"
                               ></div>
                             </template>
                           </v-tooltip>
@@ -450,7 +453,7 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
                       </div>
                     </td>
                     <td class="text-center">
-                      <v-chip size="small" :color="getStatusColor(ao.status)" variant="flat" class="font-weight-bold text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">
+                      <v-chip size="small" :color="getStatusColor(ao.status)" variant="flat" class="font-weight-black text-uppercase" style="font-size: 10px; letter-spacing: 0.5px;">
                         {{ getStatusLabel(ao.status) }}
                       </v-chip>
                     </td>
@@ -468,54 +471,56 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
       v-model="isDrawerOpen"
       location="right"
       temporary
-      width="500"
-      elevation="4"
+      width="520"
+      elevation="8"
+      border="0"
     >
       <div v-if="selectedAOData" class="d-flex flex-column h-100 bg-slate-50">
         <!-- Drawer Header -->
         <div class="pa-6 bg-white border-b d-flex justify-space-between align-start">
           <div class="d-flex align-center gap-4">
-            <v-avatar size="56" color="primary" variant="tonal" class="text-h6 font-weight-black">
+            <v-avatar size="64" :color="getProgressColor(selectedAOData.pct)" variant="tonal" class="text-h5 font-weight-black">
               {{ selectedAOData.name.substring(0, 2).toUpperCase() }}
             </v-avatar>
             <div>
               <div class="text-h6 font-weight-black text-slate-800 mb-0" style="line-height: 1.2;">{{ selectedAOData.name }}</div>
-              <div class="text-body-2 text-slate-500 font-weight-medium mt-1">Kode AO: <span class="font-weight-bold">{{ selectedAOData.kdao }}</span></div>
-              <v-chip size="small" :color="getStatusColor(selectedAOData.status)" variant="flat" class="mt-2 font-weight-bold text-uppercase" style="font-size: 10px;">
+              <div class="text-body-2 text-slate-500 font-weight-bold mt-1">ID: {{ selectedAOData.kdao }}</div>
+              <v-chip size="small" :color="getStatusColor(selectedAOData.status)" variant="flat" class="mt-2 font-weight-black text-uppercase" style="font-size: 10px;">
                 {{ getStatusLabel(selectedAOData.status) }}
               </v-chip>
             </div>
           </div>
-          <v-btn icon="ri-close-line" variant="text" size="small" color="grey-darken-1" @click="isDrawerOpen = false"></v-btn>
+          <v-btn icon="ri-close-line" variant="tonal" size="small" color="slate-400" @click="isDrawerOpen = false" class="rounded-lg"></v-btn>
         </div>
 
         <div class="pa-6 overflow-y-auto" style="flex: 1;">
           <!-- Mini Scorecards -->
           <v-row class="mb-6">
             <v-col cols="6">
-              <v-card elevation="0" border rounded="lg" class="pa-4 bg-white text-center">
-                <div class="text-caption text-slate-500 font-weight-bold text-uppercase mb-1">Target YTD</div>
-                <div class="text-h6 font-weight-black text-slate-800">{{ formatM(selectedAOData.target_ytd) }}</div>
+              <v-card elevation="0" border rounded="xl" class="pa-4 bg-white text-center h-100">
+                <div class="text-caption text-slate-500 font-weight-black text-uppercase mb-2">Target YTD</div>
+                <div class="text-h6 font-weight-black text-slate-800 target-money-drawer">{{ formatFull(selectedAOData.target_ytd) }}</div>
               </v-card>
             </v-col>
             <v-col cols="6">
-              <v-card elevation="0" border rounded="lg" class="pa-4 bg-white text-center">
-                <div class="text-caption text-slate-500 font-weight-bold text-uppercase mb-1">Realisasi</div>
-                <div class="text-h6 font-weight-black text-primary">{{ formatM(selectedAOData.realisasi) }}</div>
+              <v-card elevation="0" border rounded="xl" class="pa-4 bg-white text-center h-100">
+                <div class="text-caption text-slate-500 font-weight-black text-uppercase mb-2">Realisasi</div>
+                <div class="text-h6 font-weight-black text-emerald-600 target-money-drawer">{{ formatFull(selectedAOData.realisai || selectedAOData.realisasi) }}</div>
               </v-card>
             </v-col>
             <v-col cols="12">
-              <v-card elevation="0" border rounded="lg" class="pa-4 bg-white d-flex align-center justify-space-between">
+              <v-card elevation="0" border rounded="xl" class="pa-5 bg-white d-flex align-center justify-space-between overflow-hidden position-relative">
+                <div :style="{ background: getProgressColor(selectedAOData.pct) }" style="position:absolute; left:0; top:0; bottom:0; width:4px; opacity:0.8;"></div>
                 <div>
-                  <div class="text-caption text-slate-500 font-weight-bold text-uppercase mb-1">Pencapaian</div>
-                  <div class="text-h5 font-weight-black" :class="`text-${getProgressColor(selectedAOData.pct)}`">
-                    {{ selectedAOData.pct }}%
+                  <div class="text-caption text-slate-400 font-weight-black text-uppercase mb-1">Efektivitas Pencapaian</div>
+                  <div class="text-h4 font-weight-black" :style="{ color: getProgressColor(selectedAOData.pct) }">
+                    {{ pct(selectedAOData.pct) }}
                   </div>
                 </div>
                 <div class="text-right">
-                  <div class="text-caption text-slate-500 font-weight-bold text-uppercase mb-1">Gap / Selisih</div>
-                  <div class="text-subtitle-1 font-weight-bold" :class="selectedAOData.gap > 0 ? 'text-emerald-600' : 'text-rose-600'">
-                    {{ selectedAOData.gap > 0 ? '+' : (selectedAOData.gap < 0 ? '-' : '') }} {{ formatM(Math.abs(selectedAOData.gap)) }}
+                  <div class="text-caption text-slate-400 font-weight-black text-uppercase mb-1">Gap Nominal</div>
+                  <div class="text-h6 font-weight-black" :class="selectedAOData.gap >= 0 ? 'text-emerald-600' : 'text-rose-600'">
+                    {{ selectedAOData.gap >= 0 ? '+' : '' }} {{ formatFull(selectedAOData.gap) }}
                   </div>
                 </div>
               </v-card>
@@ -524,11 +529,11 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
 
           <!-- AO Pacing Chart -->
           <v-card elevation="0" border rounded="xl" class="pa-4 bg-white">
-            <div class="d-flex align-center gap-2 mb-4">
-              <v-icon icon="ri-line-chart-line" color="primary" />
-              <h3 class="text-subtitle-1 font-weight-black text-slate-800 mb-0">Grafik Kinerja AO</h3>
+            <div class="d-flex align-center gap-2 mb-6">
+              <v-icon icon="ri-line-chart-line" color="primary" size="20" />
+              <h3 class="text-subtitle-1 font-weight-black text-slate-800 mb-0">Matriks Performa Bulanan</h3>
             </div>
-            <VueApexCharts type="bar" height="300" :options="chartOpts" :series="aoChartSeries" />
+            <VueApexCharts type="bar" height="320" :options="chartOpts" :series="aoChartSeries" />
           </v-card>
         </div>
       </div>
@@ -537,74 +542,75 @@ watch([selectedYear, selectedMonth], fetchAnalytics)
 </template>
 
 <style scoped>
-.target-page {
-  max-width: 1400px;
-  margin: 0 auto;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+.fin-page { background: #f8fafc; min-height: 100vh; }
+.text-tiny { font-size: 10px; font-weight: 800; opacity: 0.6; }
+.target-money-exact {
+  font-size: clamp(0.95rem, 1.08vw, 1.26rem);
+  line-height: 1.14;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+}
+.target-money-drawer {
+  font-size: clamp(0.78rem, 1.05vw, 1rem) !important;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
 }
 
-.kpi-card {
-  border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
-}
-.kpi-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px -8px rgba(148, 163, 184, 0.2) !important;
+.content-card {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #eef2f6;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+  overflow: hidden;
 }
 
-.icon-box {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.kpi-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
 }
 
 .leaderboard-table th {
-  background-color: #ffffff;
-  border-bottom: 2px solid #f1f5f9 !important;
+  background-color: #f8fafc;
+  border-bottom: 2px solid #edf2f7 !important;
   font-size: 11px;
+  letter-spacing: 0.05em;
+  padding: 16px 12px !important;
 }
+
 .leaderboard-table td {
-  border-bottom: 1px solid #f8fafc !important;
+  padding: 12px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
 }
-.leaderboard-table tr:hover {
-  background-color: #f8fafc !important;
+
+.leaderboard-table tr:hover td {
+  background-color: #f1f5f9;
 }
 
 .pulse-dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #10b981;
-  animation: pulse 1.5s infinite;
+  animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-  70% { box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
-/* Tailwind custom colors mapped to standard names */
-.text-slate-400 { color: #94a3b8; }
-.text-slate-500 { color: #64748b; }
-.text-slate-600 { color: #475569; }
-.text-slate-700 { color: #334155; }
-.text-slate-800 { color: #1e293b; }
-.bg-slate-50 { background-color: #f8fafc; }
-.bg-slate-100 { background-color: #f1f5f9; }
+.transition-swing {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.5, 1);
+}
 
-.text-blue-600 { color: #2563eb; }
-.text-blue-900 { color: #1e3a8a; }
-.bg-blue-100 { background-color: #dbeafe; }
-
-.text-rose-500 { color: #f43f5e; }
-.text-rose-600 { color: #e11d48; }
-.text-rose-700 { color: #be123c; }
-.bg-rose-100 { background-color: #ffe4e6; }
-
-.text-emerald-600 { color: #059669; }
-.bg-emerald-50 { background-color: #ecfdf5; }
+/* Typography fix for long banking numbers */
+.fin-money-exact {
+    font-size: 1.75rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    word-break: break-all;
+}
 </style>

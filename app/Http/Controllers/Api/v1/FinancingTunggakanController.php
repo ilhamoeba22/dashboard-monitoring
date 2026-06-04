@@ -26,12 +26,15 @@ class FinancingTunggakanController extends Controller
         try {
             $kdloc = $request->get('cabang');
             $kdaoh = $request->get('ao');
+            $tahun = (int) $request->get('tahun', 0);
+            $bulan = (int) $request->get('bulan', 0);
 
-            $data = $this->repository->getJatuhTempoList($kdloc, $kdaoh);
+            $data = $this->repository->getJatuhTempoList($kdloc, $kdaoh, $tahun, $bulan);
 
             return response()->json([
                 'success' => true,
                 'data' => $data,
+                'period_meta' => $this->repository->getLastPeriodMeta(),
             ]);
         } catch (\Throwable $e) {
             return $this->handleError($e);

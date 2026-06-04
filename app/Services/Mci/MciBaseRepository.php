@@ -225,6 +225,15 @@ abstract class MciBaseRepository
         $key = $this->cacheKey('system_date');
 
         return Cache::remember($key, self::CACHE_LONG, function (): string {
+            // 1. Coba deteksi dari nama database (Naming Convention: MCI_{MMM}{YY}_{DDMMYYYY})
+            try {
+                $dbName = DB::connection($this->connection)->getDatabaseName();
+                if (preg_match('/_(\d{8})$/', $dbName, $matches)) {
+                    return $matches[1];
+                }
+            } catch (\Throwable $e) {}
+
+            // 2. Ambil dari tabel TANGGAL
             $tgl = DB::connection($this->connection)
                 ->table('TANGGAL')
                 ->orderBy('tgl', 'desc')

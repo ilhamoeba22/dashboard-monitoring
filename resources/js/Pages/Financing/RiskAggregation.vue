@@ -82,7 +82,7 @@ onMounted(() => { fetchCabangs(); fetchDashboardData(); })
   <div class="fin-page px-4 pt-0">
     <Head title="Risk Aggregation" />
 
-    <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
     <div class="fin-hero mb-6">
       <div class="fin-hero__deco"></div>
       <div class="fin-hero__inner">
@@ -95,7 +95,7 @@ onMounted(() => { fetchCabangs(); fetchDashboardData(); })
               <h1 class="fin-hero__title">Risk Aggregation</h1>
               <p class="fin-hero__subtitle">Analytics Portofolio & Risk Management PT. BPRS HIK MCI</p>
               <div class="fin-hero__badges">
-                <span class="fin-badge fin-badge--info">ðŸ›¡ï¸ Risk</span>
+                <span class="fin-badge fin-badge--info">🛡️ Risk</span>
               </div>
             </div>
           </div>

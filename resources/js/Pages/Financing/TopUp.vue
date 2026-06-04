@@ -173,7 +173,7 @@ watch([selectedAo, selectedAnalisa, searchQuery], resetPage)
   <div class="fin-page px-4 pt-0">
     <Head title="Top-Up & Retention Pembiayaan" />
 
-    <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
     <div class="fin-hero mb-6">
       <div class="fin-hero__deco"></div>
       <div class="fin-hero__inner">
@@ -186,7 +186,7 @@ watch([selectedAo, selectedAnalisa, searchQuery], resetPage)
               <h1 class="fin-hero__title">Top-Up & Retention</h1>
               <p class="fin-hero__subtitle">Pemantauan fasilitas penambahan plafon, retensi nasabah lunas, dan pembiayaan berulang.</p>
               <div class="fin-hero__badges">
-                <span class="fin-badge fin-badge--warning">ðŸ”„ Repeat Order</span>
+                <span class="fin-badge fin-badge--warning">🔄 Repeat Order</span>
               </div>
             </div>
           </div>
@@ -339,7 +339,7 @@ watch([selectedAo, selectedAnalisa, searchQuery], resetPage)
               <tr>
                 <th class="sticky left-0 z-10 whitespace-nowrap">Transisi Fasilitas</th>
                 <th class="whitespace-nowrap">Analisa Nasabah</th>
-                <th class="text-right whitespace-nowrap">Plafon Lama â†’ Baru</th>
+                <th class="text-right whitespace-nowrap">Plafon Lama → Baru</th>
               </tr>
             </thead>
             <tbody>

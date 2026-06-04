@@ -3,7 +3,7 @@
     <Head title="Repayment Rate Monitoring" />
 
     <div class="fin-page px-4 pt-0">
-      <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+      <!-- ── HERO HEADER ─────────────────────────────────────────── -->
       <div class="fin-hero mb-6">
         <div class="fin-hero__deco"></div>
         <div class="fin-hero__inner">
@@ -16,7 +16,7 @@
                 <h1 class="fin-hero__title">Repayment Rate Monitoring</h1>
                 <p class="fin-hero__subtitle">Analisis tingkat pembayaran nasabah aktif (Modal + Margin)</p>
                 <div class="fin-hero__badges">
-                  <span class="fin-badge fin-badge--info">ðŸ“ˆ Analytics</span>
+                  <span class="fin-badge fin-badge--info">📈 Analytics</span>
                 </div>
               </div>
             </div>

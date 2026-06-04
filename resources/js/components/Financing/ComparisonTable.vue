@@ -1,88 +1,70 @@
 <script setup>
 /**
- * ComparisonTable Component
- * Tabel perbandingan Realtime vs Historical dengan direction indicators
- * Theme: Emerald Green (#059669) + Gold (#D97706)
+ * ComparisonTable Component - STRICT BANKING VERSION
+ * Displays raw accurate data for both periods.
  */
 
 import { computed } from 'vue'
+import { formatExactRupiah, formatExactNumber } from '@/utils/money'
 
 // Props
 const props = defineProps({
   realtime: {
     type: Object,
-    default: null
+    default: () => ({})
   },
   historical: {
     type: Object,
-    default: null
+    default: () => ({})
   },
   comparison: {
     type: Object,
-    default: null
-  },
-  loading: {
-    type: Boolean,
-    default: false
+    default: () => ({})
   }
 })
 
-// Theme Colors
-const themeColors = {
-  primary: '#059669',
-  secondary: '#D97706',
-  success: '#10B981',
-  error: '#EF4444',
-  warning: '#F59E0B'
-}
-
-// Comparison metrics
+// Metrics Configuration
 const metrics = computed(() => {
-  if (!props.comparison) return []
-  
   return [
     {
-      key: 'noa',
-      label: 'Jumlah Rekening',
-      icon: 'ri-file-list-3-line',
-      realtime: props.realtime?.total_noa ?? 0,
-      historical: props.historical?.total_noa ?? 0,
-      format: 'number',
-      direction: props.comparison.noa?.direction ?? null,
-      change: props.comparison.noa?.change ?? 0
-    },
-    {
-      key: 'os',
       label: 'Total Outstanding',
       icon: 'ri-money-dollar-circle-line',
       realtime: props.realtime?.total_os ?? 0,
       historical: props.historical?.total_os ?? 0,
       format: 'currency',
-      direction: props.comparison.os?.direction ?? null,
-      change: props.comparison.os?.change ?? 0,
+      direction: props.comparison.total_os?.direction ?? null,
+      change: props.comparison.total_os?.change ?? 0,
       isPositiveGood: true
     },
     {
-      key: 'npf',
-      label: 'NPF Ratio',
-      icon: 'ri-alert-line',
+      label: 'Jumlah Nasabah (NOA)',
+      icon: 'ri-group-line',
+      realtime: props.realtime?.total_noa ?? 0,
+      historical: props.historical?.total_noa ?? 0,
+      format: 'number',
+      direction: props.comparison.total_noa?.direction ?? null,
+      change: props.comparison.total_noa?.change ?? 0,
+      isPositiveGood: true
+    },
+    {
+      label: 'Nominal NPF',
+      icon: 'ri-error-warning-line',
+      realtime: props.realtime?.total_npf ?? 0,
+      historical: props.historical?.total_npf ?? 0,
+      format: 'currency',
+      direction: props.comparison.total_npf?.direction ?? null,
+      change: props.comparison.total_npf?.change ?? 0,
+      isPositiveGood: false 
+    },
+    {
+      label: 'Rasio NPF (%)',
+      icon: 'ri-percent-line',
       realtime: props.realtime?.npf_persen ?? 0,
       historical: props.historical?.npf_persen ?? 0,
       format: 'percent',
-      direction: props.comparison.npf?.direction ?? null,
-      change: props.comparison.npf?.change ?? 0,
-      isPositiveGood: false // Lower is better
-    },
-    {
-      key: 'avg_kolek',
-      label: 'Avg Kolektibilitas',
-      icon: 'ri-bar-chart-box-line',
-      realtime: props.realtime?.avg_kolek ?? 0,
-      historical: props.historical?.avg_kolek ?? 0,
-      format: 'decimal',
-      direction: props.comparison.avg_kolek?.direction ?? null,
-      change: props.comparison.avg_kolek?.change ?? 0,
-      isPositiveGood: false // Lower is better
+      direction: props.comparison.npf_ratio?.direction ?? null,
+      change: props.comparison.npf_ratio?.change ?? 0,
+      isPositiveGood: false 
     }
   ]
 })
@@ -128,16 +110,10 @@ function getChangeText(change, format) {
   if (!change && change !== 0) return '—'
   const sign = change > 0 ? '+' : ''
   
-  if (format === 'percent') {
-    return `${sign}${change.toFixed(2)}%`
+  if (format === 'percent' || format === 'decimal') {
+    return `${sign}${change}%`
   }
-  if (format === 'currency') {
-    const num = Math.abs(change)
-    if (num >= 1e9) return `${sign}${change < 0 ? '-' : ''}Rp ${(num / 1e9).toFixed(2)} M`
-    if (num >= 1e6) return `${sign}${change < 0 ? '-' : ''}Rp ${(num / 1e6).toFixed(1)} Jt`
-    return `${sign}${change.toLocaleString('id-ID')}`
-  }
-  return `${sign}${parseInt(Math.abs(change)).toLocaleString('id-ID')}`
+  return `${sign}${formatValue(change, format)}`
 }
 
 // Check if data is available
@@ -147,158 +123,90 @@ const hasData = computed(() => {
 </script>
 
 <template>
-  <v-card elevation="2" class="h-full">
-    <v-card-title class="d-flex align-center justify-space-between pa-4 pb-2">
-      <div class="d-flex align-center">
-        <v-avatar color="secondary" size="36" variant="tonal" class="mr-3">
-          <v-icon icon="ri-git-compare-line" size="20" />
-        </v-avatar>
-        <div>
-          <h3 class="text-h6 font-weight-bold mb-0" style="font-family: 'Plus Jakarta Sans', sans-serif;">
-            Perbandingan Periode
-          </h3>
-          <p class="text-caption text-medium-emphasis mb-0">
-            Realtime vs Historical
-          </p>
-        </div>
-      </div>
-    </v-card-title>
-    
-    <v-card-text class="pa-4 pt-2">
-      <!-- Loading Skeleton -->
-      <div v-if="loading" class="d-flex justify-center align-center py-8">
-        <v-progress-circular indeterminate color="primary" size="48" />
-      </div>
-      
-      <!-- No Data Message -->
-      <v-alert
-        v-else-if="!hasData"
-        type="info"
-        variant="tonal"
-        density="compact"
-      >
-        <div class="text-body-2">
-          Tidak ada data comparison tersedia.
-        </div>
-        <template #append>
-          <code class="text-caption">php artisan financing:aggregate-snapshot</code>
-        </template>
-      </v-alert>
-      
-      <!-- Comparison Cards Grid -->
-      <v-row v-else dense>
-        <v-col
-          v-for="metric in metrics"
-          :key="metric.key"
-          cols="12"
-          sm="6"
-          md="3"
-        >
-          <v-card
-            elevation="0"
-            border
-            class="pa-4 h-100"
-            :style="{
-              borderColor: 'var(--border-color, #E5E7EB)',
-              borderRadius: '12px'
-            }"
-          >
-            <!-- Header -->
-            <div class="d-flex align-center mb-3">
-              <v-avatar
-                :color="metric.key === 'noa' ? 'primary' : metric.key === 'os' ? 'success' : metric.key === 'npf' ? 'error' : 'warning'"
-                size="32"
-                variant="tonal"
-              >
-                <v-icon :icon="metric.icon" size="16" />
-              </v-avatar>
-              <span class="text-body-2 text-medium-emphasis ml-2">
-                {{ metric.label }}
-              </span>
+  <div class="comparison-table">
+    <div v-if="!hasData" class="d-flex flex-column align-center justify-center py-12 bg-slate-50 rounded-xl border border-dashed">
+      <v-icon icon="ri-file-search-line" size="48" color="slate-200" />
+      <p class="text-slate-400 mt-2 font-weight-medium">Data pembanding belum dimuat</p>
+    </div>
+
+    <v-table v-else class="fin-table border rounded-xl overflow-hidden shadow-sm" hover>
+      <thead>
+        <tr class="bg-slate-50">
+          <th class="text-left font-weight-black text-slate-700 py-4" style="width: 30%">MATRIK UTAMA</th>
+          <th class="text-right font-weight-black text-slate-700">REALTIME</th>
+          <th class="text-right font-weight-black text-slate-500">HISTORICAL</th>
+          <th class="text-center font-weight-black text-slate-700" style="width: 20%">PERUBAHAN</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="m in metrics" :key="m.label" class="transition-swing">
+          <td class="py-4">
+            <div class="d-flex align-center gap-3">
+              <div class="metrics-icon-box">
+                <v-icon :icon="m.icon" size="20" color="primary" />
+              </div>
+              <span class="text-subtitle-2 font-weight-bold text-slate-700">{{ m.label }}</span>
             </div>
-            
-            <!-- Values -->
-            <div class="d-flex align-center justify-space-between mb-2">
-              <!-- Realtime -->
-              <div class="text-center flex-grow-1">
-                <div class="text-caption text-disabled mb-1">Realtime</div>
-                <div
-                  class="text-h6 font-weight-bold"
-                  :style="{
-                    color: metric.key === 'noa' ? themeColors.primary :
-                           metric.key === 'os' ? themeColors.success :
-                           metric.key === 'npf' ? themeColors.error : themeColors.warning
-                  }"
-                >
-                  {{ formatValue(metric.realtime, metric.format) }}
-                </div>
-              </div>
-              
-              <!-- Direction Arrow -->
-              <div class="d-flex flex-column align-center mx-2">
-                <v-icon
-                  :icon="getDirectionIcon(metric.direction)"
-                  :color="getDirectionColor(metric.direction, metric.isPositiveGood)"
-                  size="20"
-                />
-                <span
-                  class="text-caption mt-1"
-                  :style="{ color: getDirectionColor(metric.direction, metric.isPositiveGood) }"
-                >
-                  {{ metric.direction || 'N/A' }}
-                </span>
-              </div>
-              
-              <!-- Historical -->
-              <div class="text-center flex-grow-1">
-                <div class="text-caption text-disabled mb-1">Historical</div>
-                <div class="text-h6 text-medium-emphasis">
-                  {{ formatValue(metric.historical, metric.format) }}
-                </div>
-              </div>
+          </td>
+          <td class="text-right">
+            <div class="text-body-2 font-weight-black text-slate-900">
+              {{ formatValue(m.realtime, m.format) }}
             </div>
-            
-            <!-- Change Indicator -->
+          </td>
+          <td class="text-right">
+            <div class="text-body-2 font-weight-medium text-slate-500">
+              {{ formatValue(m.historical, m.format) }}
+            </div>
+          </td>
+          <td class="text-center">
             <v-chip
-              :color="getDirectionColor(metric.direction, metric.isPositiveGood)"
-              variant="tonal"
               size="small"
-              class="mt-2 w-100 justify-center"
+              :color="getDirectionColor(m.direction, m.isPositiveGood)"
+              variant="tonal"
+              class="font-weight-black"
+              rounded="lg"
             >
-              <v-icon :icon="getDirectionIcon(metric.direction)" start size="14" />
-              {{ getChangeText(metric.change, metric.format) }}
+              <template #prepend>
+                <v-icon :icon="getDirectionIcon(m.direction)" size="14" class="me-1" />
+              </template>
+              {{ getChangeText(m.change, m.format) }}
             </v-chip>
-          </v-card>
-        </v-col>
-      </v-row>
-      
-      <!-- Legend -->
-      <div v-if="hasData" class="d-flex justify-center gap-4 mt-4">
-        <div class="d-flex align-center gap-2">
-          <v-icon icon="ri-arrow-up-line" color="success" size="16" />
-          <span class="text-caption text-medium-emphasis">Increase</span>
-        </div>
-        <div class="d-flex align-center gap-2">
-          <v-icon icon="ri-arrow-down-line" color="error" size="16" />
-          <span class="text-caption text-medium-emphasis">Decrease</span>
-        </div>
-        <div class="d-flex align-center gap-2">
-          <v-icon icon="ri-subtract-line" color="secondary" size="16" />
-          <span class="text-caption text-medium-emphasis">Stable</span>
-        </div>
-      </div>
-    </v-card-text>
-  </v-card>
+          </td>
+        </tr>
+      </tbody>
+    </v-table>
+  </div>
 </template>
-d>
-</template>
-e</span>
-        </div>
-        <div class="d-flex align-center gap-2">
-          <v-icon icon="ri-subtract-line" color="secondary" size="16" />
-          <span class="text-caption text-medium-emphasis">Stable</span>
-        </div>
-      </div>
-    </v-card-text>
-  </v-card>
-</template>
+
+<style scoped>
+.fin-table :deep(table) {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.fin-table :deep(thead th) {
+  border-bottom: 2px solid #e2e8f0 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+}
+
+.fin-table :deep(tbody td) {
+  border-bottom: 1px solid #f1f5f9 !important;
+  transition: all 0.2s ease;
+}
+
+.metrics-icon-box {
+  width: 36px;
+  height: 36px;
+  background: #eff6ff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.transition-swing:hover td {
+  background-color: #f8fafc !important;
+}
+</style>

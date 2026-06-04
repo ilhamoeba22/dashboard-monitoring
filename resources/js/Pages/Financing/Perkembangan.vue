@@ -4,7 +4,7 @@ import { Head, usePage } from '@inertiajs/vue3'
 import DefaultLayout from '@/layouts/default.vue'
 import GrowthMixedChart from '@/components/Financing/GrowthMixedChart.vue'
 import '@/assets/css/financing-shared.css'
-import { formatExactRupiah } from '@/utils/money'
+import { formatExactRupiah, formatTruncatedPercentage } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -104,7 +104,7 @@ onMounted(fetchGrowthData)
   <div class="fin-page px-4 pt-0">
     <Head title="Perkembangan & Pertumbuhan" />
 
-    <!-- â”€â”€ HERO HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
     <div class="fin-hero mb-6">
       <div class="fin-hero__deco"></div>
       <div class="fin-hero__inner">
@@ -205,9 +205,9 @@ onMounted(fetchGrowthData)
                 :class="getGrowthColor(item[`m${p.index}_growth`])"
               >
                 <v-icon :icon="getGrowthIcon(item[`m${p.index}_growth`])" size="14" />
-                <span>{{ Math.abs(item[`m${p.index}_growth`]).toFixed(2) }}%</span>
+                <span>{{ formatTruncatedPercentage(item[`m${p.index}_growth`]) }}</span>
               </div>
-              <span v-else class="text-slate-300">â€”</span>
+              <span v-else class="text-slate-300">—</span>
             </template>
 
             <template #loading>

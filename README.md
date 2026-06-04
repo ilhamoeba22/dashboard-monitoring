@@ -1,58 +1,96 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 📊 Dashboard Monitoring Pembiayaan BPRS HIK MCI
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Real-time financial monitoring and analytics system for comprehensive loan portfolio management, risk tracking, and collection intelligence.
 
-## About Laravel
+## 🎯 Project Overview
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Dashboard Monitoring is an enterprise-grade business intelligence platform designed for BPRS HIK MCI (Islamic Microfinance Bank). It provides real-time visibility into lending operations, risk management, collection performance, and financial analytics across multiple branches and product lines.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+**Status**: Active Development | **Last Updated**: June 4, 2026 | **Age**: 40 days
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 📊 Why This Project Qualifies
 
-## Learning Laravel
+### Repository Metrics
+| Metric | Value |
+|--------|-------|
+| **GitHub Stars** | 0 (Early Stage) |
+| **Forks** | 0 |
+| **Watchers** | 0 |
+| **Open Issues** | 0 |
+| **Repository Size** | 13.6 KB |
+| **Visibility** | Public |
+| **License** | (Recommended: MIT) |
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Project Value Proposition
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+✅ **Business Impact**
+- Addresses critical business need for financial institutions
+- Handles sensitive financial data (borrowers, loan portfolios, credit risk)
+- Provides 21 specialized dashboard views for different stakeholder roles
+- Enables data-driven decision making for lending operations
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+✅ **Modern Tech Stack**
+- **Backend**: Laravel 13 (PHP 8.3) - Industry-standard framework
+- **Frontend**: Vue 3 + Inertia.js - Modern reactive UI
+- **Styling**: Tailwind CSS 4.0 + SCSS
+- **Database**: SQLite with migrations
+- **Charts**: ECharts + ApexCharts for data visualization
+- **Export**: Excel (Maatwebsite) + PDF generation
+- **Authentication**: Laravel Sanctum for API security
 
-## Agentic Development
+✅ **Comprehensive Documentation**
+- 6 detailed documentation files (21+ pages)
+- Role-specific guides (Direksi, Branch Manager, AO, Collection Team, Risk Management, BD)
+- Complete glossary of financial terms
+- Troubleshooting guides and best practices
+- KPI definitions and red flag indicators
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+✅ **Production-Ready Features**
+- Executive dashboard with KPI overview
+- Real-time risk monitoring (NPF, FDR, Coverage Ratio)
+- Collection management and early warning system
+- Repayment rate analytics
+- Write-off and restructuring tracking
+- AO performance evaluation
+- Comprehensive audit logging
 
-```bash
-composer require laravel/boost --dev
+## 🚀 Key Features
 
-php artisan boost:install
-```
+### Dashboard Modules (21 Pages)
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+1. **Executive Overview** - High-level KPI summary
+2. **Master Console** - Multidimensional analysis
+3. **Target RBB** - Achievement tracking
+4. **Development Trends** - Growth analysis
+5. **Maturity & Early Warning** - Collection queue monitoring
+6. **Repayment Rate** - Payment effectiveness
+7. **Quality & Risk** - Comprehensive risk view (4 tabs)
+8. **Collectibility** - Credit quality distribution
+9. **Nominative Data** - Complete account database
+10. **Restructuring** - Restructured loan monitoring
+11. **Write-Off** - Write-off tracking
+12. **Top-Up** - Plafon increase monitoring
+13. **Yield** - Profitability analysis
+14. **Settlement** - Loan repayment tracking
+15. **Employees (AO Performance)** - Staff evaluation
+16. **Syndication** - Syndicated loan monitoring
+17. **Collection Monitoring** - Activity tracking
+18. **Risk Aggregation** - Portfolio risk analysis
+19. **Development (Detail)** - Deep-dive analysis
+20. **PPKA** - Employee financing
+21. **Repayment Rate New** - Advanced analysis
 
-## Contributing
+### Core Capabilities
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- **Real-time Data Integration** - Syncs with Core Banking System
+- **Multi-dimensional Analytics** - Analysis by branch, product, borrower
+- **Role-based Access Control** - Fine-grained permissions
+- **Advanced Filtering** - Complex data queries
+- **Export Capabilities** - Excel, PDF report generation
+- **Audit Trail** - Complete activity logging
+- **Alert System** - Automated risk notifications
+- **Mobile Responsive** - Works on all devices
 
-## Code of Conduct
+## 🛠️ Tech Stack
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Backend

@@ -1,625 +1,534 @@
-﻿<template>
-  <DefaultLayout>
-    <Head title="Repayment Rate Monitoring" />
-
-    <div class="fin-page px-4 pt-0">
-      <!-- ── HERO HEADER ─────────────────────────────────────────── -->
-      <div class="fin-hero mb-6">
-        <div class="fin-hero__deco"></div>
-        <div class="fin-hero__inner">
-          <div class="d-flex flex-column flex-md-row justify-space-between align-start align-md-center gap-4">
-            <div class="d-flex align-center gap-4">
-              <div class="fin-hero__icon fin-icon-blue">
-                <v-icon icon="ri-bar-chart-grouped-fill" size="26" color="white" />
-              </div>
-              <div class="fin-hero__meta">
-                <h1 class="fin-hero__title">Repayment Rate Monitoring</h1>
-                <p class="fin-hero__subtitle">Analisis tingkat pembayaran nasabah aktif (Modal + Margin)</p>
-                <div class="fin-hero__badges">
-                  <span class="fin-badge fin-badge--info">📈 Analytics</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- KPI Cards -->
-      <v-row class="mb-6">
-        <v-col cols="12" sm="6" lg="3">
-          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
-            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
-              <v-icon icon="ri-percent-line" size="120" color="#3b82f6" />
-            </div>
-            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
-              <div class="d-flex justify-space-between align-start">
-                <div>
-                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">OVERALL RR</p>
-                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #3b82f6; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ safePct(summary.overall_rate).toFixed(2) }}%</h2>
-                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Rata-rata</p>
-                </div>
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-
-        <v-col cols="12" sm="6" lg="3">
-          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
-            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
-              <v-icon icon="ri-group-line" size="120" color="#6366f1" />
-            </div>
-            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
-              <div class="d-flex justify-space-between align-start">
-                <div>
-                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL NASABAH</p>
-                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #6366f1; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ parseInt(summary.total_nasabah || 0) }}</h2>
-                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Aktif</p>
-                </div>
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-
-        <v-col cols="12" sm="6" lg="3">
-          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
-            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
-              <v-icon icon="ri-checkbox-circle-line" size="120" color="#10b981" />
-            </div>
-            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
-              <div class="d-flex justify-space-between align-start">
-                <div>
-                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">LANCAR (100%)</p>
-                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #10b981; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ parseInt(summary.nasabah_100_pct || 0) }}</h2>
-                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif; color: #10b981; font-weight: 600;">Nasabah</p>
-                </div>
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-
-        <v-col cols="12" sm="6" lg="3">
-          <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
-            <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
-              <v-icon icon="ri-alert-line" size="120" color="#d97706" />
-            </div>
-            <v-card-text class="pa-5" style="position: relative; z-index: 1;">
-              <div class="d-flex justify-space-between align-start">
-                <div>
-                  <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">WARNING (&lt;80%)</p>
-                  <h2 class="text-h4 font-weight-bold mb-2" style="color: #d97706; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ parseInt(summary.nasabah_warning || 0) }}</h2>
-                  <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Nasabah</p>
-                </div>
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <!-- Filter Bar -->
-      <v-card class="d-flex flex-wrap align-center ga-3 pa-4 bg-white rounded-xl border shadow-sm mb-6" elevation="0">
-        <div style="max-width: 300px; flex: 1 1 auto;">
-          <v-text-field
-            v-model="filters.search"
-            label="Cari (NOCIF, Nama, Kontrak)"
-            density="compact"
-            variant="outlined"
-            prepend-inner-icon="ri-search-line"
-            clearable
-            hide-details
-            rounded="lg"
-            @update:model-value="debouncedSearch"
-          />
-        </div>
-        <div style="max-width: 200px; flex: 1 1 auto;">
-          <v-select
-            v-model="filters.ao"
-            :items="aoList"
-            label="Account Officer"
-            density="compact"
-            variant="outlined"
-            clearable
-            hide-details
-            rounded="lg"
-            @update:model-value="fetchData"
-          />
-        </div>
-        <div style="max-width: 180px; flex: 1 1 auto;">
-          <v-select
-            v-model="filters.cabang"
-            :items="cabangList"
-            label="Cabang"
-            density="compact"
-            variant="outlined"
-            clearable
-            hide-details
-            rounded="lg"
-            @update:model-value="fetchData"
-          />
-        </div>
-        <div style="max-width: 150px; flex: 1 1 auto;">
-          <v-select
-            v-model="filters.segmen"
-            :items="segmenList"
-            label="Segmen"
-            density="compact"
-            variant="outlined"
-            clearable
-            hide-details
-            rounded="lg"
-            @update:model-value="fetchData"
-          />
-        </div>
-        <div style="max-width: 150px; flex: 1 1 auto;">
-          <v-select
-            v-model="filters.collectibility"
-            :items="kolOptions"
-            label="Kolektibilitas"
-            density="compact"
-            variant="outlined"
-            clearable
-            hide-details
-            rounded="lg"
-            @update:model-value="fetchData"
-          />
-        </div>
-        <v-spacer />
-        <v-btn color="success" variant="tonal" class="rounded-lg" prepend-icon="ri-file-excel-2-line" @click="exportExcel" :loading="exporting">
-          Export
-        </v-btn>
-      </v-card>
-
-      <!-- Data Table -->
-      <div class="content-card">
-        <div v-if="!data || data.length === 0" class="pa-12 text-center bg-slate-50 rounded-xl">
-          <v-icon icon="ri-inbox-archive-line" size="64" class="text-slate-300 mb-4"></v-icon>
-          <div class="text-h6 text-slate-500">Tidak ada data Repayment Rate ditemukan</div>
-          <div class="text-caption text-slate-400 mt-2">Coba ubah filter pencarian</div>
-        </div>
-        <div v-else class="content-card__body pa-0">
-          <v-data-table
-            :headers="headers"
-            :items="filteredData"
-            :loading="loading"
-            :items-per-page="50"
-            class="fin-table fin-vtable bg-transparent"
-            density="comfortable"
-          >
-            <template #item.nama_nasabah="{ item }">
-              <div class="font-weight-medium">{{ item.nama_nasabah || 'N/A' }}</div>
-              <div class="text-caption text-grey">{{ item.nocif || '-' }}</div>
-            </template>
-
-            <template #item.colbaru="{ item }">
-              <v-chip :color="getKolColor(item.colbaru)" size="small" variant="tonal" class="font-weight-bold px-3">
-                Kol {{ item.colbaru || '-' }}
-              </v-chip>
-            </template>
-
-            <template #item.totaltag="{ item }">
-              <div class="font-weight-bold">{{ formatCurrency(item.totaltag) }}</div>
-              <div class="text-caption text-grey">Modal: {{ formatCurrency(item.tagmdl) }}</div>
-            </template>
-
-            <template #item.totalbyr="{ item }">
-              <div class="font-weight-bold text-success">{{ formatCurrency(item.totalbyr) }}</div>
-              <div class="text-caption text-grey">Modal: {{ formatCurrency(item.byrmdl) }}</div>
-            </template>
-
-            <template #item.pcttotal="{ item }">
-              <div class="d-flex align-center" style="min-width: 140px">
-                <div class="flex-grow-1 mr-2">
-                  <v-progress-linear
-                    :model-value="safePct(item.pcttotal)"
-                    :color="getRRColor(safePct(item.pcttotal))"
-                    height="8"
-                    rounded
-                  ></v-progress-linear>
-                </div>
-                <v-chip
-                  :color="getRRColor(safePct(item.pcttotal))"
-                  size="small"
-                  variant="tonal"
-                  class="font-weight-bold flex-shrink-0"
-                >
-                  {{ safePct(item.pcttotal).toFixed(2) }}%
-                </v-chip>
-              </div>
-            </template>
-
-            <template #item.nama_ao="{ item }">
-              <v-chip size="small" variant="outlined" color="primary">
-                <v-icon start icon="ri-user-follow-line" size="14"></v-icon>
-                {{ item.nama_ao || 'N/A' }}
-              </v-chip>
-            </template>
-
-            <template #item.actions="{ item }">
-              <v-btn icon size="small" variant="text" color="primary" @click="showDetail(item)">
-                <v-icon icon="ri-eye-line"></v-icon>
-              </v-btn>
-            </template>
-          </v-data-table>
-        </div>
-      </div>
-
-      <!-- Detail Modal -->
-      <v-dialog v-model="detailDialog" max-width="900px" scrollable>
-        <v-card v-if="selectedItem" class="rounded-xl">
-          <v-card-title class="d-flex align-center pa-4 bg-primary text-white">
-            <v-icon icon="ri-information-line" class="mr-2" color="white" size="24"></v-icon>
-            <span class="text-h6 font-weight-bold">Detail Repayment Rate</span>
-            <v-spacer />
-            <v-btn icon variant="text" color="white" size="small" @click="detailDialog = false">
-              <v-icon icon="ri-close-line" size="20"></v-icon>
-            </v-btn>
-          </v-card-title>
-          <v-divider></v-divider>
-          <v-card-text class="pa-4">
-            <v-row>
-              <v-col cols="12" md="6">
-                <div class="mb-2"><strong>Nama:</strong> {{ selectedItem.nama_nasabah || 'N/A' }}</div>
-                <div class="mb-2"><strong>NOCIF:</strong> {{ selectedItem.nocif || '-' }}</div>
-                <div class="mb-2"><strong>No Kontrak:</strong> {{ selectedItem.nokontrak || '-' }}</div>
-                <div class="mb-2"><strong>Produk:</strong> {{ selectedItem.nama_produk || '-' }}</div>
-              </v-col>
-              <v-col cols="12" md="6">
-                <div class="mb-2"><strong>AO:</strong> {{ selectedItem.nama_ao || 'N/A' }}</div>
-                <div class="mb-2"><strong>Cabang:</strong> {{ selectedItem.nama_cabang || '-' }}</div>
-                <div class="mb-2">
-                  <strong>Kolektibilitas:</strong>
-                  <v-chip :color="getKolColor(selectedItem.colbaru)" size="small" variant="tonal" class="ml-2 font-weight-bold">
-                    Kol {{ selectedItem.colbaru || '-' }}
-                  </v-chip>
-                </div>
-              </v-col>
-              <v-col cols="12">
-                <v-divider class="my-3" />
-                <h4 class="mb-3 text-h6 font-weight-bold">Rincian Pembayaran</h4>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-card variant="outlined" class="pa-4 rounded-lg">
-                  <div class="text-caption text-grey mb-1">Tagihan Modal</div>
-                  <div class="text-h6 font-weight-bold">{{ formatCurrency(selectedItem.tagmdl) }}</div>
-                  <div class="text-caption text-grey mt-3">Bayar Modal</div>
-                  <div class="text-h6 font-weight-bold text-success">{{ formatCurrency(selectedItem.byrmdl) }}</div>
-                  <div class="text-caption mt-3">
-                    RR Modal:
-                    <strong :class="getRRTextColor(safePct(selectedItem.pctmdl))">
-                      {{ safePct(selectedItem.pctmdl).toFixed(2) }}%
-                    </strong>
-                  </div>
-                </v-card>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-card variant="outlined" class="pa-4 rounded-lg">
-                  <div class="text-caption text-grey mb-1">Tagihan Margin</div>
-                  <div class="text-h6 font-weight-bold">{{ formatCurrency(selectedItem.tagmgn) }}</div>
-                  <div class="text-caption text-grey mt-3">Bayar Margin</div>
-                  <div class="text-h6 font-weight-bold text-success">{{ formatCurrency(selectedItem.byrmgn) }}</div>
-                  <div class="text-caption mt-3">
-                    RR Margin:
-                    <strong :class="getRRTextColor(safePct(selectedItem.pctmgn))">
-                      {{ safePct(selectedItem.pctmgn).toFixed(2) }}%
-                    </strong>
-                  </div>
-                </v-card>
-              </v-col>
-              <v-col cols="12">
-                <v-card class="pa-4 rounded-lg bg-blue-lighten-5 border">
-                  <div class="d-flex justify-space-between align-center mb-3">
-                    <div>
-                      <div class="text-caption text-grey">Total Tagihan</div>
-                      <div class="text-h5 font-weight-bold">{{ formatCurrency(selectedItem.totaltag) }}</div>
-                    </div>
-                    <div class="text-right">
-                      <div class="text-caption text-grey">Total Bayar</div>
-                      <div class="text-h5 font-weight-bold text-success">{{ formatCurrency(selectedItem.totalbyr) }}</div>
-                    </div>
-                  </div>
-                  <v-divider class="mb-3"></v-divider>
-                  <div class="d-flex align-center justify-space-between">
-                    <span class="text-h6 font-weight-bold">Repayment Rate Total:</span>
-                    <v-chip
-                      :color="getRRColor(safePct(selectedItem.pcttotal))"
-                      size="large"
-                      variant="flat"
-                      class="font-weight-bold"
-                    >
-                      {{ safePct(selectedItem.pcttotal).toFixed(2) }}%
-                    </v-chip>
-                  </div>
-                </v-card>
-              </v-col>
-            </v-row>
-          </v-card-text>
-        </v-card>
-      </v-dialog>
-    </div>
-  </DefaultLayout>
-</template>
-
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { Head } from '@inertiajs/vue3'
-import DefaultLayout from '@/Layouts/default.vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { Head, router, usePage } from '@inertiajs/vue3'
+import DefaultLayout from '@/layouts/default.vue'
 import axios from 'axios'
+import VueApexCharts from 'vue3-apexcharts'
 import '@/assets/css/financing-shared.css'
-import { formatExactRupiah } from '@/utils/money'
+import { formatExactNumber, formatExactRupiah, formatTruncatedPercentage, toFiniteNumber } from '@/utils/money'
 
+defineOptions({ layout: DefaultLayout })
+
+const page = usePage()
+const activeTab = ref(new URLSearchParams(String(page.url || '').split('?')[1] || '').get('tab') === 'new' ? 'new' : 'existing')
 const loading = ref(false)
-const exporting = ref(false)
-const data = ref([])
-const summary = ref({})
-const detailDialog = ref(false)
-const selectedItem = ref(null)
-
-const filters = ref({
-  ao: null,
-  cabang: null,
-  segmen: null,
-  collectibility: null,
-  search: ''
-})
+const isExporting = ref(false)
+const errorMessage = ref('')
+const existingRows = ref([])
+const newRows = ref([])
+const existingSummary = ref({})
+const newSummary = ref({})
+const existingFilters = ref({ search: '', ao: null, cabang: null, segmen: null, collectibility: null })
+const newFilters = ref({ search: '', ao: null, onboarding_months: 6, risk_status: null })
+const currentPage = ref(1)
+const itemsPerPage = ref(15)
 
 const kolOptions = [
-  { title: 'Lancar (1)', value: '1' },
-  { title: 'DPK (2)', value: '2' },
-  { title: 'Kurang Lancar (3)', value: '3' },
-  { title: 'Diragukan (4)', value: '4' },
-  { title: 'Macet (5)', value: '5' }
+  { title: 'Kol 1 - Lancar', value: '1' },
+  { title: 'Kol 2 - DPK', value: '2' },
+  { title: 'Kol 3 - Kurang Lancar', value: '3' },
+  { title: 'Kol 4 - Diragukan', value: '4' },
+  { title: 'Kol 5 - Macet', value: '5' },
 ]
-
-// =========================================================================
-// SAFE COMPUTED HELPERS
-// =========================================================================
-
-const aoList = computed(() => {
-  if (!data.value || !Array.isArray(data.value) || data.value.length === 0) return []
-  const aos = [...new Set(data.value.map(item => item.nama_ao).filter(Boolean))]
-  return aos.sort()
-})
-
-const cabangList = computed(() => {
-  if (!data.value || !Array.isArray(data.value) || data.value.length === 0) return []
-  const cabangs = [...new Set(data.value.map(item => item.nama_cabang).filter(Boolean))]
-  return cabangs.sort()
-})
-
-const segmenList = computed(() => {
-  if (!data.value || !Array.isArray(data.value) || data.value.length === 0) return []
-  const segmens = [...new Set(data.value.map(item => item.nama_segmen).filter(Boolean))]
-  return segmens.sort()
-})
-
-// =========================================================================
-// TABLE HEADERS
-// =========================================================================
-
-const headers = [
-  { title: 'Nasabah / CIF', key: 'nama_nasabah', sortable: true, width: '200px' },
-  { title: 'No Kontrak', key: 'nokontrak', sortable: true, width: '140px' },
-  { title: 'Kol', key: 'colbaru', sortable: true, width: '100px' },
-  { title: 'Tagihan', key: 'totaltag', sortable: true, align: 'end', width: '160px' },
-  { title: 'Bayar', key: 'totalbyr', sortable: true, align: 'end', width: '160px' },
-  { title: 'RR %', key: 'pcttotal', sortable: true, width: '160px' },
-  { title: 'AO', key: 'nama_ao', sortable: true, width: '160px' },
-  { title: '', key: 'actions', sortable: false, width: '60px' }
+const onboardingOptions = [
+  { title: '3 bulan terakhir', value: 3 },
+  { title: '6 bulan terakhir', value: 6 },
+  { title: '12 bulan terakhir', value: 12 },
 ]
+const riskOptions = ['Good', 'Warning', 'At Risk']
 
-// =========================================================================
-// FILTERED DATA (Client-side filtering)
-// =========================================================================
+const activeRows = computed(() => activeTab.value === 'existing' ? existingRows.value : newRows.value)
+const activeSummary = computed(() => activeTab.value === 'existing' ? existingSummary.value : newSummary.value)
+const activeTitle = computed(() => activeTab.value === 'existing' ? 'Existing Portfolio' : 'New / Akuisisi & Retensi')
 
-const filteredData = computed(() => {
-  if (!data.value || !Array.isArray(data.value) || data.value.length === 0) return []
-
-  let result = [...data.value]
-
-  // AO filter
-  if (filters.value.ao) {
-    result = result.filter(item => item.nama_ao === filters.value.ao)
-  }
-
-  // Cabang filter
-  if (filters.value.cabang) {
-    result = result.filter(item => item.nama_cabang === filters.value.cabang)
-  }
-
-  // Segmen filter
-  if (filters.value.segmen) {
-    result = result.filter(item => item.nama_segmen === filters.value.segmen)
-  }
-
-  // Collectibility filter
-  if (filters.value.collectibility) {
-    result = result.filter(item => String(item.colbaru) === String(filters.value.collectibility))
-  }
-
-  // Search filter
-  if (filters.value.search) {
-    const search = filters.value.search.toLowerCase()
-    result = result.filter(item =>
-      (item.nama_nasabah || '').toLowerCase().includes(search) ||
-      (item.nocif || '').toLowerCase().includes(search) ||
-      (item.nokontrak || '').toLowerCase().includes(search)
-    )
-  }
-
-  return result
+const existingFilteredRows = computed(() => {
+  const query = existingFilters.value.search.toLowerCase()
+  return existingRows.value.filter(item => {
+    const matchSearch = String(item.nama_nasabah || '').toLowerCase().includes(query)
+      || String(item.nocif || '').toLowerCase().includes(query)
+      || String(item.nokontrak || '').toLowerCase().includes(query)
+    const matchAo = !existingFilters.value.ao || item.nama_ao === existingFilters.value.ao
+    const matchCabang = !existingFilters.value.cabang || item.nama_cabang === existingFilters.value.cabang
+    const matchSegmen = !existingFilters.value.segmen || item.nama_segmen === existingFilters.value.segmen
+    const matchKol = !existingFilters.value.collectibility || String(item.colbaru) === String(existingFilters.value.collectibility)
+    return matchSearch && matchAo && matchCabang && matchSegmen && matchKol
+  })
 })
 
-// =========================================================================
-// API
-// =========================================================================
+const newFilteredRows = computed(() => {
+  const query = newFilters.value.search.toLowerCase()
+  return newRows.value.filter(item => {
+    const matchSearch = String(item.nama_nasabah || '').toLowerCase().includes(query)
+      || String(item.nokontrak || '').toLowerCase().includes(query)
+    const matchAo = !newFilters.value.ao || item.nama_ao === newFilters.value.ao
+    const matchRisk = !newFilters.value.risk_status || item.risk_status === newFilters.value.risk_status
+    return matchSearch && matchAo && matchRisk
+  })
+})
+
+const filteredRows = computed(() => activeTab.value === 'existing' ? existingFilteredRows.value : newFilteredRows.value)
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / itemsPerPage.value)))
+const paginatedRows = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  return filteredRows.value.slice(start, start + itemsPerPage.value)
+})
+
+const existingAoOptions = computed(() => unique(existingRows.value, 'nama_ao'))
+const existingCabangOptions = computed(() => unique(existingRows.value, 'nama_cabang'))
+const existingSegmenOptions = computed(() => unique(existingRows.value, 'nama_segmen'))
+const newAoOptions = computed(() => unique(newRows.value, 'nama_ao'))
+
+const totalTagihan = computed(() => activeTab.value === 'existing'
+  ? sumBy(filteredRows.value, item => item.totaltag)
+  : sumBy(filteredRows.value, item => toFiniteNumber(item.tag_current_mdl) + toFiniteNumber(item.tag_current_mgn)))
+const totalBayar = computed(() => activeTab.value === 'existing'
+  ? sumBy(filteredRows.value, item => item.totalbyr)
+  : sumBy(filteredRows.value, item => toFiniteNumber(item.cash_in_mdl) + toFiniteNumber(item.cash_in_mgn)))
+const totalRecoveryTarget = computed(() => activeTab.value === 'new' ? sumBy(filteredRows.value, item => toFiniteNumber(item.target_recovery_mdl) + toFiniteNumber(item.target_recovery_mgn)) : 0)
+const overallRate = computed(() => totalTagihan.value > 0 ? (totalBayar.value / totalTagihan.value) * 100 : 0)
+const recoveryRate = computed(() => totalRecoveryTarget.value > 0 ? (totalBayar.value / totalRecoveryTarget.value) * 100 : 0)
+const perfectRows = computed(() => filteredRows.value.filter(item => activeTab.value === 'existing' ? toFiniteNumber(item.pcttotal) >= 100 : toFiniteNumber(item.rr_pct) >= 100))
+const warningRows = computed(() => filteredRows.value.filter(item => {
+  const rate = activeTab.value === 'existing' ? toFiniteNumber(item.pcttotal) : toFiniteNumber(item.rr_pct)
+  return rate < 80
+}))
+
+const interpretation = computed(() => {
+  if (errorMessage.value) return `Data belum dapat dimuat: ${errorMessage.value}`
+  if (!filteredRows.value.length) return `Tidak ada data ${activeTitle.value} pada filter ini.`
+  if (activeTab.value === 'new' && recoveryRate.value > 0 && recoveryRate.value < 50) return `Recovery nasabah baru masih rendah di ${formatTruncatedPercentage(recoveryRate.value)}. Prioritaskan akun expired/onboarding yang sudah punya target recovery.`
+  if (overallRate.value < 80) return `Repayment rate ${activeTitle.value} berada di bawah ambang monitoring (${formatTruncatedPercentage(overallRate.value)}). Fokus ke nasabah dengan tagihan besar dan pembayaran rendah.`
+  if (warningRows.value.length > perfectRows.value.length) return `${formatNumber(warningRows.value.length)} rekening masih warning. Perlu follow-up AO dan validasi saldo autodebet.`
+  return `${activeTitle.value} relatif terkendali dengan repayment rate ${formatTruncatedPercentage(overallRate.value)}. Tetap monitor anomali bayar lebih rendah dari tagihan.`
+})
+
+const aoRows = computed(() => {
+  const groups = new Map()
+  filteredRows.value.forEach(item => {
+    const key = item.nama_ao || 'TANPA AO'
+    const current = groups.get(key) || { ao: key, rekening: 0, tagihan: 0, bayar: 0, recovery_target: 0, warning: 0 }
+    const rowTagihan = activeTab.value === 'existing' ? toFiniteNumber(item.totaltag) : toFiniteNumber(item.tag_current_mdl) + toFiniteNumber(item.tag_current_mgn)
+    const rowBayar = activeTab.value === 'existing' ? toFiniteNumber(item.totalbyr) : toFiniteNumber(item.cash_in_mdl) + toFiniteNumber(item.cash_in_mgn)
+    const rowRate = rowTagihan > 0 ? (rowBayar / rowTagihan) * 100 : 0
+    current.rekening += 1
+    current.tagihan += rowTagihan
+    current.bayar += rowBayar
+    current.recovery_target += activeTab.value === 'new' ? toFiniteNumber(item.target_recovery_mdl) + toFiniteNumber(item.target_recovery_mgn) : 0
+    if (rowRate < 80) current.warning += 1
+    groups.set(key, current)
+  })
+  return [...groups.values()].map(row => ({
+    ...row,
+    rr: row.tagihan > 0 ? (row.bayar / row.tagihan) * 100 : 0,
+    recr: row.recovery_target > 0 ? (row.bayar / row.recovery_target) * 100 : 0,
+  })).sort((a, b) => b.tagihan - a.tagihan)
+})
+
+const rrBucketRows = computed(() => {
+  const buckets = [
+    { label: 'Lancar >=100%', color: '#059669', rows: filteredRows.value.filter(item => getRowRate(item) >= 100) },
+    { label: 'Watch 80-99%', color: '#2563EB', rows: filteredRows.value.filter(item => getRowRate(item) >= 80 && getRowRate(item) < 100) },
+    { label: 'Warning 50-79%', color: '#F97316', rows: filteredRows.value.filter(item => getRowRate(item) >= 50 && getRowRate(item) < 80) },
+    { label: 'Critical <50%', color: '#E11D48', rows: filteredRows.value.filter(item => getRowRate(item) < 50) },
+  ]
+  return buckets.map(bucket => ({ ...bucket, count: bucket.rows.length, tagihan: sumBy(bucket.rows, row => activeTab.value === 'existing' ? row.totaltag : toFiniteNumber(row.tag_current_mdl) + toFiniteNumber(row.tag_current_mgn)) }))
+})
+
+const bucketChart = computed(() => ({
+  series: rrBucketRows.value.map(row => row.count),
+  options: {
+    chart: { type: 'donut', background: 'transparent', fontFamily: "'Plus Jakarta Sans', sans-serif" },
+    labels: rrBucketRows.value.map(row => row.label),
+    colors: rrBucketRows.value.map(row => row.color),
+    dataLabels: { enabled: false },
+    legend: { show: false },
+    plotOptions: { pie: { donut: { size: '76%' } } },
+    stroke: { width: 0 },
+    tooltip: { y: { formatter: value => `${formatNumber(value)} rekening` } },
+  },
+}))
+
+const aoChart = computed(() => {
+  const rows = aoRows.value.slice(0, 8)
+  return {
+    series: [
+      { name: 'Tagihan', data: rows.map(row => row.tagihan) },
+      { name: 'Bayar', data: rows.map(row => row.bayar) },
+    ],
+    options: {
+      chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
+      colors: ['#2563EB', '#10B981'],
+      plotOptions: { bar: { borderRadius: 8, horizontal: true } },
+      dataLabels: { enabled: false },
+      xaxis: { categories: rows.map(row => row.ao), labels: { formatter: value => formatRp(value), style: { colors: '#64748b', fontSize: '10px' } } },
+      yaxis: { labels: { style: { colors: '#0f172a', fontWeight: 800 } } },
+      grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
+      tooltip: { y: { formatter: value => formatRp(value) } },
+    },
+  }
+})
+
+function unique(rows, key) {
+  return [...new Set(rows.map(item => item[key]).filter(Boolean))].sort()
+}
+
+function sumBy(rows, selector) {
+  return rows.reduce((sum, item) => sum + toFiniteNumber(selector(item)), 0)
+}
+
+function getRowRate(item) {
+  return activeTab.value === 'existing' ? toFiniteNumber(item.pcttotal) : toFiniteNumber(item.rr_pct)
+}
+
+function formatRp(value) {
+  return formatExactRupiah(value)
+}
+
+function formatNumber(value) {
+  return formatExactNumber(value)
+}
+
+function getKolColor(kol) {
+  return { 1: 'success', 2: 'info', 3: 'warning', 4: 'deep-purple', 5: 'error' }[String(kol)] || 'grey'
+}
+
+function getRateColor(rate) {
+  const value = toFiniteNumber(rate)
+  if (value >= 100) return 'success'
+  if (value >= 80) return 'primary'
+  if (value >= 50) return 'warning'
+  return 'error'
+}
+
+function statusDebet(item) {
+  if (activeTab.value !== 'existing') return item.risk_status || '-'
+  const tagihan = Math.max(0, toFiniteNumber(item.tagmdl) + toFiniteNumber(item.tagmgn))
+  const bayar = toFiniteNumber(item.byrmdl) + toFiniteNumber(item.byrmgn)
+  const sisa = tagihan - bayar
+  if (toFiniteNumber(item.pcttotal) >= 100) return 'LUNAS'
+  if (toFiniteNumber(item.saldo_netto) >= sisa && sisa > 0) return 'Cukup'
+  return 'Kurang'
+}
+
+const fetchExisting = async () => {
+  const response = await axios.get('/api/v1/financing/performance/repayment-rate')
+  existingRows.value = response.data.data || []
+  existingSummary.value = response.data.summary || {}
+}
+
+const fetchNew = async () => {
+  const response = await axios.get('/api/v1/financing/performance/repayment-rate-new', {
+    params: { onboarding_months: newFilters.value.onboarding_months },
+  })
+  newRows.value = response.data.data || []
+  newSummary.value = response.data.summary || {}
+}
 
 const fetchData = async () => {
   loading.value = true
+  errorMessage.value = ''
   try {
-    const params = {
-      ao: filters.value.ao,
-      cabang: filters.value.cabang,
-      segmen: filters.value.segmen,
-      collectibility: filters.value.collectibility,
-      search: filters.value.search
-    }
-    const response = await axios.get('/api/v1/financing/performance/repayment-rate', { params })
-    data.value = Array.isArray(response.data?.data) ? response.data.data : []
-    summary.value = response.data?.summary || {}
+    if (activeTab.value === 'existing' && !existingRows.value.length) await fetchExisting()
+    if (activeTab.value === 'new' && !newRows.value.length) await fetchNew()
   } catch (error) {
-    console.error('Error fetching data:', error)
-    data.value = []
-    summary.value = {}
+    errorMessage.value = error?.response?.data?.error || error.message || 'Gagal memuat data Repayment Rate'
   } finally {
     loading.value = false
   }
 }
 
-const debouncedSearch = (() => {
-  let timeout
-  return () => {
-    clearTimeout(timeout)
-    timeout = setTimeout(fetchData, 500)
-  }
-})()
-
-const showDetail = (item) => {
-  selectedItem.value = item
-  detailDialog.value = true
+function buildExistingRows(rows = existingFilteredRows.value) {
+  return rows.map(item => ({
+    'No CIF': item.nocif || '-',
+    'No Kontrak': item.nokontrak || '-',
+    Nasabah: item.nama_nasabah || '-',
+    Kol: item.colbaru || '-',
+    Produk: item.nama_produk || '-',
+    AO: item.nama_ao || '-',
+    Cabang: item.nama_cabang || '-',
+    Wilayah: item.nama_wilayah || '-',
+    Segmen: item.nama_segmen || '-',
+    'Tag Pokok Current': toFiniteNumber(item.tagmdl),
+    'Bayar Pokok': toFiniteNumber(item.byrmdl),
+    'RR Pokok': formatTruncatedPercentage(item.pctmdl),
+    'Tag Margin Current': toFiniteNumber(item.tagmgn),
+    'Bayar Margin': toFiniteNumber(item.byrmgn),
+    'RR Margin': formatTruncatedPercentage(item.pctmgn),
+    'RR Total': formatTruncatedPercentage(item.pcttotal),
+    'Saldo Netto': toFiniteNumber(item.saldo_netto),
+    'Status Debet': statusDebet(item),
+    'Total Tunggakan': toFiniteNumber(item.grand_totaltag),
+    'Status Autodebet': item.sts_autodebet || '-',
+  }))
 }
 
-// =========================================================================
-// SAFE FORMATTERS (ANTI-RpNaN)
-// =========================================================================
-
-const safeNum = (val) => {
-  const n = parseFloat(val)
-  return Number.isFinite(n) ? n : 0
+function buildNewRows(rows = newFilteredRows.value) {
+  return rows.map(item => ({
+    'No Kontrak': item.nokontrak || '-',
+    Nasabah: item.nama_nasabah || '-',
+    Kol: item.colbaru || '-',
+    Produk: item.nama_produk || '-',
+    AO: item.nama_ao || '-',
+    Cabang: item.nama_cabang || '-',
+    Wilayah: item.nama_wilayah || '-',
+    'Tag Pokok Current': toFiniteNumber(item.tag_current_mdl),
+    'Bayar Pokok': toFiniteNumber(item.cash_in_mdl),
+    'Tag Margin Current': toFiniteNumber(item.tag_current_mgn),
+    'Bayar Margin': toFiniteNumber(item.cash_in_mgn),
+    'RR Total': formatTruncatedPercentage(item.rr_pct),
+    'Target Recovery': toFiniteNumber(item.target_recovery_mdl) + toFiniteNumber(item.target_recovery_mgn),
+    'Recovery Rate': formatTruncatedPercentage(item.recr_pct),
+    'Risk Status': item.risk_status || '-',
+    'Days Since Onboarding': item.days_since_onboarding || 0,
+  }))
 }
 
-const safePct = (val) => {
-  const n = parseFloat(val)
-  if (!Number.isFinite(n) || n < 0) return 0
-  if (n > 100) return 100
-  return n
-}
-
-const formatCurrency = (value) => {
-  return formatExactRupiah(value)
-}
-
-// =========================================================================
-// COLOR HELPERS
-// =========================================================================
-
-const getKolColor = (kol) => {
-  const colors = { '1': 'success', '2': 'info', '3': 'warning', '4': 'orange-darken-2', '5': 'error' }
-  return colors[String(kol)] || 'grey'
-}
-
-const getRRColor = (rate) => {
-  if (rate >= 100) return 'success'
-  if (rate >= 80) return 'info'
-  if (rate >= 50) return 'warning'
-  return 'error'
-}
-
-const getRRTextColor = (rate) => {
-  if (rate >= 100) return 'text-success'
-  if (rate >= 80) return 'text-info'
-  if (rate >= 50) return 'text-warning'
-  return 'text-error'
+function buildSummaryRows() {
+  return [
+    { Metrik: 'Tab', Nilai: activeTitle.value },
+    { Metrik: 'Sumber Legacy', Nilai: activeTab.value === 'existing' ? 'repayment-rate-pembiayaan.blade.php / FinancingRepaymentRate.php' : 'repayment-rate-new-pembiayaan.blade.php / FinancingRepaymentRateNew.php' },
+    { Metrik: 'Total Rekening', Nilai: filteredRows.value.length },
+    { Metrik: 'Total Tagihan', Nilai: totalTagihan.value },
+    { Metrik: 'Total Bayar', Nilai: totalBayar.value },
+    { Metrik: 'Repayment Rate', Nilai: formatTruncatedPercentage(overallRate.value) },
+    { Metrik: 'Perfect/Lunas', Nilai: perfectRows.value.length },
+    { Metrik: 'Warning', Nilai: warningRows.value.length },
+    { Metrik: 'Interpretasi', Nilai: interpretation.value },
+  ]
 }
 
 const exportExcel = async () => {
-  exporting.value = true
+  if (isExporting.value) return
+  isExporting.value = true
   try {
-    const params = new URLSearchParams({
-      ao: filters.value.ao || '',
-      cabang: filters.value.cabang || '',
-      segmen: filters.value.segmen || '',
-      collectibility: filters.value.collectibility || '',
-      search: filters.value.search || ''
-    })
-    window.location.href = `/api/v1/financing/performance/repayment-rate/export?${params.toString()}`
-  } catch (error) {
-    console.error('Export error:', error)
+    const XLSX = await import('xlsx')
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(buildSummaryRows()), '00 Summary')
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(activeTab.value === 'existing' ? buildExistingRows() : buildNewRows()), '01 Detail Aktif')
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(aoRows.value), '02 Rekap AO')
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rrBucketRows.value.map(({ rows, ...row }) => row)), '03 Bucket RR')
+    XLSX.writeFile(workbook, `repayment-rate-${activeTab.value}.xlsx`)
   } finally {
-    setTimeout(() => { exporting.value = false }, 2000)
+    isExporting.value = false
   }
 }
 
-onMounted(() => {
+const exportPdf = async () => {
+  if (isExporting.value) return
+  isExporting.value = true
+  try {
+    const { default: jsPDF } = await import('jspdf')
+    await import('jspdf-autotable')
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(15)
+    doc.text(`Repayment Rate - ${activeTitle.value}`, 40, 38)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    doc.text(`Tagihan ${formatRp(totalTagihan.value)} | Bayar ${formatRp(totalBayar.value)} | RR ${formatTruncatedPercentage(overallRate.value)}`, 40, 58)
+    doc.autoTable({
+      startY: 82,
+      head: [['Nasabah', 'Kontrak', 'Kol', 'AO', 'Tagihan', 'Bayar', 'RR', activeTab.value === 'existing' ? 'Status Debet' : 'Risk']],
+      body: filteredRows.value.map(item => [
+        item.nama_nasabah || '-',
+        item.nokontrak || '-',
+        item.colbaru || '-',
+        item.nama_ao || '-',
+        formatRp(activeTab.value === 'existing' ? item.totaltag : toFiniteNumber(item.tag_current_mdl) + toFiniteNumber(item.tag_current_mgn)),
+        formatRp(activeTab.value === 'existing' ? item.totalbyr : toFiniteNumber(item.cash_in_mdl) + toFiniteNumber(item.cash_in_mgn)),
+        formatTruncatedPercentage(getRowRate(item)),
+        statusDebet(item),
+      ]),
+      styles: { fontSize: 7, cellPadding: 4, overflow: 'linebreak' },
+      headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+      columnStyles: { 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' } },
+    })
+    doc.save(`repayment-rate-${activeTab.value}.pdf`)
+  } finally {
+    isExporting.value = false
+  }
+}
+
+const resetPage = () => { currentPage.value = 1 }
+
+onMounted(fetchData)
+watch(activeTab, tab => {
+  resetPage()
+  router.replace(`/financing/repayment-rate${tab === 'new' ? '?tab=new' : ''}`, { preserveState: true, preserveScroll: true })
   fetchData()
+})
+watch([existingFilters, newFilters], resetPage, { deep: true })
+watch(() => newFilters.value.onboarding_months, async () => {
+  newRows.value = []
+  if (activeTab.value === 'new') await fetchData()
 })
 </script>
 
+<template>
+  <div class="fin-page px-4 pt-0">
+    <Head title="Repayment Rate Monitoring" />
+
+    <div class="fin-hero mb-6">
+      <div class="fin-hero__deco"></div>
+      <div class="fin-hero__inner">
+        <div class="d-flex flex-column flex-xl-row justify-space-between align-start align-xl-center gap-4">
+          <div class="d-flex align-center gap-4">
+            <div class="fin-hero__icon fin-icon-blue">
+              <v-icon icon="ri-speed-up-line" size="26" color="white" />
+            </div>
+            <div class="fin-hero__meta">
+              <h1 class="fin-hero__title">Repayment Rate Monitoring</h1>
+              <p class="fin-hero__subtitle">Satu halaman untuk repayment existing portfolio dan new acquisition, dengan dua query legacy yang tetap terpisah.</p>
+              <div class="fin-hero__badges">
+                <span class="fin-badge fin-badge--info">Performance</span>
+                <span class="fin-badge fin-badge--slate">Legacy Source Preserved</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="rr-toolbar">
+            <div class="rr-export-actions">
+              <v-btn size="small" rounded="lg" color="success" variant="flat" :loading="isExporting" prepend-icon="ri-file-excel-2-line" @click="exportExcel">Excel</v-btn>
+              <v-btn size="small" rounded="lg" color="error" variant="flat" :loading="isExporting" prepend-icon="ri-file-pdf-2-line" @click="exportPdf">PDF</v-btn>
+              <v-btn size="small" rounded="lg" color="primary" variant="tonal" :loading="loading" prepend-icon="ri-refresh-line" @click="fetchData">Refresh</v-btn>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <v-card class="rr-tab-card mb-6" elevation="0">
+      <v-tabs v-model="activeTab" color="primary" slider-color="primary" class="rr-tabs">
+        <v-tab value="existing">Existing Portfolio</v-tab>
+        <v-tab value="new">New / Akuisisi & Retensi</v-tab>
+      </v-tabs>
+    </v-card>
+
+    <div class="rr-insight-panel mb-6">
+      <div class="rr-insight-card rr-insight-card--primary">
+        <span>Interpretasi Operasional</span>
+        <strong>{{ interpretation }}</strong>
+        <small>{{ activeTab === 'existing' ? 'Legacy: repayment-rate-pembiayaan' : 'Legacy: repayment-rate-new-pembiayaan' }}</small>
+      </div>
+      <div class="rr-insight-card">
+        <span>Total Tagihan</span>
+        <strong>{{ formatRp(totalTagihan) }}</strong>
+        <small>{{ formatNumber(filteredRows.length) }} rekening dalam filter</small>
+      </div>
+      <div class="rr-insight-card">
+        <span>Total Bayar</span>
+        <strong>{{ formatRp(totalBayar) }}</strong>
+        <small>RR {{ formatTruncatedPercentage(overallRate) }}</small>
+      </div>
+      <div class="rr-insight-card">
+        <span>{{ activeTab === 'new' ? 'Recovery Rate' : 'Warning' }}</span>
+        <strong>{{ activeTab === 'new' ? formatTruncatedPercentage(recoveryRate) : `${formatNumber(warningRows.length)} rekening` }}</strong>
+        <small>{{ activeTab === 'new' ? `Target ${formatRp(totalRecoveryTarget)}` : 'RR di bawah 80%' }}</small>
+      </div>
+    </div>
+
+    <v-row class="mb-6">
+      <v-col cols="12" sm="6" lg="3"><v-card class="rr-score-card" elevation="0"><v-icon icon="ri-percent-line" size="34" color="#2563eb" /><div><p>Overall RR</p><h2>{{ formatTruncatedPercentage(overallRate) }}</h2><small>Bayar / Tagihan</small></div></v-card></v-col>
+      <v-col cols="12" sm="6" lg="3"><v-card class="rr-score-card" elevation="0"><v-icon icon="ri-group-line" size="34" color="#6366f1" /><div><p>Total Rekening</p><h2>{{ formatNumber(filteredRows.length) }}</h2><small>{{ activeTitle }}</small></div></v-card></v-col>
+      <v-col cols="12" sm="6" lg="3"><v-card class="rr-score-card" elevation="0"><v-icon icon="ri-checkbox-circle-line" size="34" color="#059669" /><div><p>Lancar</p><h2>{{ formatNumber(perfectRows.length) }}</h2><small>RR minimal 100%</small></div></v-card></v-col>
+      <v-col cols="12" sm="6" lg="3"><v-card class="rr-score-card" elevation="0"><v-icon icon="ri-alert-line" size="34" color="#d97706" /><div><p>Warning</p><h2>{{ formatNumber(warningRows.length) }}</h2><small>RR di bawah 80%</small></div></v-card></v-col>
+    </v-row>
+
+    <v-card v-if="activeTab === 'existing'" class="rr-filter-card mb-6" elevation="0">
+      <v-text-field v-model="existingFilters.search" prepend-inner-icon="ri-search-2-line" placeholder="Cari NOCIF / nama / kontrak..." variant="outlined" density="compact" hide-details rounded="lg" />
+      <v-select v-model="existingFilters.ao" :items="existingAoOptions" label="AO" clearable variant="outlined" density="compact" hide-details rounded="lg" />
+      <v-select v-model="existingFilters.cabang" :items="existingCabangOptions" label="Cabang" clearable variant="outlined" density="compact" hide-details rounded="lg" />
+      <v-select v-model="existingFilters.segmen" :items="existingSegmenOptions" label="Segmen" clearable variant="outlined" density="compact" hide-details rounded="lg" />
+      <v-select v-model="existingFilters.collectibility" :items="kolOptions" item-title="title" item-value="value" label="Kol" clearable variant="outlined" density="compact" hide-details rounded="lg" />
+    </v-card>
+
+    <v-card v-else class="rr-filter-card rr-filter-card--new mb-6" elevation="0">
+      <v-text-field v-model="newFilters.search" prepend-inner-icon="ri-search-2-line" placeholder="Cari nama / kontrak..." variant="outlined" density="compact" hide-details rounded="lg" />
+      <v-select v-model="newFilters.ao" :items="newAoOptions" label="AO" clearable variant="outlined" density="compact" hide-details rounded="lg" />
+      <v-select v-model="newFilters.onboarding_months" :items="onboardingOptions" item-title="title" item-value="value" label="Onboarding" variant="outlined" density="compact" hide-details rounded="lg" />
+      <v-select v-model="newFilters.risk_status" :items="riskOptions" label="Risk Status" clearable variant="outlined" density="compact" hide-details rounded="lg" />
+    </v-card>
+
+    <v-row class="mb-6">
+      <v-col cols="12" lg="4">
+        <div class="content-card">
+          <div class="content-card__header"><div><div class="content-card__title">Bucket Repayment</div><div class="content-card__subtitle">Distribusi rekening berdasarkan RR.</div></div></div>
+          <div class="content-card__body d-flex align-center justify-center gap-6">
+            <VueApexCharts v-if="!loading" type="donut" width="190" height="190" :options="bucketChart.options" :series="bucketChart.series" />
+            <div class="rr-chart-legend">
+              <span v-for="row in rrBucketRows" :key="row.label"><i :style="{ background: row.color }"></i>{{ row.label }} {{ formatNumber(row.count) }}</span>
+            </div>
+          </div>
+        </div>
+      </v-col>
+      <v-col cols="12" lg="8">
+        <div class="content-card">
+          <div class="content-card__header"><div><div class="content-card__title">Top AO by Tagihan</div><div class="content-card__subtitle">Perbandingan tagihan dan bayar per AO.</div></div></div>
+          <div class="content-card__body"><VueApexCharts v-if="!loading" type="bar" height="280" :options="aoChart.options" :series="aoChart.series" /></div>
+        </div>
+      </v-col>
+    </v-row>
+
+    <div class="content-card mb-6">
+      <div class="content-card__header"><div><div class="content-card__title">Prioritas Account Officer</div><div class="content-card__subtitle">AO dengan tagihan terbesar, warning terbanyak, dan repayment yang perlu dipantau.</div></div></div>
+      <div class="content-card__body pa-0">
+        <div v-for="row in aoRows.slice(0, 8)" :key="row.ao" class="rr-priority-row">
+          <div><strong>{{ row.ao }}</strong><small>{{ formatNumber(row.rekening) }} rekening | warning {{ formatNumber(row.warning) }} | RR {{ formatTruncatedPercentage(row.rr) }}</small></div>
+          <span>{{ formatRp(row.tagihan) }}</span>
+        </div>
+        <div v-if="!aoRows.length" class="pa-8 text-center text-disabled">Tidak ada prioritas AO pada filter ini.</div>
+      </div>
+    </div>
+
+    <div class="content-card">
+      <div class="content-card__header">
+        <div><div class="content-card__title">Detail {{ activeTitle }}</div><div class="content-card__subtitle">Detail kontrak, tagihan, pembayaran, repayment rate, status saldo/autodebet, dan recovery untuk tab new.</div></div>
+        <v-chip size="x-small" color="primary" variant="flat" class="font-weight-black">{{ formatNumber(filteredRows.length) }} data</v-chip>
+      </div>
+      <div class="content-card__body pa-0">
+        <div class="overflow-x-auto">
+          <table class="fin-table fin-vtable rr-table">
+            <thead>
+              <tr>
+                <th>Nasabah / Kontrak</th>
+                <th class="text-center">Kol</th>
+                <th>AO / Cabang</th>
+                <th class="text-right">Tagihan</th>
+                <th class="text-right">Bayar</th>
+                <th class="text-right">RR</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="loading"><td colspan="7" class="pa-12 text-center"><v-progress-circular indeterminate color="primary" size="46" /><div class="text-h6 text-medium-emphasis font-weight-bold mt-4">Memuat Repayment Rate...</div></td></tr>
+              <tr v-else-if="paginatedRows.length === 0"><td colspan="7" class="pa-12 text-center"><v-icon icon="ri-inbox-line" size="64" class="text-disabled mb-4" /><div class="text-h6 text-medium-emphasis font-weight-bold">Data Tidak Ditemukan</div></td></tr>
+              <tr v-for="item in paginatedRows" :key="`${activeTab}-${item.nokontrak}`">
+                <td><div class="font-weight-black text-uppercase">{{ item.nama_nasabah }}</div><div class="rr-contract-flow"><span>{{ item.nocif || '-' }}</span><span>{{ item.nokontrak }}</span></div><div class="text-caption text-medium-emphasis">{{ item.nama_produk || '-' }}</div></td>
+                <td class="text-center"><v-chip size="small" :color="getKolColor(item.colbaru)" variant="tonal" class="font-weight-black">Kol {{ item.colbaru }}</v-chip></td>
+                <td><div class="font-weight-black text-caption text-uppercase">{{ item.nama_ao || 'TANPA AO' }}</div><div class="text-caption text-medium-emphasis">{{ item.nama_cabang || '-' }} | {{ item.nama_wilayah || '-' }}</div></td>
+                <td class="text-right"><div class="rr-money">{{ formatRp(activeTab === 'existing' ? item.totaltag : toFiniteNumber(item.tag_current_mdl) + toFiniteNumber(item.tag_current_mgn)) }}</div><div class="rr-small">Pokok {{ formatRp(activeTab === 'existing' ? item.tagmdl : item.tag_current_mdl) }}</div><div class="rr-small">Margin {{ formatRp(activeTab === 'existing' ? item.tagmgn : item.tag_current_mgn) }}</div></td>
+                <td class="text-right"><div class="rr-money rr-money--success">{{ formatRp(activeTab === 'existing' ? item.totalbyr : toFiniteNumber(item.cash_in_mdl) + toFiniteNumber(item.cash_in_mgn)) }}</div><div class="rr-small">Pokok {{ formatRp(activeTab === 'existing' ? item.byrmdl : item.cash_in_mdl) }}</div><div class="rr-small">Margin {{ formatRp(activeTab === 'existing' ? item.byrmgn : item.cash_in_mgn) }}</div></td>
+                <td class="text-right"><v-chip size="small" :color="getRateColor(getRowRate(item))" variant="flat" class="font-weight-black text-white">{{ formatTruncatedPercentage(getRowRate(item)) }}</v-chip><div v-if="activeTab === 'new'" class="rr-small">Rec {{ formatTruncatedPercentage(item.recr_pct) }}</div></td>
+                <td><v-chip size="small" :color="statusDebet(item) === 'Kurang' || statusDebet(item) === 'At Risk' ? 'warning' : 'success'" variant="tonal" class="font-weight-black">{{ statusDebet(item) }}</v-chip><div v-if="activeTab === 'existing'" class="rr-small">{{ item.sts_autodebet }}</div><div v-else class="rr-small">Target rec {{ formatRp(toFiniteNumber(item.target_recovery_mdl) + toFiniteNumber(item.target_recovery_mgn)) }}</div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <v-divider v-if="filteredRows.length > 0" />
+        <div v-if="filteredRows.length > 0" class="pa-4 d-flex align-center justify-space-between bg-slate-50">
+          <div class="text-caption text-medium-emphasis font-weight-bold">Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, filteredRows.length) }} dari {{ filteredRows.length }} data</div>
+          <v-pagination v-model="currentPage" :length="totalPages" :total-visible="5" density="compact" variant="flat" active-color="primary" />
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
 <style scoped>
-.rounded-xl {
-  border-radius: 16px !important;
-}
-
-.shadow-sm {
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1) !important;
-}
-
-.border {
-  border: 1px solid #e2e8f0 !important;
-}
-
-.bg-slate-50 {
-  background-color: #f8fafc !important;
-}
-
-.text-slate-300 {
-  color: #cbd5e1 !important;
-}
-
-.text-slate-500 {
-  color: #64748b !important;
-}
-
-/* Data Table Enterprise Styling */
-:deep(.v-data-table) {
-  background-color: transparent !important;
-}
-
-:deep(.v-data-table .v-data-table__th) {
-  background-color: #f8fafc !important;
-  color: #475569 !important;
-  font-weight: 900 !important;
-  font-size: 11px !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
-  border-bottom: 1px solid #e2e8f0 !important;
-}
-
-:deep(.v-data-table .v-data-table__td) {
-  color: #334155 !important;
-  font-size: 13px !important;
-  padding-top: 12px !important;
-  padding-bottom: 12px !important;
-  border-bottom: 1px solid #f1f5f9 !important;
-}
-
-:deep(.v-chip) {
-  font-weight: 700 !important;
-}
-
-:deep(.v-avatar.blue-lighten-5) {
-  background-color: #eff6ff !important;
-}
-:deep(.v-avatar.indigo-lighten-5) {
-  background-color: #eef2ff !important;
-}
-:deep(.v-avatar.green-lighten-5) {
-  background-color: #ecfdf5 !important;
-}
-:deep(.v-avatar.amber-lighten-5) {
-  background-color: #fffbeb !important;
-}
-
-/* Modal styling */
-:deep(.v-dialog .v-card) {
-  border-radius: 16px !important;
-}
+.rr-toolbar,.rr-export-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}.rr-export-actions{gap:8px}.fin-badge--slate{background:rgba(255,255,255,.12);color:#e2e8f0;border:1px solid rgba(255,255,255,.18)}
+.rr-tab-card{background:#fff;border:1px solid #dbe7f3;border-radius:20px;box-shadow:0 10px 28px rgba(15,23,42,.06);overflow:hidden}.rr-tabs :deep(.v-tab){font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+.rr-insight-panel{display:grid;grid-template-columns:minmax(0,1.45fr) repeat(3,minmax(210px,.75fr));gap:16px}.rr-insight-card,.rr-score-card,.rr-filter-card{background:linear-gradient(145deg,#fff 0%,#f8fafc 100%);border:1px solid #dbe7f3;border-radius:20px;box-shadow:0 10px 28px rgba(15,23,42,.06)}.rr-insight-card{min-height:124px;padding:18px 20px;display:flex;flex-direction:column;justify-content:center;gap:7px}.rr-insight-card span,.rr-score-card p{color:#64748b;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;margin:0}.rr-insight-card strong{color:#0f172a;font-family:'Plus Jakarta Sans',sans-serif;font-size:clamp(.98rem,1vw,1.16rem);line-height:1.45;letter-spacing:-.02em}.rr-insight-card small,.rr-score-card small{color:#64748b;font-size:12px;font-weight:700}.rr-insight-card--primary{background:radial-gradient(circle at top right,rgba(37,99,235,.16),transparent 34%),linear-gradient(145deg,#eff6ff 0%,#fff 74%);border-color:#bfdbfe}
+.rr-score-card{min-height:132px;padding:20px;display:flex;align-items:center;gap:16px;height:100%}.rr-score-card h2{color:#0f172a;font-family:'Plus Jakarta Sans',sans-serif;font-size:clamp(1rem,1.55vw,1.75rem);font-weight:900;line-height:1.1;margin:4px 0;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rr-filter-card{padding:16px;display:grid;grid-template-columns:minmax(240px,1.35fr) repeat(4,minmax(145px,.7fr));gap:12px}.rr-filter-card--new{grid-template-columns:minmax(260px,1.4fr) repeat(3,minmax(160px,.8fr))}
+.rr-chart-legend{display:flex;flex-direction:column;gap:10px}.rr-chart-legend span{font-size:12px;font-weight:800;color:#334155}.rr-chart-legend i{display:inline-block;width:10px;height:10px;border-radius:999px;margin-right:8px}.rr-priority-row{display:flex;justify-content:space-between;gap:14px;padding:14px 18px;border-bottom:1px solid #e2e8f0}.rr-priority-row strong{color:#0f172a;font-size:13px;font-weight:900}.rr-priority-row small{display:block;color:#64748b;font-size:11px;font-weight:700;margin-top:3px}.rr-priority-row span,.rr-money{color:#0f172a;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:900;white-space:nowrap}.rr-money--success{color:#059669}.rr-contract-flow{display:flex;align-items:center;gap:8px;color:#64748b;font-family:monospace;font-size:11px;font-weight:800;margin:4px 0}.rr-contract-flow span{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:2px 6px}.rr-small{color:#64748b;font-size:10px;font-weight:800;margin-top:4px;white-space:nowrap}.rr-table :deep(th){height:52px!important;letter-spacing:.5px!important}.rr-table :deep(td){height:82px!important;vertical-align:middle}
+@media(max-width:1180px){.rr-insight-panel{grid-template-columns:1fr 1fr}.rr-filter-card,.rr-filter-card--new{grid-template-columns:1fr 1fr}}@media(max-width:720px){.rr-toolbar,.rr-export-actions{width:100%}.rr-export-actions .v-btn{flex:1}.rr-insight-panel,.rr-filter-card,.rr-filter-card--new{grid-template-columns:1fr}}
 </style>

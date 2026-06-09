@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref, computed, onMounted, mergeProps } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { useTheme } from 'vuetify'
@@ -58,14 +58,13 @@ const navItems = [
 
       // G7: PENYELESAIAN
       { type: 'subheader', title: 'PENYELESAIAN' },
-      { title: 'PPKA', icon: 'ri-file-damage-line', href: '/financing/ppka' },
       { title: 'Settlement', icon: 'ri-hand-coin-line', href: '/financing/settlement' },
       { title: 'Write-Off', icon: 'ri-delete-back-2-line', href: '/financing/write-off' },
       { title: 'Yield', icon: 'ri-percent-line', href: '/financing/yield' },
 
       // G8: PERFORMANCE
       { type: 'subheader', title: 'PERFORMANCE' },
-      { title: 'Repayment Rate', icon: 'ri-speed-up-line', href: '/financing/repayment-rate-new' },
+      { title: 'Repayment Rate', icon: 'ri-speed-up-line', href: '/financing/repayment-rate' },
     ]
   },
 
@@ -328,7 +327,7 @@ function navigate(href) {
         <div class="d-flex align-center gap-2">
           <VIcon icon="ri-building-4-line" color="primary" size="18" />
           <span style="font-size: 14px; font-weight: 500; opacity: 0.8; font-family: 'Plus Jakarta Sans', sans-serif;">
-            BPRS HIK MCI — Sistem Monitoring Keuangan
+            BPRS HIK MCI - Sistem Monitoring Keuangan
           </span>
         </div>
       </VAppBarTitle>

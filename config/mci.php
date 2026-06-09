@@ -59,7 +59,7 @@ return [
     | untuk melihat daftar database yang tersedia.
     |
     */
-    'active_database' => env('MCI_ACTIVE_DATABASE', 'MCI_MAR26_01042026'),
+    'active_database' => env('MCI_ACTIVE_DATABASE') ?: '',
 
     /*
     |--------------------------------------------------------------------------

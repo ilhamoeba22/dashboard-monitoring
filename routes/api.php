@@ -107,6 +107,8 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
         Route::get('/rekapitulasi', [FinancingController::class, 'rekapitulasi']);
         Route::get('/rekap-master', [FinancingController::class, 'rekapMaster']); // G4 Master Rekap Console
         Route::get('/quality-analytics', [FinancingController::class, 'qualityAnalytics']); // G4 Quality & Risk Console
+        Route::get('/quality-action-workflows', [FinancingController::class, 'qualityActionWorkflows']);
+        Route::post('/quality-action-workflows', [FinancingController::class, 'saveQualityActionWorkflow']);
         Route::get('/quality-diagnostic', [FinancingController::class, 'qualityDiagnostic']); // TEMP: diagnostic
         Route::get('/aos', [FinancingController::class, 'aos']);
         Route::get('/cabangs', [FinancingController::class, 'cabangs']);

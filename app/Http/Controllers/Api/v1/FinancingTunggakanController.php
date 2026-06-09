@@ -55,6 +55,7 @@ class FinancingTunggakanController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $data,
+                'meta' => $this->repository->getLastCollMonitoringMeta(),
             ]);
         } catch (\Throwable $e) {
             return $this->handleError($e);

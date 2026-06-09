@@ -11,12 +11,47 @@ import autoTable from 'jspdf-autotable'
 
 defineOptions({ layout: DefaultLayout })
 
-// ─── State Management ────────────────────────────────────────
+// --- State Management ----------------------------------------
 const isLoading = ref(true)
 const activeTab = ref(0)
 const selectedCabang = ref(null)
 const stressDialogOpen = ref(false)
 const selectedStressScenario = ref('top5')
+const actionWorkflows = ref({})
+const actionWorkflowDialog = ref(false)
+const selectedActionWorkflowItem = ref(null)
+const isSavingActionWorkflow = ref(false)
+const isExporting = ref(false)
+const exportError = ref('')
+const ppkaOperationalLoading = ref(false)
+const ppkaOperationalRows = ref([])
+const ppkaOperationalSummary = ref({
+  total_ppap: 0,
+  kol1_ppap: 0,
+  kol2_ppap: 0,
+  kol3_ppap: 0,
+  kol4_ppap: 0,
+  kol5_ppap: 0,
+  total_kontrak: 0,
+})
+const ppkaOperationalSearch = ref('')
+const ppkaOperationalAo = ref('Semua AO')
+const ppkaOperationalPage = ref(1)
+const manualAdjustmentEnabled = ref(false)
+const ppkaAdjustmentDialog = ref(false)
+const isSavingPpkaAdjustment = ref(false)
+const ppkaAdjustmentForm = ref({
+  nokontrak: '',
+  nominal_ppap: '',
+  alasan: ''
+})
+const actionWorkflowForm = ref({
+  status: 'open',
+  owner: '',
+  due_date: '',
+  note: '',
+  reviewed_by: ''
+})
 
 const cabangs = ref([])
 const segmens = ref(['Semua Segmen', 'Retail', 'Korporasi', 'Mikro'])
@@ -155,6 +190,9 @@ const qualityData = ref({
   pkr_metrics: {
     summary: {},
     rows: [],
+    detail_rows: [],
+    trend: [],
+    trend_meta: {},
     methodology: {}
   },
   restru_guard: {
@@ -217,7 +255,38 @@ const months = [
   { title: 'Oktober', value: 10 }, { title: 'November', value: 11 }, { title: 'Desember', value: 12 }
 ]
 
-// ─── Computed Properties ─────────────────────────────────────
+// --- Computed Properties -------------------------------------
+const actionWorkflowStatusItems = [
+  { title: 'Open', value: 'open' },
+  { title: 'In Progress', value: 'in_progress' },
+  { title: 'Waiting', value: 'waiting' },
+  { title: 'Done', value: 'done' },
+  { title: 'Waived', value: 'waived' }
+]
+
+const actionWorkflowStatusLabel = (status) => ({
+  open: 'Open',
+  in_progress: 'In Progress',
+  waiting: 'Waiting',
+  done: 'Done',
+  waived: 'Waived'
+}[status] || 'Open')
+
+const actionWorkflowStatusClass = (status) => ({
+  open: 'workflow-status--open',
+  in_progress: 'workflow-status--progress',
+  waiting: 'workflow-status--waiting',
+  done: 'workflow-status--done',
+  waived: 'workflow-status--waived'
+}[status] || 'workflow-status--open')
+
+const isPastDueDate = (dateValue, status = 'open') => {
+  if (!dateValue || ['done', 'waived'].includes(status)) return false
+  const dueDate = new Date(`${dateValue}T23:59:59`)
+  if (Number.isNaN(dueDate.getTime())) return false
+  return dueDate < new Date()
+}
+
 const summary = computed(() => qualityData.value.summary || {})
 const stressTest = computed(() => qualityData.value.stress_test || {})
 const restruGuard = computed(() => qualityData.value.restru_guard || {})
@@ -240,6 +309,9 @@ const aydaIndicator = computed(() => qualityRiskIndicators.value.ayda || {})
 const pkrMetrics = computed(() => qualityData.value.pkr_metrics || { summary: {}, rows: [], methodology: {} })
 const pkrSummary = computed(() => pkrMetrics.value.summary || {})
 const pkrRows = computed(() => pkrMetrics.value.rows || [])
+const pkrDetailRows = computed(() => pkrMetrics.value.detail_rows || [])
+const pkrTrendRows = computed(() => pkrMetrics.value.trend || [])
+const pkrTrendMeta = computed(() => pkrMetrics.value.trend_meta || {})
 const pkrMethodology = computed(() => pkrMetrics.value.methodology || {})
 const kapPpapShortfallAccounts = computed(() => kapMetrics.value.ppap_shortfall_accounts || [])
 const kapPpapOverReservedAccounts = computed(() => kapMetrics.value.ppap_over_reserved_accounts || [])
@@ -261,7 +333,284 @@ const kapSourceReconciliationSummary = computed(() => kapSourceReconciliation.va
 const kapDataQuality = computed(() => kapMetrics.value.data_quality || { rows: [], summary: {} })
 const kapDataQualityRows = computed(() => kapDataQuality.value.rows || [])
 const kapDataQualitySummary = computed(() => kapDataQuality.value.summary || {})
+const ppkaOperationalAoOptions = computed(() => {
+  const options = [...new Set(ppkaOperationalRows.value.map(item => item.nmao).filter(Boolean))]
+  return ['Semua AO', ...options.sort()]
+})
+const filteredPpkaOperationalRows = computed(() => {
+  const keyword = ppkaOperationalSearch.value.trim().toLowerCase()
+  return ppkaOperationalRows.value.filter(item => {
+    const matchAo = ppkaOperationalAo.value === 'Semua AO' || item.nmao === ppkaOperationalAo.value
+    const matchSearch = !keyword ||
+      String(item.nama || '').toLowerCase().includes(keyword) ||
+      String(item.nokontrak || '').toLowerCase().includes(keyword) ||
+      String(item.nocif || '').toLowerCase().includes(keyword)
+    return matchAo && matchSearch
+  })
+})
+const ppkaOperationalDistribution = computed(() => [
+  { label: 'Kol 1 Lancar', value: Number(ppkaOperationalSummary.value.kol1_ppap) || 0, class: 'ppka-dist--safe' },
+  { label: 'Kol 2 DPK', value: Number(ppkaOperationalSummary.value.kol2_ppap) || 0, class: 'ppka-dist--watch' },
+  { label: 'Kol 3 KL', value: Number(ppkaOperationalSummary.value.kol3_ppap) || 0, class: 'ppka-dist--warning' },
+  { label: 'Kol 4 Diragukan', value: Number(ppkaOperationalSummary.value.kol4_ppap) || 0, class: 'ppka-dist--danger' },
+  { label: 'Kol 5 Macet', value: Number(ppkaOperationalSummary.value.kol5_ppap) || 0, class: 'ppka-dist--critical' }
+])
 const topObligors = computed(() => qualityData.value.top_obligor || [])
+const actionPriorityQueue = computed(() => {
+  const items = []
+  const pushUnique = (item) => {
+    const key = item.key || `${item.nokontrak || item.nama}-${item.signal}`
+    const existing = items.find(row => row.key === key)
+    if (existing) {
+      existing.score += item.score
+      existing.signals.push(item.signal)
+      existing.action = `${existing.action} ${item.action}`
+      existing.amount = Math.max(existing.amount || 0, item.amount || 0)
+      existing.severity = existing.score >= 90 ? 'critical' : existing.score >= 65 ? 'high' : existing.score >= 40 ? 'medium' : 'watch'
+      return
+    }
+    items.push({
+      ...item,
+      key,
+      signals: [item.signal],
+      severity: item.score >= 90 ? 'critical' : item.score >= 65 ? 'high' : item.score >= 40 ? 'medium' : 'watch'
+    })
+  }
+
+  pkrDetailRows.value.slice(0, 80).forEach(item => {
+    const col = String(item.colbaru || '')
+    const score = col === '5' ? 95 : col === '4' ? 85 : col === '3' ? 75 : col === '2' ? 55 : 45
+    pushUnique({
+      key: `pkr-${item.nokontrak}`,
+      signal: item.pkr_bucket || 'PKR',
+      nokontrak: item.nokontrak,
+      nama: item.nama,
+      ao: item.nama_ao,
+      cabang: item.cabang,
+      kol: item.colbaru,
+      amount: Number(item.os_pokok) || 0,
+      score,
+      action: col === '2'
+        ? 'Tetapkan owner collection untuk cegah migrasi ke NPF.'
+        : 'Susun action remedial, validasi agunan, dan eskalasi kolektibilitas.',
+      source: 'PKR'
+    })
+  })
+
+  kapPpapShortfallAccounts.value.slice(0, 50).forEach(item => {
+    pushUnique({
+      key: `shortfall-${item.nokontrak}`,
+      signal: 'PPKA Shortfall',
+      nokontrak: item.nokontrak,
+      nama: item.nama,
+      ao: item.nama_ao,
+      cabang: item.cabang,
+      kol: item.colbaru,
+      amount: Math.abs(Number(item.ppap_gap) || 0),
+      score: 88,
+      action: 'Rekonsiliasi PPKA wajib dibentuk vs sistem dan validasi agunan.',
+      source: 'PPKA'
+    })
+  })
+
+  kapApydContributors.value.slice(0, 40).forEach(item => {
+    pushUnique({
+      key: `apyd-${item.nokontrak}`,
+      signal: 'Top APYD Contributor',
+      nokontrak: item.nokontrak,
+      nama: item.nama,
+      ao: item.nama_ao,
+      cabang: item.cabang,
+      kol: item.colbaru,
+      amount: Number(item.apyd_tks) || 0,
+      score: 72,
+      action: 'Prioritaskan remedial karena kontribusi APYD besar.',
+      source: 'APYD'
+    })
+  })
+
+  topObligors.value.slice(0, 10).forEach(item => {
+    pushUnique({
+      key: `top-${item.nokontrak}`,
+      signal: 'Top Obligor Stress',
+      nokontrak: item.nokontrak,
+      nama: item.nama,
+      ao: item.nama_ao,
+      cabang: item.cabang,
+      kol: item.colbaru,
+      amount: Number(item.os) || 0,
+      score: 60,
+      action: 'Review BMPK/stress exposure dan mitigasi jika terjadi penurunan kualitas.',
+      source: 'Stress Test'
+    })
+  })
+
+  ;(qualityData.value.alerts || []).slice(0, 30).forEach(item => {
+    pushUnique({
+      key: `ews-${item.nokontrak}`,
+      signal: 'High-Risk Watchlist',
+      nokontrak: item.nokontrak,
+      nama: item.nama,
+      ao: item.nama_ao || '-',
+      cabang: item.cabang || '-',
+      kol: item.colbaru,
+      amount: Number(item.osmdlc) || 0,
+      score: 68,
+      action: 'Masukkan ke monitoring mingguan dan update status penagihan.',
+      source: 'EWS'
+    })
+  })
+
+  const rankedItems = items
+    .sort((a, b) => (b.score - a.score) || ((b.amount || 0) - (a.amount || 0)))
+    .slice(0, 50)
+
+  return rankedItems.map(item => {
+    const workflow = actionWorkflows.value[item.key] || {}
+    const workflowStatus = workflow.status || 'open'
+
+    return {
+      ...item,
+      workflow,
+      workflow_status: workflowStatus,
+      workflow_owner: workflow.owner || '',
+      workflow_due_date: workflow.due_date || '',
+      workflow_note: workflow.note || '',
+      workflow_reviewed_by: workflow.reviewed_by || '',
+      workflow_completed_at: workflow.completed_at || null,
+      workflow_overdue: isPastDueDate(workflow.due_date, workflowStatus)
+    }
+  })
+})
+const actionQueueSummary = computed(() => ({
+  total: actionPriorityQueue.value.length,
+  critical: actionPriorityQueue.value.filter(item => item.severity === 'critical').length,
+  high: actionPriorityQueue.value.filter(item => item.severity === 'high').length,
+  medium: actionPriorityQueue.value.filter(item => item.severity === 'medium').length,
+  inProgress: actionPriorityQueue.value.filter(item => item.workflow_status === 'in_progress').length,
+  done: actionPriorityQueue.value.filter(item => item.workflow_status === 'done').length,
+  overdue: actionPriorityQueue.value.filter(item => item.workflow_overdue).length,
+  exposure: actionPriorityQueue.value.reduce((sum, item) => sum + (Number(item.amount) || 0), 0)
+}))
+const ewsWatchlistRows = computed(() => {
+  return (qualityData.value.alerts || []).map(item => {
+    const os = Number(item.osmdlc ?? item.os ?? 0) || 0
+    const collateral = Number(item.htgagun ?? item.nilai_agunan ?? 0) || 0
+    const ppka = Number(item.ppap ?? item.ppap_system ?? 0) || 0
+    const daysPastDue = Number(item.haritgk) || 0
+    const kol = String(item.colbaru || '')
+    const totalCover = collateral + ppka
+    const uncovered = Math.max(0, os - totalCover)
+    const coverRatio = os > 0 ? (totalCover / os) * 100 : 0
+    const severityScore =
+      (kol === '5' ? 45 : kol === '4' ? 35 : kol === '3' ? 25 : 10) +
+      (daysPastDue >= 180 ? 25 : daysPastDue >= 90 ? 18 : daysPastDue >= 30 ? 10 : 0) +
+      (coverRatio < 50 ? 20 : coverRatio < 80 ? 12 : coverRatio < 100 ? 6 : 0) +
+      (os >= 5000000000 ? 15 : os >= 1000000000 ? 10 : os >= 250000000 ? 5 : 0)
+    const severity = severityScore >= 80 ? 'critical' : severityScore >= 60 ? 'high' : severityScore >= 40 ? 'medium' : 'watch'
+    const recommendedAction = severity === 'critical'
+      ? 'Eskalasi remedial harian, validasi agunan, dan siapkan opsi restrukturisasi/penyelesaian.'
+      : severity === 'high'
+        ? 'Tetapkan PIC monitoring mingguan dan pastikan rencana penagihan terdokumentasi.'
+        : 'Pantau tren tunggakan dan update status kontak debitur.'
+    const workflowKey = `ews-${item.nokontrak || item.nocif || item.nama || severityScore}`
+    const workflow = actionWorkflows.value[workflowKey] || {}
+    const workflowStatus = workflow.status || 'open'
+
+    return {
+      ...item,
+      key: workflowKey,
+      source: 'EWS Watchlist',
+      signal: 'High-Risk Watchlist',
+      signals: [
+        'High-Risk Watchlist',
+        `Kol ${kol || '-'}`,
+        `${daysPastDue} hari tunggakan`,
+        `Cover ${formatTruncatedPercentage(coverRatio)}`
+      ],
+      os,
+      amount: os,
+      collateral,
+      ppka,
+      total_cover: totalCover,
+      uncovered,
+      cover_ratio: coverRatio,
+      severity_score: severityScore,
+      score: severityScore,
+      severity,
+      days_past_due: daysPastDue,
+      action: recommendedAction,
+      recommended_action: recommendedAction,
+      workflow_status: workflowStatus,
+      workflow_owner: workflow.owner || '',
+      workflow_due_date: workflow.due_date || '',
+      workflow_note: workflow.note || '',
+      workflow_reviewed_by: workflow.reviewed_by || '',
+      workflow_completed_at: workflow.completed_at || null,
+      workflow_overdue: isPastDueDate(workflow.due_date, workflowStatus)
+    }
+  }).sort((a, b) => (b.severity_score - a.severity_score) || (b.os - a.os))
+})
+const pagedEwsWatchlistRows = computed(() => paginateRows(ewsWatchlistRows.value, alertsPage.value))
+const ewsWatchlistSummary = computed(() => ({
+  total: ewsWatchlistRows.value.length,
+  critical: ewsWatchlistRows.value.filter(item => item.severity === 'critical').length,
+  high: ewsWatchlistRows.value.filter(item => item.severity === 'high').length,
+  exposure: ewsWatchlistRows.value.reduce((sum, item) => sum + item.os, 0),
+  uncovered: ewsWatchlistRows.value.reduce((sum, item) => sum + item.uncovered, 0),
+  avg_cover_ratio: ewsWatchlistRows.value.length
+    ? ewsWatchlistRows.value.reduce((sum, item) => sum + item.cover_ratio, 0) / ewsWatchlistRows.value.length
+    : 0
+}))
+const topAoRisk = computed(() => {
+  return [...(qualityData.value.ao_matrix || [])]
+    .map(item => ({
+      ...item,
+      total_os: Number(item.total_os) || 0,
+      npf_os: Number(item.npf_os ?? (Number(item.kol3_os || 0) + Number(item.kol4_os || 0) + Number(item.kol5_os || 0))) || 0,
+      npf_ratio: Number(item.npf_ratio) || 0
+    }))
+    .sort((a, b) => (b.npf_ratio - a.npf_ratio) || (b.npf_os - a.npf_os))
+    [0] || {}
+})
+const topProductRisk = computed(() => {
+  return [...productRiskRows.value]
+    .sort((a, b) => (b.npf_os - a.npf_os) || (b.npf_ratio - a.npf_ratio))
+    [0] || {}
+})
+const topObligorRisk = computed(() => topObligors.value[0] || {})
+const riskConcentrationSummary = computed(() => {
+  const sectorName = sectorRiskSummary.value.top_sector || '-'
+  const productName = topProductRisk.value.produk || summary.value.top_akad_risk || '-'
+  const aoName = topAoRisk.value.nama_ao || '-'
+  const obligorName = topObligorRisk.value.nama || '-'
+  const warningLevel = ewsWatchlistSummary.value.critical > 0 || Number(sectorRiskSummary.value.npf_ratio) >= 5
+    ? 'critical'
+    : ewsWatchlistSummary.value.high > 0 || Number(pkrSummary.value.watch_kol2_ratio) >= 5
+      ? 'high'
+      : 'watch'
+
+  return {
+    warning_level: warningLevel,
+    headline: warningLevel === 'critical'
+      ? 'Tekanan risiko terkonsentrasi perlu eskalasi manajemen.'
+      : warningLevel === 'high'
+        ? 'Ada konsentrasi risiko yang perlu dipantau ketat.'
+        : 'Konsentrasi risiko masih berada pada level monitoring.',
+    interpretation: `Fokus utama saat ini berada pada sektor ${sectorName}, produk ${productName}, AO ${aoName}, dan obligor ${obligorName}. Critical EWS ${ewsWatchlistSummary.value.critical} debitur dengan net uncovered ${formatRp(ewsWatchlistSummary.value.uncovered)}.`,
+    sector_name: sectorName,
+    sector_npf_ratio: sectorRiskSummary.value.npf_ratio || 0,
+    sector_npf: sectorRiskSummary.value.npf_os || 0,
+    product_name: productName,
+    product_npf: topProductRisk.value.npf_os || 0,
+    ao_name: aoName,
+    ao_npf_ratio: topAoRisk.value.npf_ratio || 0,
+    obligor_name: obligorName,
+    obligor_os: Number(topObligorRisk.value.os || 0),
+    ews_critical: ewsWatchlistSummary.value.critical,
+    ews_uncovered: ewsWatchlistSummary.value.uncovered
+  }
+})
 const stressDialogLimit = computed(() => selectedStressScenario.value === 'top10' ? 10 : 5)
 const stressDialogTitle = computed(() => selectedStressScenario.value === 'top10' ? 'Top 10 Debitur Macet' : 'Top 5 Debitur Macet')
 const stressDialogItems = computed(() => topObligors.value.slice(0, stressDialogLimit.value))
@@ -275,8 +624,9 @@ const kapApydPage = ref(1)
 const kapAbaPage = ref(1)
 const kapOverReservedPage = ref(1)
 const alertsPage = ref(1)
-const legacyAlertsPage = ref(1)
 const pkrPage = ref(1)
+const pkrDetailPage = ref(1)
+const actionQueuePage = ref(1)
 
 const paginateRows = (rows, page) => {
   const safeRows = Array.isArray(rows) ? rows : []
@@ -293,9 +643,11 @@ const kapPpapGapPageCount = computed(() => totalPages(kapPpapGapRows.value))
 const kapApydPageCount = computed(() => totalPages(kapApydContributors.value))
 const kapAbaPageCount = computed(() => totalPages(kapAbaRows.value))
 const kapOverReservedPageCount = computed(() => totalPages(kapPpapOverReservedAccounts.value))
-const alertsPageCount = computed(() => totalPages(qualityData.value.alerts || []))
-const legacyAlertsPageCount = computed(() => totalPages(qualityData.value.alerts || []))
+const alertsPageCount = computed(() => totalPages(ewsWatchlistRows.value))
 const pkrPageCount = computed(() => totalPages(pkrRows.value))
+const pkrDetailPageCount = computed(() => totalPages(pkrDetailRows.value))
+const actionQueuePageCount = computed(() => totalPages(actionPriorityQueue.value))
+const ppkaOperationalPageCount = computed(() => totalPages(filteredPpkaOperationalRows.value))
 
 const pagedCkpnIndividualDebtors = computed(() => paginateRows(ckpnIndividualDebtors.value, ckpnIndividualPage.value))
 const pagedAoMatrix = computed(() => paginateRows(qualityData.value.ao_matrix || [], aoMatrixPage.value))
@@ -304,9 +656,11 @@ const pagedKapPpapGapRows = computed(() => paginateRows(kapPpapGapRows.value, ka
 const pagedKapApydContributors = computed(() => paginateRows(kapApydContributors.value, kapApydPage.value))
 const pagedKapAbaRows = computed(() => paginateRows(kapAbaRows.value, kapAbaPage.value))
 const pagedKapPpapOverReservedAccounts = computed(() => paginateRows(kapPpapOverReservedAccounts.value, kapOverReservedPage.value))
-const pagedAlerts = computed(() => paginateRows(qualityData.value.alerts || [], alertsPage.value))
-const pagedLegacyAlerts = computed(() => paginateRows(qualityData.value.alerts || [], legacyAlertsPage.value))
+const pagedAlerts = computed(() => paginateRows(ewsWatchlistRows.value, alertsPage.value))
 const pagedPkrRows = computed(() => paginateRows(pkrRows.value, pkrPage.value))
+const pagedPkrDetailRows = computed(() => paginateRows(pkrDetailRows.value, pkrDetailPage.value))
+const pagedActionPriorityQueue = computed(() => paginateRows(actionPriorityQueue.value, actionQueuePage.value))
+const pagedPpkaOperationalRows = computed(() => paginateRows(filteredPpkaOperationalRows.value, ppkaOperationalPage.value))
 const ckpnComparison = computed(() => {
   const modelCkpn = Number(ckpnSummary.value.model_ckpn) || 0
   const systemPpap = Number(ckpnSummary.value.system_ppap) || 0
@@ -324,8 +678,8 @@ const ckpnComparison = computed(() => {
       status: 'neutral',
       icon: 'ri-information-line',
       label: 'Belum Ada Cadangan Terbaca',
-      headline: 'CKPN model dan PPAP sistem belum menghasilkan nilai pada scope periode ini.',
-      body: 'Interpretasi otomatis akan aktif ketika data EAD, PPAP sistem, dan parameter PD/LGD tersedia dari database.',
+      headline: 'CKPN model dan PPKA sistem belum menghasilkan nilai pada scope periode ini.',
+      body: 'Interpretasi otomatis akan aktif ketika data EAD, PPKA sistem, dan parameter PD/LGD tersedia dari database.',
       action: 'Pastikan periode, cabang, segmen, dan scope produk CKPN sudah memiliki data pembiayaan aktif.',
       gap,
       gapToModel,
@@ -339,7 +693,7 @@ const ckpnComparison = computed(() => {
       status: gapToModel >= 10 ? 'danger' : 'warning',
       icon: gapToModel >= 10 ? 'ri-alarm-warning-line' : 'ri-error-warning-line',
       label: gapToModel >= 10 ? 'Indikasi Under-Reserved' : 'Gap Perlu Review',
-      headline: `CKPN model lebih tinggi dari PPAP sistem sebesar ${formatSignedRp(gap)}.`,
+      headline: `CKPN model lebih tinggi dari PPKA sistem sebesar ${formatSignedRp(gap)}.`,
       body: `Artinya model berbasis PD, LGD, dan EAD membaca kebutuhan cadangan lebih besar daripada baseline CBS. Selisih ini setara ${formatTruncatedPercentage(gapToModel)} dari CKPN model dan ${formatTruncatedPercentage(gapToEad)} dari EAD eligible.`,
       action: 'Prioritaskan review parameter PD/LGD, validasi agunan, dan debitur individual sebelum dipakai sebagai rekomendasi pembentukan cadangan.',
       gap,
@@ -354,7 +708,7 @@ const ckpnComparison = computed(() => {
       status: 'safe',
       icon: 'ri-shield-check-line',
       label: 'Cadangan Sistem Memadai',
-      headline: `PPAP sistem lebih tinggi dari CKPN model sebesar ${formatRp(absGap)}.`,
+      headline: `PPKA sistem lebih tinggi dari CKPN model sebesar ${formatRp(absGap)}.`,
       body: `Secara nominal baseline CBS masih menutup kebutuhan model CKPN pada scope eligible. Coverage sistem berada ${formatTruncatedPercentage(Math.abs(coverageDelta))} di atas coverage model terhadap EAD.`,
       action: 'Tetap lakukan review per stage dan per debitur besar agar tidak ada konsentrasi risiko yang tertutup oleh angka agregat.',
       gap,
@@ -368,7 +722,7 @@ const ckpnComparison = computed(() => {
     status: 'balanced',
     icon: 'ri-scales-3-line',
     label: 'Selaras',
-    headline: 'CKPN model dan PPAP sistem berada pada nilai yang sama.',
+    headline: 'CKPN model dan PPKA sistem berada pada nilai yang sama.',
     body: 'Tidak ada gap nominal pada scope eligible periode ini. Pembacaan lanjutan tetap perlu dilakukan melalui staging, individual debtor, dan AO matrix.',
     action: 'Pertahankan monitoring bulanan dan cek perubahan PD/LGD pada periode berikutnya.',
     gap,
@@ -550,22 +904,64 @@ const kolChartOpts = computed(() => ({
 const sectorChartSeries = computed(() => {
   const data = qualityData.value.sector_data || []
   if (data.length === 0) return []
-  const top10 = data.slice(0, 10)
+  const top10 = sectorRiskRows.value
   return [
-    { name: 'Total Outstanding', data: top10.map(r => parseFloat(r.total_os) || 0) },
-    { name: 'Pembiayaan Bermasalah (NPF)', data: top10.map(r => parseFloat(r.npf_os) || 0) }
+    { name: 'Total Outstanding', data: top10.map(r => Number(r.total_os) || 0) },
+    { name: 'Pembiayaan Bermasalah (NPF)', data: top10.map(r => Number(r.npf_os) || 0) }
   ]
 })
 const sectorChartOpts = computed(() => ({
   chart: { type: 'bar', stacked: false, toolbar: { show: false }, fontFamily: "'Plus Jakarta Sans', sans-serif" },
-  plotOptions: { bar: { horizontal: true, borderRadius: 5, barHeight: '55%', dataLabels: { position: 'top' } } },
-  colors: ['#0284c7', '#e11d48'],
-  xaxis: { categories: (qualityData.value.sector_data || []).slice(0, 10).map(r => r.sektor), labels: { formatter: (v) => formatRpSingkat(v), style: { fontSize: '11px', colors: '#94a3b8' } } },
+  plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '62%', dataLabels: { position: 'top' } } },
+  colors: ['#0f766e', '#e11d48'],
+  xaxis: {
+    labels: { formatter: (v) => formatRpSingkat(v), style: { fontSize: '11px', colors: '#64748b', fontWeight: 700 } },
+    axisBorder: { show: false },
+    axisTicks: { show: false }
+  },
+  yaxis: {
+    categories: sectorRiskRows.value.map(r => r.sektor),
+    labels: {
+      maxWidth: 240,
+      style: { fontSize: '11px', colors: '#334155', fontWeight: 800 }
+    }
+  },
   dataLabels: { enabled: false },
-  grid: { xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } }, borderColor: '#f1f5f9', strokeDashArray: 5 },
+  grid: { xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } }, borderColor: '#e2e8f0', strokeDashArray: 4 },
   tooltip: { shared: true, intersect: false, y: { formatter: (v) => formatRp(v) } },
-  legend: { position: 'top', horizontalAlign: 'right', fontWeight: 600 }
+  legend: { position: 'top', horizontalAlign: 'right', fontWeight: 700, markers: { radius: 8 } }
 }))
+
+const sectorRiskRows = computed(() => {
+  return (qualityData.value.sector_data || [])
+    .map(item => {
+      const totalOs = Number(item.total_os) || 0
+      const npfOs = Number(item.npf_os) || 0
+      return {
+        ...item,
+        total_os: totalOs,
+        npf_os: npfOs,
+        noa: Number(item.noa) || 0,
+        npf_ratio: totalOs > 0 ? (npfOs / totalOs) * 100 : 0
+      }
+    })
+    .sort((a, b) => (b.npf_os - a.npf_os) || (b.total_os - a.total_os))
+    .slice(0, 10)
+})
+
+const sectorRiskSummary = computed(() => {
+  const rows = sectorRiskRows.value
+  const totalOs = rows.reduce((sum, item) => sum + item.total_os, 0)
+  const npfOs = rows.reduce((sum, item) => sum + item.npf_os, 0)
+  const top = rows[0] || {}
+  return {
+    total_os: totalOs,
+    npf_os: npfOs,
+    npf_ratio: totalOs > 0 ? (npfOs / totalOs) * 100 : 0,
+    top_sector: top.sektor || '-',
+    top_npf: top.npf_os || 0
+  }
+})
 
 // Chart TAB 3: Product Composition (Donut)
 const productChartSeries = computed(() => {
@@ -579,9 +975,9 @@ const productChartOpts = computed(() => ({
   colors: ['#4f46e5', '#8b5cf6', '#d946ef', '#0ea5e9', '#14b8a6', '#f59e0b', '#64748b'],
   plotOptions: { pie: { donut: { size: '65%' } } },
   dataLabels: { enabled: false },
-  legend: { 
-    position: 'bottom', 
-    offsetY: 0, 
+  legend: {
+    position: 'bottom',
+    offsetY: 0,
     fontSize: '12px',
     markers: { width: 8, height: 8, radius: 4 },
     itemMargin: { horizontal: 5, vertical: 2 }
@@ -590,14 +986,31 @@ const productChartOpts = computed(() => ({
   tooltip: { y: { formatter: (val) => formatRp(val) } }
 }))
 
+const productRiskRows = computed(() => {
+  return (qualityData.value.product_data || [])
+    .map(item => {
+      const totalOs = Number(item.total_os) || 0
+      const npfOs = Number(item.npf_os) || 0
+      return {
+        ...item,
+        total_os: totalOs,
+        npf_os: npfOs,
+        noa: Number(item.noa) || 0,
+        npf_ratio: totalOs > 0 ? (npfOs / totalOs) * 100 : 0
+      }
+    })
+    .sort((a, b) => b.total_os - a.total_os)
+    .slice(0, 6)
+})
+
 const kapTrendAvailableRows = computed(() => kapPrudentialTrend.value.filter(item => item.available))
 const kapTrendChartSeries = computed(() => {
   const rows = kapTrendAvailableRows.value
   return [
     { name: 'Rasio KAP (%)', type: 'line', data: rows.map(item => Number(item.kap_ratio) || 0) },
     { name: 'APYD', type: 'column', data: rows.map(item => Number(item.apyd) || 0) },
-    { name: 'Total PPAP Bulanan', type: 'column', data: rows.map(item => Number(item.total_ppap_bulanan ?? item.ppap_rekap_current ?? item.ppap_system) || 0) },
-    { name: 'Gap PPAP Bulanan', type: 'column', data: rows.map(item => Number(item.ppap_gap) || 0) },
+    { name: 'Total PPKA Bulanan', type: 'column', data: rows.map(item => Number(item.total_ppap_bulanan ?? item.ppap_rekap_current ?? item.ppap_system) || 0) },
+    { name: 'Gap PPKA Bulanan', type: 'column', data: rows.map(item => Number(item.ppap_gap) || 0) },
     { name: 'Net Exposure Agunan', type: 'line', data: rows.map(item => Number(item.net_exposure_agunan) || 0) }
   ]
 })
@@ -635,14 +1048,14 @@ const kapTrendChartOpts = computed(() => ({
     },
     {
       opposite: true,
-      seriesName: 'Total PPAP Bulanan',
+      seriesName: 'Total PPKA Bulanan',
       show: false,
       decimalsInFloat: 0,
       labels: { formatter: (value) => formatChartCurrencyAxis(value) }
     },
     {
       opposite: true,
-      seriesName: 'Gap PPAP Bulanan',
+      seriesName: 'Gap PPKA Bulanan',
       show: false,
       decimalsInFloat: 0,
       labels: { formatter: (value) => formatChartCurrencyAxis(value) }
@@ -666,6 +1079,56 @@ const kapTrendChartOpts = computed(() => ({
   }
 }))
 
+const pkrTrendAvailableRows = computed(() => pkrTrendRows.value.filter(item => item.available))
+const pkrTrendChartSeries = computed(() => {
+  const rows = pkrTrendAvailableRows.value
+  return [
+    { name: 'PKR Ratio (%)', type: 'line', data: rows.map(item => Number(item.pkr_ratio) || 0) },
+    { name: 'OS PKR', type: 'column', data: rows.map(item => Number(item.pkr_os) || 0) },
+    { name: 'Kol 1 Restrukturisasi/Valid', type: 'column', data: rows.map(item => Number(item.restructured_lancar_os) || 0) },
+    { name: 'Kol 2 Watch', type: 'column', data: rows.map(item => Number(item.watch_kol2_os) || 0) },
+    { name: 'Kol 2-5', type: 'column', data: rows.map(item => Number(item.pkr_non_lancar_os) || 0) }
+  ]
+})
+const pkrTrendChartOpts = computed(() => ({
+  chart: { type: 'line', stacked: false, toolbar: { show: false }, fontFamily: "'Plus Jakarta Sans', sans-serif", background: 'transparent' },
+  labels: pkrTrendAvailableRows.value.map(item => item.label),
+  colors: ['#e11d48', '#0d9488', '#8b5cf6', '#f59e0b', '#334155'],
+  stroke: { width: [4, 0, 0, 0, 0], curve: 'smooth' },
+  plotOptions: { bar: { columnWidth: '56%', borderRadius: 5 } },
+  dataLabels: { enabled: false },
+  yaxis: [
+    {
+      seriesName: 'PKR Ratio (%)',
+      decimalsInFloat: 2,
+      tickAmount: 5,
+      labels: { formatter: (value) => formatChartPercentAxis(value), style: { colors: '#e11d48', fontWeight: 800, fontSize: '11px' } },
+      min: 0,
+      max: 100
+    },
+    {
+      opposite: true,
+      seriesName: 'OS PKR',
+      decimalsInFloat: 0,
+      tickAmount: 5,
+      labels: { formatter: (value) => formatChartCurrencyAxis(value), style: { colors: '#64748b', fontWeight: 800, fontSize: '10px' }, minWidth: 118, maxWidth: 150 },
+      title: { text: 'Nominal', style: { color: '#64748b', fontSize: '10px', fontWeight: 800 } }
+    },
+    { opposite: true, seriesName: 'Kol 1 Restrukturisasi/Valid', show: false, labels: { formatter: (value) => formatChartCurrencyAxis(value) } },
+    { opposite: true, seriesName: 'Kol 2 Watch', show: false, labels: { formatter: (value) => formatChartCurrencyAxis(value) } },
+    { opposite: true, seriesName: 'Kol 2-5', show: false, labels: { formatter: (value) => formatChartCurrencyAxis(value) } }
+  ],
+  grid: { borderColor: '#f1f5f9', strokeDashArray: 5 },
+  legend: { position: 'top', horizontalAlign: 'right', fontWeight: 700, fontSize: '12px' },
+  tooltip: {
+    shared: true,
+    intersect: false,
+    y: {
+      formatter: (value, context) => context.seriesIndex === 0 ? formatTruncatedPercentage(value) : formatRp(value)
+    }
+  }
+}))
+
 // PK Score formatter
 const pkScoreData = computed(() => {
   const pk = summary.value.composite_score || 1
@@ -677,24 +1140,93 @@ const pkScoreData = computed(() => {
 const tabs = [
   { name: 'RGEC & Profil Risiko', icon: 'ri-dashboard-3-line' },
   { name: 'Kualitas & CKPN', icon: 'ri-safe-2-line' },
-  { name: 'KAP & PPAP Prudential', icon: 'ri-shield-star-line' },
+  { name: 'KAP & PPKA Prudential', icon: 'ri-shield-star-line' },
   { name: 'Risk Concentration & EWS', icon: 'ri-alarm-warning-line' }
 ]
 
-// ─── API Calls ───────────────────────────────────────────────
+// --- API Calls -----------------------------------------------
 const exportPeriodLabel = computed(() => `${selectedMonthLabel.value} ${filters.value.tahun}`)
+const exportReportTitle = computed(() => `Monitoring Dashboard - ${tabs[activeTab.value]?.name || 'Quality'}`)
 const exportFileStem = computed(() => {
   const tab = tabs[activeTab.value]?.name || 'Quality'
   return `quality-${tab}-${exportPeriodLabel.value}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 })
+const canExport = computed(() => !isLoading.value && !isExporting.value)
 const currencyValue = (value) => formatExactRupiah(value)
 const percentageValue = (value) => formatTruncatedPercentage(value)
 const sheetName = (name) => String(name).replace(/[\\/?*[\]:]/g, ' ').slice(0, 31) || 'Sheet'
+const exportGeneratedAt = () => new Date().toLocaleString('id-ID', {
+  day: '2-digit',
+  month: 'long',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
+})
+const applyWorksheetWidths = (worksheet, rows) => {
+  const columns = Object.keys(rows[0] || { Informasi: '' })
+  worksheet['!cols'] = columns.map(column => {
+    const maxContentLength = rows.reduce((max, row) => Math.max(max, String(row[column] ?? '').length), column.length)
+    return { wch: Math.min(Math.max(maxContentLength + 2, 12), 48) }
+  })
+}
+const exportMetadataRows = () => [
+  { Field: 'Report', Value: exportReportTitle.value },
+  { Field: 'Periode', Value: exportPeriodLabel.value },
+  { Field: 'Filter', Value: activeFilterText.value },
+  { Field: 'Tab Aktif', Value: tabs[activeTab.value]?.name || '-' },
+  { Field: 'Tanggal Generate', Value: exportGeneratedAt() },
+  { Field: 'Standar Angka', Value: 'Nominal ditampilkan penuh tanpa pembulatan; persentase maksimal 2 angka desimal.' },
+  { Field: 'Sumber', Value: 'Database operasional/snapshot sesuai filter bulan dan tahun aktif.' }
+]
+const normalizedSheetRows = (sheet) => sheet.rows?.length ? sheet.rows : [{ Informasi: 'Tidak ada data pada filter ini' }]
+const buildStandardWorksheet = (sheet, sheetIndex) => {
+  const rows = normalizedSheetRows(sheet)
+  const columns = Object.keys(rows[0] || { Informasi: '' })
+  const headerRow = 7
+  const worksheet = XLSX.utils.aoa_to_sheet([
+    [exportReportTitle.value],
+    ['Periode', exportPeriodLabel.value],
+    ['Filter', activeFilterText.value],
+    ['Generated At', exportGeneratedAt()],
+    ['Sheet', `${String(sheetIndex + 1).padStart(2, '0')} - ${sheet.name}`],
+    [],
+    columns
+  ])
+  XLSX.utils.sheet_add_json(worksheet, rows, { origin: { r: headerRow, c: 0 }, skipHeader: true })
+  const lastColumn = Math.max(columns.length - 1, 0)
+  const lastRow = headerRow + rows.length
+  worksheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: lastColumn } }]
+  worksheet['!autofilter'] = {
+    ref: XLSX.utils.encode_range({ s: { r: headerRow - 1, c: 0 }, e: { r: lastRow, c: lastColumn } })
+  }
+  worksheet['!freeze'] = { xSplit: 0, ySplit: headerRow, topLeftCell: 'A8', activePane: 'bottomLeft', state: 'frozen' }
+  applyWorksheetWidths(worksheet, rows)
+  worksheet['!rows'] = [
+    { hpt: 24 },
+    { hpt: 18 },
+    { hpt: 18 },
+    { hpt: 18 },
+    { hpt: 18 },
+    { hpt: 8 },
+    { hpt: 22 }
+  ]
+  return worksheet
+}
+const buildMetadataWorksheet = () => {
+  const rows = exportMetadataRows()
+  const worksheet = XLSX.utils.json_to_sheet(rows)
+  applyWorksheetWidths(worksheet, rows)
+  worksheet['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: rows.length, c: 1 } }) }
+  worksheet['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft', state: 'frozen' }
+  return worksheet
+}
 
 const buildExportSheets = () => {
   const commonSummary = [
     { Metrik: 'Periode', Nilai: exportPeriodLabel.value },
     { Metrik: 'Filter', Nilai: activeFilterText.value },
+    { Metrik: 'Tab Aktif', Nilai: tabs[activeTab.value]?.name || '-' },
+    { Metrik: 'Waktu Generate', Nilai: exportGeneratedAt() },
     { Metrik: 'Total Pembiayaan', Nilai: currencyValue(summary.value.total_os) },
     { Metrik: 'NPF Gross', Nilai: percentageValue(summary.value.npf_gross) },
     { Metrik: 'NPF Net', Nilai: percentageValue(summary.value.npf_net) },
@@ -711,7 +1243,7 @@ const buildExportSheets = () => {
         Bulan: item.bulan,
         'Total OS': currencyValue(item.total_os),
         'NPF OS': currencyValue(item.npf_os),
-        'Total PPAP': currencyValue(item.total_ppap),
+        'Total PPKA': currencyValue(item.total_ppap),
         'NPF Gross': item.total_os > 0 ? percentageValue((Number(item.npf_os) / Number(item.total_os)) * 100) : percentageValue(0)
       })) },
       { name: 'Top Obligor', rows: topObligors.value.map(item => ({
@@ -720,7 +1252,7 @@ const buildExportSheets = () => {
         AO: item.nama_ao,
         Kol: kolektibilitasLabel(item.colbaru),
         OS: currencyValue(item.os),
-        PPAP: currencyValue(item.ppap)
+        PPKA: currencyValue(item.ppap)
       })) }
     ]
   }
@@ -758,7 +1290,7 @@ const buildExportSheets = () => {
         OS: currencyValue(item.total_os),
         NPF: currencyValue(item.npf_os),
         'NPF Ratio': percentageValue(item.npf_ratio),
-        PPAP: currencyValue(item.total_ppap)
+        PPKA: currencyValue(item.total_ppap)
       })) }
     ]
   }
@@ -772,17 +1304,17 @@ const buildExportSheets = () => {
         { Metrik: 'MIAPB', Nilai: percentageValue(miapbIndicator.value.ratio) },
         { Metrik: 'Modal Inti MIAPB', Nilai: currencyValue(miapbIndicator.value.modal_inti) },
         { Metrik: 'Aset Bermasalah MIAPB', Nilai: currencyValue(miapbIndicator.value.aset_bermasalah) },
-        { Metrik: 'PPAP Bermasalah MIAPB', Nilai: currencyValue(miapbIndicator.value.ppap_bermasalah) },
+        { Metrik: 'PPKA Bermasalah MIAPB', Nilai: currencyValue(miapbIndicator.value.ppap_bermasalah) },
         { Metrik: 'AYDA Ratio', Nilai: percentageValue(aydaIndicator.value.ratio) },
         { Metrik: 'AYDA', Nilai: currencyValue(aydaIndicator.value.amount) },
         { Metrik: 'ABA Non-Macet', Nilai: currencyValue(kapSummary.value.antar_bank_aktiva_lancar) },
         { Metrik: 'APYD TKS', Nilai: currencyValue(kapSummary.value.apyd) },
-        { Metrik: 'PPAP WD Total', Nilai: currencyValue(kapSummary.value.ppap_wajib_dibentuk) },
-        { Metrik: 'PPAP Sistem', Nilai: currencyValue(kapSummary.value.ppap_system) },
-        { Metrik: 'PPAP Template Bulan Berjalan', Nilai: currencyValue(kapSummary.value.ppap_rekap_current) },
-        { Metrik: 'PPAP Pembanding Bulan Sebelumnya', Nilai: currencyValue(kapSummary.value.ppap_rekap_previous) },
-        { Metrik: 'Gap PPAP Bulanan', Nilai: formatSignedRp(kapSummary.value.ppap_gap) },
-        { Metrik: 'Gap PPAP Sistem - WD', Nilai: formatSignedRp(kapSummary.value.ppap_system_vs_wd_gap) }
+        { Metrik: 'PPKA WD Total', Nilai: currencyValue(kapSummary.value.ppap_wajib_dibentuk) },
+        { Metrik: 'PPKA Sistem', Nilai: currencyValue(kapSummary.value.ppap_system) },
+        { Metrik: 'PPKA Template Bulan Berjalan', Nilai: currencyValue(kapSummary.value.ppap_rekap_current) },
+        { Metrik: 'PPKA Pembanding Bulan Sebelumnya', Nilai: currencyValue(kapSummary.value.ppap_rekap_previous) },
+        { Metrik: 'Gap PPKA Bulanan', Nilai: formatSignedRp(kapSummary.value.ppap_gap) },
+        { Metrik: 'Gap PPKA Sistem - WD', Nilai: formatSignedRp(kapSummary.value.ppap_system_vs_wd_gap) }
       ] },
       { name: 'Worksheet KAP', rows: kapWorksheetRows.value.map(item => ({
         Section: item.section,
@@ -792,9 +1324,9 @@ const buildExportSheets = () => {
         APYD: currencyValue(item.apyd),
         'Agunan Dikuasai': currencyValue(item.agunan_dikuasai),
         Jumlah: currencyValue(item.jumlah_setelah_agunan),
-        'Tarif PPAP WD': item.tarif_ppap_wd,
-        'PPAP WD': currencyValue(item.ppap_wajib_dibentuk),
-        'PPAP Sistem': currencyValue(item.ppap_system)
+        'Tarif PPKA WD': item.tarif_ppap_wd,
+        'PPKA WD': currencyValue(item.ppap_wajib_dibentuk),
+        'PPKA Sistem': currencyValue(item.ppap_system)
       })) },
       { name: 'Rekomendasi', rows: kapRecommendations.value.map((item, index) => ({ No: index + 1, Rekomendasi: item })) },
       { name: 'Trend Prudential', rows: kapPrudentialTrend.value.map(item => ({
@@ -805,10 +1337,10 @@ const buildExportSheets = () => {
         'Rasio KAP': item.available ? percentageValue(item.kap_ratio) : '-',
         APYD: item.available ? currencyValue(item.apyd) : '-',
         'APYD Ratio': item.available ? percentageValue(item.apyd_ratio) : '-',
-        'PPAP WD': item.available ? currencyValue(item.ppap_wajib_dibentuk) : '-',
-        'PPAP Sistem': item.available ? currencyValue(item.ppap_system) : '-',
-        'Total PPAP Bulanan': item.available ? currencyValue(item.total_ppap_bulanan ?? item.ppap_rekap_current ?? item.ppap_system) : '-',
-        'Gap PPAP Bulanan': item.available ? formatSignedRp(item.ppap_gap) : '-',
+        'PPKA WD': item.available ? currencyValue(item.ppap_wajib_dibentuk) : '-',
+        'PPKA Sistem': item.available ? currencyValue(item.ppap_system) : '-',
+        'Total PPKA Bulanan': item.available ? currencyValue(item.total_ppap_bulanan ?? item.ppap_rekap_current ?? item.ppap_system) : '-',
+        'Gap PPKA Bulanan': item.available ? formatSignedRp(item.ppap_gap) : '-',
         'Net Exposure Agunan': item.available ? currencyValue(item.net_exposure_agunan) : '-',
         'KAP Delta': item.available ? percentageValue(item.kap_delta) : '-'
       })) },
@@ -840,11 +1372,25 @@ const buildExportSheets = () => {
         AO: item.nama_ao,
         Kol: item.colbaru,
         OS: currencyValue(item.os_pokok),
-        'PPAP Sistem': currencyValue(item.ppap_system),
+        'PPKA Sistem': currencyValue(item.ppap_system),
         'Agunan TOFJAMIN': currencyValue(item.collateral_from_tofjamin),
         'Agunan TOFLMB': currencyValue(item.collateral_from_toflmb)
       })) },
-      { name: 'Detail GAP PPAP', rows: kapPpapGapRows.value.map(item => ({
+      { name: 'PPKA Operasional', rows: filteredPpkaOperationalRows.value.map(item => ({
+        Kontrak: item.nokontrak,
+        CIF: item.nocif || '-',
+        Nasabah: item.nama,
+        AO: item.nmao || '-',
+        Kol: kolektibilitasLabel(item.colbaru),
+        'Hari Tunggakan': item.haritgk ?? 0,
+        Outstanding: currencyValue(item.osmdlc),
+        'Agunan PPKA': currencyValue(item.total_agunan_ppka),
+        'PPKA Sistem': currencyValue(item.ppap_system),
+        'PPKA Dihitung': currencyValue(item.ppap_seharusnya),
+        'PPKA Manual/Berlaku': currencyValue(item.ppap_manual),
+        'Manual Adjusted': item.is_manual_adjusted ? 'Ya' : 'Tidak'
+      })) },
+      { name: 'Detail GAP PPKA', rows: kapPpapGapRows.value.map(item => ({
         Kontrak: item.nokontrak,
         CIF: item.nocif,
         Nasabah: item.nama,
@@ -859,12 +1405,12 @@ const buildExportSheets = () => {
         'Jenis Agunan': item.jns_agunan || '-',
         'Jenis Ikatan': item.jns_ikatan || '-',
         'Gol Jamin': item.gol_jamin || '-',
-        'PPAP Sebelumnya': currencyValue(item.ppap_previous),
-        'PPAP Berjalan': currencyValue(item.ppap_current),
-        'GAP PPAP': formatSignedRp(item.ppap_gap),
+        'PPKA Sebelumnya': currencyValue(item.ppap_previous),
+        'PPKA Berjalan': currencyValue(item.ppap_current),
+        'GAP PPKA': formatSignedRp(item.ppap_gap),
         Status: item.movement_status || '-'
       })) },
-      { name: 'PPAP Shortfall', rows: kapPpapShortfallAccounts.value.map(item => ({
+      { name: 'PPKA Shortfall', rows: kapPpapShortfallAccounts.value.map(item => ({
         Kontrak: item.nokontrak,
         Nasabah: item.nama,
         Produk: item.produk,
@@ -874,8 +1420,8 @@ const buildExportSheets = () => {
         OS: currencyValue(item.os_pokok),
         Agunan: currencyValue(item.collateral_weighted),
         Jumlah: currencyValue(item.net_exposure_agunan),
-        'PPAP WD': currencyValue(item.ppap_wajib_dibentuk),
-        'PPAP Sistem': currencyValue(item.ppap_system),
+        'PPKA WD': currencyValue(item.ppap_wajib_dibentuk),
+        'PPKA Sistem': currencyValue(item.ppap_system),
         Gap: formatSignedRp(item.ppap_gap)
       })) },
       { name: 'Top APYD', rows: kapApydContributors.value.map(item => ({
@@ -899,8 +1445,8 @@ const buildExportSheets = () => {
         Produk: item.produk,
         AO: item.nama_ao,
         Kol: kolektibilitasLabel(item.colbaru),
-        'PPAP WD': currencyValue(item.ppap_wajib_dibentuk),
-        'PPAP Sistem': currencyValue(item.ppap_system),
+        'PPKA WD': currencyValue(item.ppap_wajib_dibentuk),
+        'PPKA Sistem': currencyValue(item.ppap_system),
         Surplus: formatSignedRp(item.ppap_gap)
       })) }
     ]
@@ -912,6 +1458,8 @@ const buildExportSheets = () => {
       { Metrik: 'PKR', Nilai: percentageValue(pkrSummary.value.pkr_ratio) },
       { Metrik: 'OS PKR', Nilai: currencyValue(pkrSummary.value.pkr_os) },
       { Metrik: 'NOA PKR', Nilai: pkrSummary.value.pkr_noa || 0 },
+      { Metrik: 'OS Kol 1 Restrukturisasi/Valid', Nilai: currencyValue(pkrSummary.value.restructured_lancar_os) },
+      { Metrik: 'OS Kol 2-5', Nilai: currencyValue(pkrSummary.value.pkr_non_lancar_os) },
       { Metrik: 'Kol 2 Watch', Nilai: currencyValue(pkrSummary.value.watch_kol2_os) },
       { Metrik: 'O/S Restrukturisasi', Nilai: currencyValue(restruGuard.value.total_os_restru) },
       { Metrik: 'Vintage Failure Rate', Nilai: percentageValue(restruGuard.value.vintage_failure_rate) }
@@ -929,14 +1477,74 @@ const buildExportSheets = () => {
       'Selisih OS': currencyValue(item.selisih_osmdlc),
       'Selisih NOA': item.selisih_rec
     })) },
-    { name: 'Watchlist Alerts', rows: (qualityData.value.alerts || []).map(item => ({
+    { name: 'Trend PKR Bulanan', rows: pkrTrendRows.value.map(item => ({
+      Tahun: item.tahun,
+      Bulan: item.label,
+      Database: item.source_database || '-',
+      Tersedia: item.available ? 'Ya' : 'Tidak',
+      'PKR Ratio': item.available ? percentageValue(item.pkr_ratio) : '-',
+      'OS PKR': item.available ? currencyValue(item.pkr_os) : '-',
+      'NOA PKR': item.available ? item.pkr_noa : '-',
+      'Kol 1 Restrukturisasi/Valid': item.available ? currencyValue(item.restructured_lancar_os) : '-',
+      'Kol 2 Watch': item.available ? currencyValue(item.watch_kol2_os) : '-',
+      'Kol 2-5': item.available ? currencyValue(item.pkr_non_lancar_os) : '-',
+      'PKR Delta': item.available ? percentageValue(item.pkr_delta) : '-'
+    })) },
+    { name: 'Detail Kontrak PKR', rows: pkrDetailRows.value.map(item => ({
+      Periode: item.periode,
+      Bucket: item.pkr_bucket,
+      Kontrak: item.nokontrak,
+      CIF: item.nocif,
+      Nasabah: item.nama,
+      Cabang: item.cabang,
+      Segmen: item.segmen_nama,
+      AO: item.nama_ao,
+      Produk: item.produk,
+      Kol: kolektibilitasLabel(item.colbaru),
+      OS: currencyValue(item.os_pokok),
+      'Tunggakan Pokok': currencyValue(item.tunggakan_pokok),
+      'Tunggakan Margin': currencyValue(item.tunggakan_margin),
+      PPKA: currencyValue(item.ppap_system)
+    })) },
+    { name: 'Action Priority Queue', rows: actionPriorityQueue.value.map((item, index) => ({
+      Prioritas: index + 1,
+      Severity: item.severity,
+      Score: item.score,
+      Sumber: item.source,
+      Sinyal: (item.signals || [item.signal]).join(' | '),
+      Kontrak: item.nokontrak || '-',
+      Nasabah: item.nama || '-',
+      AO: item.ao || '-',
+      Cabang: item.cabang || '-',
+      Kol: item.kol ? kolektibilitasLabel(item.kol) : '-',
+      Exposure: currencyValue(item.amount),
+      Status: actionWorkflowStatusLabel(item.workflow_status),
+      Owner: item.workflow_owner || '-',
+      'Due Date': item.workflow_due_date || '-',
+      Overdue: item.workflow_overdue ? 'Ya' : 'Tidak',
+      Catatan: item.workflow_note || '-',
+      'Rekomendasi Aksi': item.action
+    })) },
+    { name: 'Watchlist Alerts', rows: ewsWatchlistRows.value.map(item => ({
       Kontrak: item.nokontrak,
       Nasabah: item.nama,
       AO: item.nama_ao,
       Kol: kolektibilitasLabel(item.colbaru),
+      Severity: item.severity,
+      Score: item.severity_score,
       OS: currencyValue(item.os),
-      PPAP: currencyValue(item.ppap),
-      Risiko: item.risk_level || item.alert_level || '-'
+      'Hari Tunggakan': item.days_past_due,
+      Agunan: currencyValue(item.collateral),
+      PPKA: currencyValue(item.ppka),
+      'Cover Ratio': percentageValue(item.cover_ratio),
+      'Net Uncovered': currencyValue(item.uncovered),
+      Risiko: item.risk_level || item.alert_level || '-',
+      'Workflow Status': actionWorkflowStatusLabel(item.workflow_status),
+      Owner: item.workflow_owner || '-',
+      'Due Date': item.workflow_due_date || '-',
+      Overdue: item.workflow_overdue ? 'Ya' : 'Tidak',
+      Catatan: item.workflow_note || '-',
+      'Rekomendasi Aksi': item.recommended_action
     })) },
     { name: 'Sector Data', rows: (qualityData.value.sector_data || []).map(item => ({
       Sektor: item.sektor,
@@ -954,65 +1562,115 @@ const buildExportSheets = () => {
 }
 
 const downloadActiveTabExcel = () => {
-  const workbook = XLSX.utils.book_new()
-  buildExportSheets().forEach((sheet) => {
-    const rows = sheet.rows?.length ? sheet.rows : [{ Informasi: 'Tidak ada data pada filter ini' }]
-    const worksheet = XLSX.utils.json_to_sheet(rows)
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName(sheet.name))
-  })
-  XLSX.writeFile(workbook, `${exportFileStem.value}.xlsx`)
+  if (!canExport.value) return
+  isExporting.value = true
+  exportError.value = ''
+  try {
+    const workbook = XLSX.utils.book_new()
+    workbook.Props = {
+      Title: exportReportTitle.value,
+      Subject: `${tabs[activeTab.value]?.name || 'Quality'} - ${exportPeriodLabel.value}`,
+      Author: 'Monitoring Dashboard',
+      Company: 'MCI',
+      CreatedDate: new Date()
+    }
+    XLSX.utils.book_append_sheet(workbook, buildMetadataWorksheet(), '00 Metadata')
+    buildExportSheets().forEach((sheet, index) => {
+      XLSX.utils.book_append_sheet(workbook, buildStandardWorksheet(sheet, index), sheetName(`${String(index + 1).padStart(2, '0')} ${sheet.name}`))
+    })
+    XLSX.writeFile(workbook, `${exportFileStem.value}.xlsx`)
+  } catch (error) {
+    console.error(error)
+    exportError.value = 'Gagal membuat file Excel. Coba ulangi setelah data selesai dimuat.'
+  } finally {
+    isExporting.value = false
+  }
 }
 
 const downloadActiveTabPdf = () => {
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
-  const pageWidth = doc.internal.pageSize.getWidth()
-  const sheets = buildExportSheets()
-  let y = 16
-
-  doc.setFillColor(13, 148, 136)
-  doc.rect(0, 0, pageWidth, 28, 'F')
-  doc.setTextColor(255, 255, 255)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(16)
-  doc.text(tabs[activeTab.value]?.name || 'Quality Report', 14, 13)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  doc.text(activeFilterText.value, 14, 21)
-  y = 38
-
-  sheets.forEach((sheet, index) => {
-    const rows = sheet.rows?.length ? sheet.rows : [{ Informasi: 'Tidak ada data pada filter ini' }]
-    const columns = Object.keys(rows[0] || { Informasi: '' })
-    const body = rows.map(row => columns.map(column => row[column] ?? '-'))
-    if (index > 0 && y > 172) {
-      doc.addPage()
-      y = 18
+  if (!canExport.value) return
+  isExporting.value = true
+  exportError.value = ''
+  try {
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const sheets = buildExportSheets()
+    const generatedAt = exportGeneratedAt()
+    const drawHeader = () => {
+      doc.setFillColor(15, 23, 42)
+      doc.rect(0, 0, pageWidth, 30, 'F')
+      doc.setFillColor(13, 148, 136)
+      doc.rect(0, 29, pageWidth, 1.2, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(15)
+      doc.text(exportReportTitle.value, 14, 12)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8.5)
+      doc.text(doc.splitTextToSize(activeFilterText.value, 170), 14, 20)
+      doc.setFont('helvetica', 'bold')
+      doc.text(exportPeriodLabel.value, pageWidth - 14, 12, { align: 'right' })
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Generate: ${generatedAt}`, pageWidth - 14, 20, { align: 'right' })
     }
-    doc.setTextColor(15, 23, 42)
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(11)
-    doc.text(sheet.name, 14, y)
-    autoTable(doc, {
-      startY: y + 5,
-      head: [columns],
-      body,
-      styles: { fontSize: 7, cellPadding: 2, overflow: 'linebreak', lineColor: [226, 232, 240], lineWidth: 0.1 },
-      headStyles: { fillColor: [15, 118, 110], textColor: 255, fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
-      margin: { left: 14, right: 14 },
-      theme: 'grid'
+    const drawFooter = (page, pageCount) => {
+      doc.setDrawColor(226, 232, 240)
+      doc.line(14, pageHeight - 10, pageWidth - 14, pageHeight - 10)
+      doc.setFontSize(7.5)
+      doc.setTextColor(100, 116, 139)
+      doc.text('Nominal penuh tanpa pembulatan; persentase maksimal 2 desimal.', 14, pageHeight - 5)
+      doc.text(`Halaman ${page}/${pageCount}`, pageWidth - 14, pageHeight - 5, { align: 'right' })
+    }
+    doc.setProperties({
+      title: exportReportTitle.value,
+      subject: `${tabs[activeTab.value]?.name || 'Quality'} - ${exportPeriodLabel.value}`,
+      author: 'Monitoring Dashboard',
+      creator: 'Monitoring Dashboard'
     })
-    y = doc.lastAutoTable.finalY + 12
-  })
+    drawHeader()
+    let y = 40
 
-  const pageCount = doc.internal.getNumberOfPages()
-  for (let page = 1; page <= pageCount; page++) {
-    doc.setPage(page)
-    doc.setFontSize(8)
-    doc.setTextColor(100, 116, 139)
-    doc.text(`Monitoring Dashboard - ${exportPeriodLabel.value} - Halaman ${page}/${pageCount}`, 14, 202)
+    sheets.forEach((sheet, index) => {
+      const rows = normalizedSheetRows(sheet)
+      const columns = Object.keys(rows[0] || { Informasi: '' })
+      const body = rows.map(row => columns.map(column => row[column] ?? '-'))
+      if (index > 0 && y > 172) {
+        doc.addPage()
+        drawHeader()
+        y = 40
+      }
+      doc.setTextColor(15, 23, 42)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(11)
+      doc.text(`${sheet.name} (${rows.length} baris)`, 14, y)
+      autoTable(doc, {
+        startY: y + 5,
+        head: [columns],
+        body,
+        styles: { fontSize: 7, cellPadding: 2, overflow: 'linebreak', lineColor: [226, 232, 240], lineWidth: 0.1 },
+        headStyles: { fillColor: [15, 118, 110], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        margin: { top: 38, left: 14, right: 14, bottom: 16 },
+        theme: 'grid',
+        showHead: 'everyPage',
+        didDrawPage: () => drawHeader()
+      })
+      y = doc.lastAutoTable.finalY + 12
+    })
+
+    const pageCount = doc.internal.getNumberOfPages()
+    for (let page = 1; page <= pageCount; page++) {
+      doc.setPage(page)
+      drawFooter(page, pageCount)
+    }
+    doc.save(`${exportFileStem.value}.pdf`)
+  } catch (error) {
+    console.error(error)
+    exportError.value = 'Gagal membuat file PDF. Coba ulangi setelah data selesai dimuat.'
+  } finally {
+    isExporting.value = false
   }
-  doc.save(`${exportFileStem.value}.pdf`)
 }
 
 const resetTablePages = () => {
@@ -1023,7 +1681,10 @@ const resetTablePages = () => {
   kapAbaPage.value = 1
   kapOverReservedPage.value = 1
   alertsPage.value = 1
-  legacyAlertsPage.value = 1
+  pkrPage.value = 1
+  pkrDetailPage.value = 1
+  actionQueuePage.value = 1
+  ppkaOperationalPage.value = 1
 }
 
 const fetchCabangs = async () => {
@@ -1042,6 +1703,173 @@ const fetchSegmens = async () => {
   } catch (e) { console.error(e) }
 }
 
+const fetchPpkaSettings = async () => {
+  try {
+    const res = await axios.get('/api/v1/admin/settings')
+    const enabled = res.data?.data?.ppka_manual_enabled
+    manualAdjustmentEnabled.value = enabled === true || enabled === 'true'
+  } catch (e) {
+    console.error(e)
+    manualAdjustmentEnabled.value = false
+  }
+}
+
+const fetchPpkaOperational = async () => {
+  ppkaOperationalLoading.value = true
+  try {
+    const res = await axios.get('/api/v1/financing/penyelesaian/ppka')
+    if (res.data.success) {
+      ppkaOperationalRows.value = res.data.data || []
+      ppkaOperationalSummary.value = {
+        ...ppkaOperationalSummary.value,
+        ...(res.data.summary || {})
+      }
+      ppkaOperationalPage.value = 1
+    }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    ppkaOperationalLoading.value = false
+  }
+}
+
+const openPpkaAdjustmentDialog = (item) => {
+  ppkaAdjustmentForm.value = {
+    nokontrak: item?.nokontrak || '',
+    nominal_ppap: item?.ppap_manual ?? item?.ppap_system ?? '',
+    alasan: ''
+  }
+  ppkaAdjustmentDialog.value = true
+}
+
+const submitPpkaAdjustment = async () => {
+  if (!ppkaAdjustmentForm.value.nokontrak || ppkaAdjustmentForm.value.nominal_ppap === '') return
+  isSavingPpkaAdjustment.value = true
+  try {
+    const res = await axios.post('/api/v1/financing/penyelesaian/ppka-adjustment', {
+      nokontrak: ppkaAdjustmentForm.value.nokontrak,
+      nominal_ppap: ppkaAdjustmentForm.value.nominal_ppap,
+      alasan: ppkaAdjustmentForm.value.alasan || 'Penyesuaian melalui Quality & Risk Console'
+    })
+    if (res.data.success) {
+      ppkaAdjustmentDialog.value = false
+      await fetchPpkaOperational()
+      await fetchQualityData()
+    }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    isSavingPpkaAdjustment.value = false
+  }
+}
+
+const actionWorkflowStorageKey = () => `quality-action-workflows:${filters.value.tahun}:${filters.value.bulan}`
+
+const loadLocalActionWorkflows = () => {
+  try {
+    return JSON.parse(localStorage.getItem(actionWorkflowStorageKey()) || '{}')
+  } catch (e) {
+    console.error(e)
+    return {}
+  }
+}
+
+const saveLocalActionWorkflow = (workflow) => {
+  const workflows = loadLocalActionWorkflows()
+  const nextWorkflows = {
+    ...workflows,
+    [workflow.action_key]: workflow
+  }
+  localStorage.setItem(actionWorkflowStorageKey(), JSON.stringify(nextWorkflows))
+  actionWorkflows.value = nextWorkflows
+}
+
+const fetchActionWorkflows = async () => {
+  try {
+    const res = await axios.get('/api/v1/financing/quality-action-workflows', {
+      params: {
+        tahun: filters.value.tahun,
+        bulan: filters.value.bulan
+      }
+    })
+    if (res.data.success) {
+      const indexed = res.data.indexed || {}
+      actionWorkflows.value = Object.keys(indexed).length ? indexed : loadLocalActionWorkflows()
+    }
+  } catch (e) {
+    console.error(e)
+    actionWorkflows.value = loadLocalActionWorkflows()
+  }
+}
+
+const openActionWorkflowDialog = (item) => {
+  selectedActionWorkflowItem.value = item
+  actionWorkflowForm.value = {
+    status: item.workflow_status || 'open',
+    owner: item.workflow_owner || '',
+    due_date: item.workflow_due_date || '',
+    note: item.workflow_note || '',
+    reviewed_by: item.workflow_reviewed_by || ''
+  }
+  actionWorkflowDialog.value = true
+}
+
+const saveActionWorkflow = async () => {
+  if (!selectedActionWorkflowItem.value) return
+  isSavingActionWorkflow.value = true
+  const item = selectedActionWorkflowItem.value
+
+  try {
+    const res = await axios.post('/api/v1/financing/quality-action-workflows', {
+      period_year: filters.value.tahun,
+      period_month: filters.value.bulan,
+      action_key: item.key,
+      nokontrak: item.nokontrak || null,
+      nama: item.nama || null,
+      source: item.source || null,
+      signals: item.signals || [item.signal],
+      severity: item.severity,
+      score: item.score || 0,
+      exposure: item.amount || 0,
+      status: actionWorkflowForm.value.status,
+      owner: actionWorkflowForm.value.owner || null,
+      due_date: actionWorkflowForm.value.due_date || null,
+      note: actionWorkflowForm.value.note || null,
+      reviewed_by: actionWorkflowForm.value.reviewed_by || null
+    })
+
+    if (res.data.success) {
+      actionWorkflows.value = {
+        ...actionWorkflows.value,
+        [res.data.data.action_key]: res.data.data
+      }
+      actionWorkflowDialog.value = false
+    }
+  } catch (e) {
+    console.error(e)
+    saveLocalActionWorkflow({
+      action_key: item.key,
+      nokontrak: item.nokontrak || null,
+      nama: item.nama || null,
+      source: item.source || null,
+      signals: item.signals || [item.signal],
+      severity: item.severity,
+      score: item.score || 0,
+      exposure: item.amount || 0,
+      status: actionWorkflowForm.value.status,
+      owner: actionWorkflowForm.value.owner || '',
+      due_date: actionWorkflowForm.value.due_date || '',
+      note: actionWorkflowForm.value.note || '',
+      reviewed_by: actionWorkflowForm.value.reviewed_by || '',
+      completed_at: actionWorkflowForm.value.status === 'done' ? new Date().toISOString() : null,
+      local_only: true
+    })
+    actionWorkflowDialog.value = false
+  } finally {
+    isSavingActionWorkflow.value = false
+  }
+}
+
 const fetchQualityData = async () => {
   isLoading.value = true
   try {
@@ -1055,23 +1883,25 @@ const fetchQualityData = async () => {
     })
     if (res.data.success) {
       qualityData.value = { ...qualityData.value, ...res.data.data }
+      await fetchActionWorkflows()
       resetTablePages()
     }
   } catch (e) { console.error(e) }
   finally { isLoading.value = false }
 }
 
-onMounted(() => { fetchCabangs(); fetchSegmens(); fetchQualityData(); })
+onMounted(() => { fetchCabangs(); fetchSegmens(); fetchPpkaSettings(); fetchPpkaOperational(); fetchQualityData(); })
 watch([selectedCabang, filters], fetchQualityData, { deep: true })
+watch([ppkaOperationalSearch, ppkaOperationalAo], () => { ppkaOperationalPage.value = 1 })
 </script>
 
 <template>
   <div class="quality-console">
     <Head title="RGEC Quality & Risk Console" />
 
-    <!-- ══════════════════════════════════════════
+    <!-- ==========================================
          HERO HEADER
-    ══════════════════════════════════════════ -->
+    ========================================== -->
     <div class="hero-header">
       <div class="hero-bg-decoration"></div>
       <div class="hero-content max-w-7xl mx-auto px-6 py-8">
@@ -1199,9 +2029,9 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════════
+    <!-- ==========================================
          MAIN CONTENT
-    ══════════════════════════════════════════ -->
+    ========================================== -->
     <div class="main-content max-w-7xl mx-auto px-6 pt-7 pb-16">
 
       <!-- Tab Navigation -->
@@ -1218,28 +2048,44 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
           </button>
         </div>
         <div class="tab-export-actions">
-          <button type="button" class="export-btn export-btn--excel" @click="downloadActiveTabExcel">
-            <v-icon icon="ri-file-excel-2-line" size="16"></v-icon>
-            Download Excel
+          <button
+            type="button"
+            class="export-btn export-btn--excel"
+            :disabled="!canExport"
+            :aria-busy="isExporting"
+            @click="downloadActiveTabExcel"
+          >
+            <v-icon :icon="isExporting ? 'ri-loader-4-line' : 'ri-file-excel-2-line'" size="16" :class="{ 'export-spin': isExporting }"></v-icon>
+            {{ isExporting ? 'Menyiapkan...' : 'Download Excel' }}
           </button>
-          <button type="button" class="export-btn export-btn--pdf" @click="downloadActiveTabPdf">
-            <v-icon icon="ri-file-pdf-2-line" size="16"></v-icon>
-            Download PDF
+          <button
+            type="button"
+            class="export-btn export-btn--pdf"
+            :disabled="!canExport"
+            :aria-busy="isExporting"
+            @click="downloadActiveTabPdf"
+          >
+            <v-icon :icon="isExporting ? 'ri-loader-4-line' : 'ri-file-pdf-2-line'" size="16" :class="{ 'export-spin': isExporting }"></v-icon>
+            {{ isExporting ? 'Menyiapkan...' : 'Download PDF' }}
           </button>
+          <span v-if="exportError" class="export-error">
+            <v-icon icon="ri-error-warning-line" size="14"></v-icon>
+            {{ exportError }}
+          </span>
         </div>
       </div>
 
       <v-window v-model="activeTab" class="overflow-visible" :touch="false">
 
-        <!-- ══════════════════════════════════
+        <!-- ==================================
              TAB 1: RGEC & RISK PROFILE
-        ══════════════════════════════════ -->
+        ================================== -->
         <v-window-item :value="0">
 
           <!-- KPI Cards -->
           <v-row class="mb-6">
             <v-col cols="12" sm="6" lg="3">
-              <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+              <v-card class="rounded-xl border shadow-sm transition-swing" elevation="0" style="position: relative; overflow: hidden;">
                 <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
                   <v-icon icon="ri-wallet-3-line" size="120" color="#059669" />
                 </div>
@@ -1258,7 +2104,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
             </v-col>
 
             <v-col cols="12" sm="6" lg="3">
-              <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+              <v-card class="rounded-xl border shadow-sm transition-swing" elevation="0" style="position: relative; overflow: hidden;">
                 <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
                   <v-icon icon="ri-error-warning-line" size="120" :color="(summary.npf_gross || 0) > 5 ? '#e11d48' : '#059669'" />
                 </div>
@@ -1276,7 +2122,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
             </v-col>
 
             <v-col cols="12" sm="6" lg="3">
-              <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+              <v-card class="rounded-xl border shadow-sm transition-swing" elevation="0" style="position: relative; overflow: hidden;">
                 <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
                   <v-icon icon="ri-bank-card-line" size="120" :color="(summary.fdr || 0) > 120 ? '#e11d48' : (summary.fdr || 0) > 100 ? '#d97706' : '#0284c7'" />
                 </div>
@@ -1299,7 +2145,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
             </v-col>
 
             <v-col cols="12" sm="6" lg="3">
-              <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+              <v-card class="rounded-xl border shadow-sm transition-swing" elevation="0" style="position: relative; overflow: hidden;">
                 <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
                   <v-icon icon="ri-water-flash-line" size="120" color="#4f46e5" />
                 </div>
@@ -1329,7 +2175,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                   <div>
                     <div class="content-card__title">Tren Pembiayaan Bermasalah (NPF)</div>
                     <div class="content-card__subtitle" v-if="lastAvailableTrendMonth">
-                      Pergerakan Gross vs Net — Jan s/d
+                      Pergerakan Gross vs Net - Jan s/d
                       <strong :style="hasTrendGap ? 'color: #d97706;' : 'color: #059669;'">
                         {{ lastAvailableTrendMonth }} {{ filters.tahun }}
                       </strong>
@@ -1508,7 +2354,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                         <th>Akad / Cabang</th>
                         <th class="text-right">Outstanding</th>
                         <th class="text-right">Tunggakan</th>
-                        <th class="text-right">PPAP/CKPN</th>
+                        <th class="text-right">PPKA/CKPN</th>
                         <th class="text-right">Agunan</th>
                         <th>Kualitas</th>
                         <th>Tanggal</th>
@@ -1521,13 +2367,13 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                         </td>
                         <td>
                           <div class="stress-debtor-name">{{ item.nama || '-' }}</div>
-                          <div class="stress-debtor-meta">Kontrak: {{ item.nokontrak || '-' }} · CIF: {{ item.nocif || '-' }}</div>
+                          <div class="stress-debtor-meta">Kontrak: {{ item.nokontrak || '-' }}  -  CIF: {{ item.nocif || '-' }}</div>
                           <div class="stress-debtor-meta">No Akad: {{ item.noakad || '-' }}</div>
                         </td>
                         <td>
                           <div class="stress-cell-main">{{ item.jenis_akad || '-' }}</div>
-                          <div class="stress-debtor-meta">{{ item.cabang || '-' }} · {{ item.nama_ao || '-' }}</div>
-                          <div class="stress-debtor-meta">{{ item.segmen || '-' }} · Sektor {{ item.sekon || '-' }}</div>
+                          <div class="stress-debtor-meta">{{ item.cabang || '-' }}  -  {{ item.nama_ao || '-' }}</div>
+                          <div class="stress-debtor-meta">{{ item.segmen || '-' }}  -  Sektor {{ item.sekon || '-' }}</div>
                         </td>
                         <td class="text-right">
                           <div class="stress-cell-main">{{ formatRp(item.os) }}</div>
@@ -1562,11 +2408,103 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
             </v-card>
           </v-dialog>
 
+          <v-dialog v-model="actionWorkflowDialog" max-width="760" persistent>
+            <v-card class="action-workflow-dialog" elevation="0">
+              <div class="action-workflow-dialog__header">
+                <div>
+                  <div class="stress-detail-dialog__eyebrow">Risk Action Workflow</div>
+                  <h3 class="stress-detail-dialog__title">{{ selectedActionWorkflowItem?.nama || 'Update Tindakan' }}</h3>
+                  <p class="stress-detail-dialog__subtitle">
+                    Simpan owner, status, due date, dan catatan tindak lanjut untuk prioritas risiko periode {{ filters.bulan }}/{{ filters.tahun }}.
+                  </p>
+                </div>
+                <button type="button" class="stress-detail-dialog__close" @click="actionWorkflowDialog = false" aria-label="Tutup workflow">
+                  <v-icon icon="ri-close-line" size="20"></v-icon>
+                </button>
+              </div>
+
+              <v-card-text class="pa-6">
+                <div v-if="selectedActionWorkflowItem" class="action-workflow-context">
+                  <div>
+                    <span>Kontrak</span>
+                    <strong>{{ selectedActionWorkflowItem.nokontrak || '-' }}</strong>
+                  </div>
+                  <div>
+                    <span>Sumber Risiko</span>
+                    <strong>{{ selectedActionWorkflowItem.source || '-' }}</strong>
+                  </div>
+                  <div>
+                    <span>Exposure</span>
+                    <strong>{{ formatRp(selectedActionWorkflowItem.amount) }}</strong>
+                  </div>
+                </div>
+
+                <v-row class="mt-3">
+                  <v-col cols="12" md="6">
+                    <v-select
+                      v-model="actionWorkflowForm.status"
+                      :items="actionWorkflowStatusItems"
+                      label="Status"
+                      variant="outlined"
+                      density="comfortable"
+                    ></v-select>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="actionWorkflowForm.owner"
+                      label="Owner / PIC"
+                      variant="outlined"
+                      density="comfortable"
+                      placeholder="Contoh: Remedial - AO Cabang"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="actionWorkflowForm.due_date"
+                      label="Due Date"
+                      type="date"
+                      variant="outlined"
+                      density="comfortable"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="actionWorkflowForm.reviewed_by"
+                      label="Reviewed By"
+                      variant="outlined"
+                      density="comfortable"
+                      placeholder="Opsional"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-textarea
+                      v-model="actionWorkflowForm.note"
+                      label="Catatan Tindak Lanjut"
+                      variant="outlined"
+                      rows="4"
+                      auto-grow
+                      placeholder="Tuliskan hasil kontak, rencana remedial, kebutuhan dokumen, atau alasan waived."
+                    ></v-textarea>
+                  </v-col>
+                </v-row>
+              </v-card-text>
+
+              <v-card-actions class="pa-6 pt-0 justify-end">
+                <v-btn variant="text" @click="actionWorkflowDialog = false">Batal</v-btn>
+                <v-btn color="primary" :loading="isSavingActionWorkflow" @click="saveActionWorkflow">
+                  Simpan Workflow
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+
+
+
         </v-window-item>
 
-        <!-- ══════════════════════════════════
+        <!-- ==================================
              TAB 2: KUALITAS ASET & CKPN
-        ══════════════════════════════════ -->
+        ================================== -->
         <v-window-item :value="1">
           <div class="quality-section-header mb-4">
             <div>
@@ -1585,7 +2523,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
           <v-row class="mb-6">
             <!-- Kolektibilitas Donut -->
             <v-col cols="12" lg="4">
-              <div class="content-card h-100">
+              <div class="content-card">
                 <div class="content-card__accent-top" style="background: linear-gradient(90deg, #10b981, #059669);"></div>
                 <div class="content-card__header">
                   <div>
@@ -1606,12 +2544,12 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 
             <!-- Aging & ECL Table -->
             <v-col cols="12" lg="8">
-              <div class="content-card h-100">
+              <div class="content-card">
                 <div class="content-card__accent-top" style="background: linear-gradient(90deg, #0ea5e9, #0284c7);"></div>
                 <div class="content-card__header">
                   <div>
                     <div class="content-card__title">Aging Bucket &amp; Pencadangan Sistem</div>
-                    <div class="content-card__subtitle">Pembacaan operasional aging dan PPAP/CKPN sistem per stage kualitas</div>
+                    <div class="content-card__subtitle">Pembacaan operasional aging dan PPKA/CKPN sistem per stage kualitas</div>
                   </div>
                   <div class="icon-badge" style="background: #f0f9ff; color: #0284c7;">
                     <v-icon icon="ri-stack-line" size="18"></v-icon>
@@ -1630,13 +2568,13 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                         </div>
                         <div>
                           <div class="aging-cat-name">Lancar</div>
-                          <div class="aging-cat-sub">0 Hari — Belum Menunggak</div>
+                          <div class="aging-cat-sub">0 Hari - Belum Menunggak</div>
                         </div>
                       </div>
                       <div class="aging-row__financials">
                         <div class="aging-os">{{ formatRp(agingStageTotals.stage1) }}</div>
                         <div class="aging-ecl-wrap">
-                          <div class="aging-ecl-label">Stage 1 — Sistem</div>
+                          <div class="aging-ecl-label">Stage 1 - Sistem</div>
                           <div class="aging-ecl-chip aging-ecl-chip--stage1">{{ formatRpSingkat(qualityData.ecl_staging?.ckpn_stage_1) }}</div>
                         </div>
                       </div>
@@ -1653,13 +2591,13 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                         </div>
                         <div>
                           <div class="aging-cat-name">Dalam Perhatian Khusus</div>
-                          <div class="aging-cat-sub">1 – 90 Hari (SICR)</div>
+                          <div class="aging-cat-sub">1 - 90 Hari (SICR)</div>
                         </div>
                       </div>
                       <div class="aging-row__financials">
                         <div class="aging-os" style="color: #d97706;">{{ formatRp(agingStageTotals.stage2) }}</div>
                         <div class="aging-ecl-wrap">
-                          <div class="aging-ecl-label">Stage 2 — Sistem</div>
+                          <div class="aging-ecl-label">Stage 2 - Sistem</div>
                           <div class="aging-ecl-chip aging-ecl-chip--stage2">{{ formatRpSingkat(qualityData.ecl_staging?.ckpn_stage_2) }}</div>
                         </div>
                       </div>
@@ -1676,13 +2614,13 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                         </div>
                         <div>
                           <div class="aging-cat-name" style="color: #be123c;">Non-Performing (NPF)</div>
-                          <div class="aging-cat-sub" style="color: #f43f5e;">> 90 Hari — Credit Impaired</div>
+                          <div class="aging-cat-sub" style="color: #f43f5e;">> 90 Hari - Credit Impaired</div>
                         </div>
                       </div>
                       <div class="aging-row__financials">
                         <div class="aging-os" style="color: #e11d48; font-weight: 800;">{{ formatRp(agingStageTotals.stage3) }}</div>
                         <div class="aging-ecl-wrap">
-                          <div class="aging-ecl-label" style="color: #f43f5e;">Stage 3 — Sistem</div>
+                          <div class="aging-ecl-label" style="color: #f43f5e;">Stage 3 - Sistem</div>
                           <div class="aging-ecl-chip aging-ecl-chip--stage3">{{ formatRpSingkat(qualityData.ecl_staging?.ckpn_stage_3) }}</div>
                         </div>
                       </div>
@@ -1703,12 +2641,12 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                 </div>
                 <h2 class="ckpn-model-panel__title">Model Kualitas &amp; CKPN Berbasis Database</h2>
                 <p class="ckpn-model-panel__subtitle">
-                  Menggunakan EAD, klasifikasi individual/kolektif, PD historis, LGD collateral shortfall, dan pembanding PPAP sistem.
+                  Menggunakan EAD, klasifikasi individual/kolektif, PD historis, LGD collateral shortfall, dan pembanding PPKA sistem.
                 </p>
               </div>
               <div class="ckpn-model-panel__period">
                 <span>Periode Observasi PD</span>
-                <strong>{{ ckpnParameters.observation_start || '-' }} — {{ ckpnParameters.observation_end || '-' }}</strong>
+                <strong>{{ ckpnParameters.observation_start || '-' }} - {{ ckpnParameters.observation_end || '-' }}</strong>
               </div>
             </div>
 
@@ -1716,22 +2654,22 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
               <div class="ckpn-kpi-card ckpn-kpi-card--primary">
                 <span>Total CKPN Model</span>
                 <strong>{{ formatRp(ckpnSummary.model_ckpn) }}</strong>
-                <small>Individual + Kolektif berbasis PD × LGD × EAD</small>
+                <small>Individual + Kolektif berbasis PD x LGD x EAD</small>
               </div>
               <div class="ckpn-kpi-card">
-                <span>PPAP Sistem Eligible</span>
+                <span>PPKA Sistem Eligible</span>
                 <strong>{{ formatRp(ckpnSummary.system_ppap) }}</strong>
                 <small>Baseline CBS untuk produk yang masuk scope CKPN</small>
               </div>
               <div :class="['ckpn-kpi-card', Number(ckpnSummary.gap_vs_system) > 0 ? 'ckpn-kpi-card--danger' : 'ckpn-kpi-card--safe']">
                 <span>Gap Model vs Sistem</span>
                 <strong>{{ formatSignedRp(ckpnSummary.gap_vs_system) }}</strong>
-                <small>{{ Number(ckpnSummary.gap_vs_system) > 0 ? 'Indikasi kekurangan cadangan' : 'Model di bawah/sama PPAP sistem' }}</small>
+                <small>{{ Number(ckpnSummary.gap_vs_system) > 0 ? 'Indikasi kekurangan cadangan' : 'Model di bawah/sama PPKA sistem' }}</small>
               </div>
               <div class="ckpn-kpi-card">
                 <span>Coverage Model / EAD</span>
                 <strong>{{ formatTruncatedPercentage(ckpnSummary.coverage_model_to_ead) }}</strong>
-                <small>PPAP sistem: {{ formatTruncatedPercentage(ckpnSummary.system_coverage_to_ead) }}</small>
+                <small>PPKA sistem: {{ formatTruncatedPercentage(ckpnSummary.system_coverage_to_ead) }}</small>
               </div>
             </div>
 
@@ -1740,7 +2678,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                 <div>
                   <div class="ckpn-section-title">
                     <v-icon icon="ri-scales-3-line" size="16"></v-icon>
-                    Pendampingan CKPN Model vs PPAP Sistem
+                    Pendampingan CKPN Model vs PPKA Sistem
                   </div>
                   <p>
                     Membandingkan kebutuhan cadangan model ECL dengan baseline cadangan CBS pada produk eligible.
@@ -1756,17 +2694,17 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                 <div class="ckpn-comparison-metric">
                   <span>CKPN Model</span>
                   <strong>{{ formatRp(ckpnSummary.model_ckpn) }}</strong>
-                  <small>Hasil hitung PD × LGD × EAD + individual</small>
+                  <small>Hasil hitung PD x LGD x EAD + individual</small>
                 </div>
                 <div class="ckpn-comparison-metric">
-                  <span>PPAP Sistem</span>
+                  <span>PPKA Sistem</span>
                   <strong>{{ formatRp(ckpnSummary.system_ppap) }}</strong>
                   <small>Cadangan yang terbaca dari CBS untuk scope eligible</small>
                 </div>
                 <div class="ckpn-comparison-metric">
                   <span>Coverage Delta</span>
                   <strong>{{ formatTruncatedPercentage(ckpnComparison.coverageDelta) }}</strong>
-                  <small>Coverage model dikurangi coverage PPAP sistem</small>
+                  <small>Coverage model dikurangi coverage PPKA sistem</small>
                 </div>
                 <div class="ckpn-comparison-metric">
                   <span>Gap terhadap EAD</span>
@@ -1789,7 +2727,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 
             <v-row class="mt-4">
               <v-col cols="12" lg="4">
-                <div class="ckpn-method-card h-100">
+                <div class="ckpn-method-card">
                   <div class="ckpn-section-title">
                     <v-icon icon="ri-flow-chart" size="16"></v-icon>
                     Metodologi
@@ -1814,7 +2752,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
               </v-col>
 
               <v-col cols="12" lg="4">
-                <div class="ckpn-method-card h-100">
+                <div class="ckpn-method-card">
                   <div class="ckpn-section-title">
                     <v-icon icon="ri-percent-line" size="16"></v-icon>
                     Parameter PD / LGD
@@ -1844,7 +2782,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
               </v-col>
 
               <v-col cols="12" lg="4">
-                <div class="ckpn-method-card h-100">
+                <div class="ckpn-method-card">
                   <div class="ckpn-section-title">
                     <v-icon icon="ri-bank-card-line" size="16"></v-icon>
                     Scope Portofolio
@@ -1904,8 +2842,8 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                           <td><span class="ckpn-rank-badge">#{{ item.exposure_rank }}</span></td>
                           <td>
                             <div class="stress-debtor-name">{{ item.nama }}</div>
-                            <div class="stress-debtor-meta">{{ item.nokontrak }} · CIF {{ item.nocif || '-' }}</div>
-                            <div class="stress-debtor-meta">{{ item.cabang }} · {{ item.nama_ao }}</div>
+                            <div class="stress-debtor-meta">{{ item.nokontrak }}  -  CIF {{ item.nocif || '-' }}</div>
+                            <div class="stress-debtor-meta">{{ item.cabang }}  -  {{ item.nama_ao }}</div>
                           </td>
                           <td>
                             <span :class="['stress-kol-chip', `stress-kol-chip--${item.colbaru}`]">Kol {{ item.colbaru }}</span>
@@ -1943,7 +2881,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                     <div v-for="item in ckpnProductScope" :key="`${item.produk}-${item.ckpn_scope}`" class="ckpn-product-row">
                       <div>
                         <div class="ckpn-product-name">{{ item.produk }}</div>
-                        <div class="stress-debtor-meta">{{ formatWholeNumber(item.noa) }} rekening · PPAP {{ formatRpSingkat(item.ppap_system) }}</div>
+                        <div class="stress-debtor-meta">{{ formatWholeNumber(item.noa) }} rekening  -  PPKA {{ formatRpSingkat(item.ppap_system) }}</div>
                       </div>
                       <div class="ckpn-product-row__metric">
                         <span :class="['ckpn-scope-chip', item.ckpn_scope === 'eligible' ? 'ckpn-scope-chip--ok' : 'ckpn-scope-chip--muted']">
@@ -2033,20 +2971,20 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
           </div>
         </v-window-item>
 
-        <!-- ══════════════════════════════════
-             TAB 3: KAP & PPAP PRUDENTIAL
-        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ==================================
+             TAB 3: KAP & PPKA PRUDENTIAL
+        ================================== -->
         <v-window-item :value="2">
           <div class="quality-section-header mb-5">
             <div>
               <span class="quality-section-header__eyebrow">Prudential Asset Quality Layer</span>
-              <h2 class="quality-section-header__title">KAP, APYD, PPAP WD, dan Net Exposure Agunan</h2>
+              <h2 class="quality-section-header__title">KAP, APYD, PPKA WD, dan Net Exposure Agunan</h2>
               <p class="quality-section-header__subtitle">
                 Tab ini dipisahkan dari CKPN agar pembacaan regulatory prudential tidak memotong alur model CKPN.
-                Fokusnya adalah kualitas aktiva produktif, eksposur setelah agunan berbobot, dan kecukupan PPAP sistem.
+                Fokusnya adalah kualitas aktiva produktif, eksposur setelah agunan berbobot, dan kecukupan PPKA sistem.
               </p>
             </div>
-            <span class="quality-section-pill quality-section-pill--danger">KAP & PPAP Control</span>
+            <span class="quality-section-pill quality-section-pill--danger">KAP & PPKA Control</span>
           </div>
 
           <div class="kap-risk-panel">
@@ -2057,7 +2995,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                   Prudential Summary
                 </div>
               <p>
-                  Menghubungkan Rasio KAP TKS, APYD, PPAP wajib dibentuk, PPAP sistem, dan jumlah setelah agunan
+                  Menghubungkan Rasio KAP TKS, APYD, PPKA wajib dibentuk, PPKA sistem, dan jumlah setelah agunan
                   menjadi satu cockpit keputusan remedial dan pencadangan.
                 </p>
               </div>
@@ -2081,9 +3019,9 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                 <small>Baki debet - agunan dikuasai, tanpa floor</small>
               </div>
               <div :class="['kap-kpi-card', Number(kapSummary.ppap_gap) > 0 ? 'kap-kpi-card--danger' : 'kap-kpi-card--safe']">
-                <span>Gap PPAP Bulanan</span>
+                <span>Gap PPKA Bulanan</span>
                 <strong>{{ formatSignedRp(kapSummary.ppap_gap) }}</strong>
-                <small>Berjalan {{ formatRp(kapSummary.ppap_rekap_current) }} · Pembanding {{ formatRp(kapSummary.ppap_rekap_previous) }}</small>
+                <small>Berjalan {{ formatRp(kapSummary.ppap_rekap_current) }}  -  Pembanding {{ formatRp(kapSummary.ppap_rekap_previous) }}</small>
               </div>
             </div>
 
@@ -2096,38 +3034,38 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
               <div class="kap-component-card">
                 <span>ABA Total / Non-Macet / Macet</span>
                 <strong>{{ formatRp(kapSummary.antar_bank_aktiva_total) }}</strong>
-                <small>Non-macet {{ formatRp(kapSummary.antar_bank_aktiva_lancar) }} · Macet {{ formatRp(kapSummary.antar_bank_aktiva_macet) }}</small>
+                <small>Non-macet {{ formatRp(kapSummary.antar_bank_aktiva_lancar) }}  -  Macet {{ formatRp(kapSummary.antar_bank_aktiva_macet) }}</small>
               </div>
               <div class="kap-component-card">
                 <span>APYD Financing / ABA</span>
                 <strong>{{ formatRp(kapSummary.apyd) }}</strong>
-                <small>Financing {{ formatRp(kapSummary.apyd_financing_tks) }} · ABA {{ formatRp(kapSummary.antar_bank_aktiva_apyd) }}</small>
+                <small>Financing {{ formatRp(kapSummary.apyd_financing_tks) }}  -  ABA {{ formatRp(kapSummary.antar_bank_aktiva_apyd) }}</small>
               </div>
               <div class="kap-component-card">
                 <span>NPF Gross / Net</span>
                 <strong>{{ formatTruncatedPercentage(kapSummary.npf_gross_ratio) }} / {{ formatTruncatedPercentage(kapSummary.npf_nett_ratio) }}</strong>
-                <small>NPF nominal {{ formatRp(kapSummary.npf_gross) }} · PPAP NPF {{ formatRp(kapSummary.ppap_system_npf) }}</small>
+                <small>NPF nominal {{ formatRp(kapSummary.npf_gross) }}  -  PPKA NPF {{ formatRp(kapSummary.ppap_system_npf) }}</small>
               </div>
               <div class="kap-component-card">
-                <span>PPAP WD / Sistem</span>
+                <span>PPKA WD / Sistem</span>
                 <strong>{{ formatRp(kapSummary.ppap_wajib_dibentuk) }}</strong>
-                <small>Gap Sistem-WD {{ formatSignedRp(kapSummary.ppap_system_vs_wd_gap) }} · Coverage {{ formatTruncatedPercentage(kapSummary.ppap_coverage_to_wd) }}</small>
+                <small>Gap Sistem-WD {{ formatSignedRp(kapSummary.ppap_system_vs_wd_gap) }}  -  Coverage {{ formatTruncatedPercentage(kapSummary.ppap_coverage_to_wd) }}</small>
               </div>
               <div class="kap-component-card">
                 <span>Agunan / Coverage</span>
                 <strong>{{ formatRp(kapSummary.agunan_berbobot) }}</strong>
-                <small>Coverage agunan {{ formatTruncatedPercentage(kapSummary.collateral_coverage_ratio) }} · Unmapped ABA {{ formatRp(kapSummary.antar_bank_aktiva_unmapped) }}</small>
+                <small>Coverage agunan {{ formatTruncatedPercentage(kapSummary.collateral_coverage_ratio) }}  -  Unmapped ABA {{ formatRp(kapSummary.antar_bank_aktiva_unmapped) }}</small>
               </div>
             </div>
 
             <v-row class="mt-4">
               <v-col cols="12" xl="8">
-                <div class="kap-trend-card h-100">
+                <div class="kap-trend-card">
                   <div class="kap-detail-header">
                     <div>
                       <div class="kap-card-title">Trend Prudential Bulanan</div>
                       <p>
-                        Monitoring KAP, APYD, total PPAP bulanan, Gap PPAP Bulanan, dan Net Exposure Agunan berdasarkan database snapshot bulanan yang tersedia.
+                        Monitoring KAP, APYD, total PPKA bulanan, Gap PPKA Bulanan, dan Net Exposure Agunan berdasarkan database snapshot bulanan yang tersedia.
                       </p>
                     </div>
                     <span class="quality-section-pill quality-section-pill--soft">
@@ -2149,8 +3087,8 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                           <th class="text-left">Database</th>
                           <th class="text-right">KAP</th>
                           <th class="text-right">APYD</th>
-                          <th class="text-right">Total PPAP Bulanan</th>
-                          <th class="text-right">Gap PPAP Bulanan</th>
+                          <th class="text-right">Total PPKA Bulanan</th>
+                          <th class="text-right">Gap PPKA Bulanan</th>
                           <th class="text-right">Net Exposure</th>
                         </tr>
                       </thead>
@@ -2173,7 +3111,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
               </v-col>
 
               <v-col cols="12" xl="4">
-                <div class="kap-anomaly-card h-100">
+                <div class="kap-anomaly-card">
                   <div class="kap-card-title">Anomaly Detector Prudential</div>
                   <p class="kap-card-explanation">
                     Panel ini membaca tekanan data bulan aktif dan perubahan dari trend snapshot untuk menandai kondisi yang perlu tindakan manajemen.
@@ -2213,12 +3151,12 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 
             <v-row class="mt-4">
               <v-col cols="12" xl="7">
-                <div class="kap-audit-card h-100">
+                <div class="kap-audit-card">
                   <div class="kap-detail-header">
                     <div>
                       <div class="kap-card-title">Rekonsiliasi Sumber Data Prudential</div>
                       <p>
-                        Menunjukkan tabel, field, basis filter, dan nominal pembentuk KAP/APYD/PPAP/ABA agar angka dashboard bisa diaudit sampai sumber CBS.
+                        Menunjukkan tabel, field, basis filter, dan nominal pembentuk KAP/APYD/PPKA/ABA agar angka dashboard bisa diaudit sampai sumber CBS.
                       </p>
                     </div>
                     <span class="quality-section-pill quality-section-pill--soft">
@@ -2246,12 +3184,12 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
               </v-col>
 
               <v-col cols="12" xl="5">
-                <div class="kap-audit-card h-100">
+                <div class="kap-audit-card">
                   <div class="kap-detail-header">
                     <div>
                       <div class="kap-card-title">Data Quality Checks</div>
                       <p>
-                        Pemeriksaan otomatis untuk kontrak aktif: kol invalid, OS/PPAP negatif, PPAP kosong untuk Kol 3-5, agunan tidak terbaca, dan agunan ekstrem.
+                        Pemeriksaan otomatis untuk kontrak aktif: kol invalid, OS/PPKA negatif, PPKA kosong untuk Kol 3-5, agunan tidak terbaca, dan agunan ekstrem.
                       </p>
                       <p v-if="kapDataQualitySummary.issue_count" class="kap-audit-note">
                         Menampilkan 10 prioritas teratas dari {{ kapDataQualitySummary.issue_count }} issue terdeteksi.
@@ -2275,8 +3213,8 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                     <div v-for="item in kapDataQualityRows.slice(0, 10)" :key="`dq-${item.issue}-${item.nokontrak}`" :class="['kap-quality-item', `kap-quality-item--${item.severity}`]">
                       <div>
                         <div class="kap-quality-item__title">{{ item.issue }}</div>
-                        <p>{{ item.nama }} · {{ item.nokontrak }}</p>
-                        <small>{{ item.produk }} · {{ item.nama_ao }} · Kol {{ item.colbaru || '-' }}</small>
+                        <p>{{ item.nama }}  -  {{ item.nokontrak }}</p>
+                        <small>{{ item.produk }}  -  {{ item.nama_ao }}  -  Kol {{ item.colbaru || '-' }}</small>
                       </div>
                       <div class="kap-quality-item__amount">{{ formatRp(item.os_pokok) }}</div>
                     </div>
@@ -2291,13 +3229,13 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 
             <v-row class="mt-4">
               <v-col cols="12">
-                <div class="kap-breakdown-card h-100">
+                <div class="kap-breakdown-card">
                   <div class="kap-detail-header">
                     <div>
-                      <div class="kap-card-title">Detail Drilldown GAP PPAP Bulanan</div>
+                      <div class="kap-card-title">Detail Drilldown GAP PPKA Bulanan</div>
                       <p>
-                        Menjelaskan kontrak penyumbang kenaikan atau penurunan GAP PPAP.
-                        PPAP berjalan dihitung memakai formula template, lalu dibandingkan dengan PPAP snapshot bulan sebelumnya.
+                        Menjelaskan kontrak penyumbang kenaikan atau penurunan GAP PPKA.
+                        PPKA berjalan dihitung memakai formula template, lalu dibandingkan dengan PPKA snapshot bulan sebelumnya.
                       </p>
                     </div>
                     <span :class="['quality-section-pill', Number(kapPpapGapSummary.net_gap) > 0 ? 'quality-section-pill--danger' : 'quality-section-pill--soft']">
@@ -2333,17 +3271,17 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                           <th class="text-right">OS Sebelumnya</th>
                           <th class="text-right">OS Berjalan</th>
                           <th class="text-right">Likuidasi Agunan</th>
-                          <th class="text-right">PPAP Sebelumnya</th>
-                          <th class="text-right">PPAP Berjalan</th>
+                          <th class="text-right">PPKA Sebelumnya</th>
+                          <th class="text-right">PPKA Berjalan</th>
                           <th class="text-right">GAP</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="item in pagedKapPpapGapRows" :key="`ppap-gap-${item.nokontrak}`">
+                        <tr v-for="item in pagedKapPpapGapRows" :key="`PPKA-gap-${item.nokontrak}`">
                           <td class="font-weight-bold">{{ item.nokontrak }}</td>
                           <td>
                             <div class="kap-account-name">{{ item.nama }}</div>
-                            <small>{{ item.produk }} · {{ item.nama_ao }}</small>
+                            <small>{{ item.produk }}  -  {{ item.nama_ao }}</small>
                           </td>
                           <td>
                             <div class="kap-kol-flow">
@@ -2373,7 +3311,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                   </div>
                   <div v-if="!kapPpapGapRows.length" class="empty-state pa-8">
                     <v-icon icon="ri-shield-check-line" size="36" color="#10b981" class="mb-2"></v-icon>
-                    <p>Tidak ada perubahan GAP PPAP material pada scope filter ini.</p>
+                    <p>Tidak ada perubahan GAP PPKA material pada scope filter ini.</p>
                   </div>
                 </div>
               </v-col>
@@ -2391,7 +3329,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                   </div>
                   <p>{{ miapbIndicator.interpretation || 'Interpretasi MIAPB akan muncul setelah data modal inti dan aset bermasalah terbaca.' }}</p>
                   <div class="kap-formula-mini">
-                    <strong>{{ miapbIndicator.formula || 'Modal Inti / (Aset Bermasalah - PPAP Bermasalah)' }}</strong>
+                    <strong>{{ miapbIndicator.formula || 'Modal Inti / (Aset Bermasalah - PPKA Bermasalah)' }}</strong>
                     <span>{{ formatRp(miapbIndicator.modal_inti) }} / ({{ formatRp(miapbIndicator.aset_bermasalah) }} - {{ formatRp(miapbIndicator.ppap_bermasalah) }})</span>
                   </div>
                 </div>
@@ -2416,12 +3354,12 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 
             <v-row class="mt-4">
               <v-col cols="12">
-                <div class="kap-breakdown-card h-100">
+                <div class="kap-breakdown-card">
                   <div class="kap-card-title">Rekonsiliasi Worksheet KAP Prudential</div>
                   <p class="kap-card-explanation">
                     Tabel ini menyusun ulang perhitungan KAP bergaya worksheet: pembiayaan per kolektibilitas,
                     subtotal pembiayaan, ABA non-macet, pengecualian ABA macet bila ada, sampai total Aktiva
-                    Produktif. Tujuannya agar sumber pembentuk KAP, APYD, agunan, PPAP WD, dan PPAP sistem
+                    Produktif. Tujuannya agar sumber pembentuk KAP, APYD, agunan, PPKA WD, dan PPKA sistem
                     bisa diaudit dalam satu alur tanpa membuka tab lain.
                   </p>
                   <div class="overflow-x-auto">
@@ -2436,8 +3374,8 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                           <th class="text-right">Agunan Dikuasai</th>
                           <th class="text-right">Jumlah</th>
                           <th class="text-center">Tarif</th>
-                          <th class="text-right">PPAP WD</th>
-                          <th class="text-right">PPAP Sistem</th>
+                          <th class="text-right">PPKA WD</th>
+                          <th class="text-right">PPKA Sistem</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2464,7 +3402,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
               </v-col>
 
               <v-col cols="12">
-                <div class="kap-recommendation-card h-100">
+                <div class="kap-recommendation-card">
                   <div class="kap-card-title">Rekomendasi Otomatis Berikutnya</div>
                   <div class="kap-method-grid">
                     <div>
@@ -2476,7 +3414,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                       <strong>{{ kapMethodology.apyd_formula || '-' }}</strong>
                     </div>
                     <div>
-                      <span>Formula PPAP WD</span>
+                      <span>Formula PPKA WD</span>
                       <strong>{{ kapMethodology.ppap_wd_formula || '-' }}</strong>
                     </div>
                     <div>
@@ -2496,11 +3434,161 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 
             <v-row class="mt-4">
               <v-col cols="12">
+                <div class="kap-breakdown-card ppka-operational-panel">
+                  <div class="kap-detail-header">
+                    <div>
+                      <div class="kap-card-title">Operasional PPKA Sistem & Adjustment</div>
+                      <p>
+                        Panel ini menggabungkan halaman PPKA lama ke Quality: membaca PPKA operasional per kontrak,
+                        agunan pengurang PPKA, kolektibilitas, dan status penyesuaian manual bila fitur admin diaktifkan.
+                        Bagian ini ditempatkan di KAP & PPKA karena menjadi tindak lanjut langsung dari Gap PPKA, PPKA WD,
+                        dan rekonsiliasi prudential.
+                      </p>
+                    </div>
+                    <div class="ppka-operational-actions">
+                      <span :class="['quality-section-pill', manualAdjustmentEnabled ? 'quality-section-pill--warning' : 'quality-section-pill--soft']">
+                        Manual {{ manualAdjustmentEnabled ? 'Aktif' : 'Nonaktif' }}
+                      </span>
+                      <v-btn size="small" variant="tonal" color="primary" :loading="ppkaOperationalLoading" prepend-icon="ri-refresh-line" @click="fetchPpkaOperational">
+                        Refresh
+                      </v-btn>
+                    </div>
+                  </div>
+
+                  <div class="ppka-operational-summary">
+                    <div>
+                      <span>Total PPKA Berlaku</span>
+                      <strong>{{ formatRp(ppkaOperationalSummary.total_ppap) }}</strong>
+                      <small>{{ formatWholeNumber(ppkaOperationalSummary.total_kontrak) }} kontrak aktif</small>
+                    </div>
+                    <div>
+                      <span>Kol 1-2</span>
+                      <strong>{{ formatRp(Number(ppkaOperationalSummary.kol1_ppap || 0) + Number(ppkaOperationalSummary.kol2_ppap || 0)) }}</strong>
+                      <small>Lancar dan Dalam Perhatian Khusus</small>
+                    </div>
+                    <div>
+                      <span>Kol 3</span>
+                      <strong>{{ formatRp(ppkaOperationalSummary.kol3_ppap) }}</strong>
+                      <small>Kurang Lancar</small>
+                    </div>
+                    <div>
+                      <span>Kol 4-5</span>
+                      <strong>{{ formatRp(Number(ppkaOperationalSummary.kol4_ppap || 0) + Number(ppkaOperationalSummary.kol5_ppap || 0)) }}</strong>
+                      <small>Diragukan dan Macet</small>
+                    </div>
+                  </div>
+
+                  <div class="ppka-distribution-strip">
+                    <div v-for="item in ppkaOperationalDistribution" :key="item.label" :class="['ppka-distribution-item', item.class]">
+                      <span>{{ item.label }}</span>
+                      <strong>{{ formatRp(item.value) }}</strong>
+                    </div>
+                  </div>
+
+                  <div class="ppka-operational-filter">
+                    <v-text-field
+                      v-model="ppkaOperationalSearch"
+                      prepend-inner-icon="ri-search-2-line"
+                      label="Cari nasabah / kontrak / CIF"
+                      variant="outlined"
+                      density="compact"
+                      hide-details
+                    ></v-text-field>
+                    <v-select
+                      v-model="ppkaOperationalAo"
+                      :items="ppkaOperationalAoOptions"
+                      prepend-inner-icon="ri-user-star-line"
+                      label="Account Officer"
+                      variant="outlined"
+                      density="compact"
+                      hide-details
+                    ></v-select>
+                  </div>
+
+                  <div v-if="ppkaOperationalLoading" class="pa-12 text-center">
+                    <v-progress-circular indeterminate color="#0d9488"></v-progress-circular>
+                    <p class="mt-3 text-medium-emphasis">Memuat detail PPKA operasional...</p>
+                  </div>
+                  <div v-else-if="filteredPpkaOperationalRows.length" class="overflow-x-auto">
+                    <table class="data-table kap-table kap-detail-table">
+                      <thead>
+                        <tr>
+                          <th class="text-left">Nasabah / Kontrak</th>
+                          <th class="text-left">AO</th>
+                          <th class="text-center">Kol</th>
+                          <th class="text-right">Outstanding</th>
+                          <th class="text-right">Agunan PPKA</th>
+                          <th class="text-right">PPKA Sistem</th>
+                          <th class="text-right">PPKA Berlaku</th>
+                          <th class="text-center">Adjustment</th>
+                          <th class="text-center">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="item in pagedPpkaOperationalRows" :key="`ppka-operational-${item.nokontrak}`">
+                          <td>
+                            <div class="kap-account-name">{{ item.nama }}</div>
+                            <small>{{ item.nokontrak }}  -  CIF {{ item.nocif || '-' }}</small>
+                          </td>
+                          <td>{{ item.nmao || '-' }}</td>
+                          <td class="text-center">
+                            <span class="kol-badge" :class="`kol-badge--${item.colbaru}`">
+                              {{ kolektibilitasLabel(item.colbaru) }}
+                            </span>
+                            <small class="d-block mt-1">{{ item.haritgk || 0 }} hari</small>
+                          </td>
+                          <td class="text-right">{{ formatRp(item.osmdlc) }}</td>
+                          <td class="text-right">{{ formatRp(item.total_agunan_ppka) }}</td>
+                          <td class="text-right">{{ formatRp(item.ppap_system) }}</td>
+                          <td class="text-right font-weight-bold">
+                            <span :class="item.is_manual_adjusted ? 'text-primary' : 'text-amber-darken-3'">
+                              {{ formatRp(item.ppap_manual) }}
+                            </span>
+                            <small v-if="item.is_manual_adjusted" class="d-block text-decoration-line-through text-medium-emphasis">
+                              {{ formatRp(item.ppap_seharusnya) }}
+                            </small>
+                          </td>
+                          <td class="text-center">
+                            <span :class="['ppka-adjustment-chip', item.is_manual_adjusted ? 'ppka-adjustment-chip--manual' : 'ppka-adjustment-chip--system']">
+                              {{ item.is_manual_adjusted ? 'Manual' : 'Sistem' }}
+                            </span>
+                          </td>
+                          <td class="text-center">
+                            <v-btn
+                              v-if="manualAdjustmentEnabled"
+                              size="small"
+                              variant="tonal"
+                              color="warning"
+                              prepend-icon="ri-edit-box-line"
+                              @click="openPpkaAdjustmentDialog(item)"
+                            >
+                              Adjust
+                            </v-btn>
+                            <span v-else class="text-medium-emphasis text-caption">Locked</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div v-if="filteredPpkaOperationalRows.length > tablePageSize" class="table-pagination">
+                      <span>Menampilkan {{ pagedPpkaOperationalRows.length }} dari {{ filteredPpkaOperationalRows.length }} kontrak PPKA</span>
+                      <v-pagination v-model="ppkaOperationalPage" :length="ppkaOperationalPageCount" density="compact" total-visible="5"></v-pagination>
+                    </div>
+                  </div>
+                  <div v-else class="empty-state pa-8">
+                    <v-icon icon="ri-inbox-line" size="40" color="#94a3b8" class="mb-2"></v-icon>
+                    <p>Data PPKA operasional tidak ditemukan pada filter ini.</p>
+                  </div>
+                </div>
+              </v-col>
+            </v-row>
+
+            <v-row class="mt-4">
+              <v-col cols="12">
                 <div class="kap-breakdown-card">
                   <div class="kap-detail-header">
                     <div>
-                      <div class="kap-card-title">Rekonsiliasi PPAP Sistem vs PPAP WD per Kontrak</div>
-                      <p>Daftar prioritas akun yang perlu dicek karena PPAP sistem belum menutup PPAP wajib dibentuk berdasarkan parameter prudential yang berlaku di dashboard.</p>
+                      <div class="kap-card-title">Rekonsiliasi PPKA Sistem vs PPKA WD per Kontrak</div>
+                      <p>Daftar prioritas akun yang perlu dicek karena PPKA sistem belum menutup PPKA wajib dibentuk berdasarkan parameter prudential yang berlaku di dashboard.</p>
                     </div>
                     <span class="quality-section-pill quality-section-pill--danger">
                       {{ kapPpapShortfallAccounts.length }} Shortfall
@@ -2517,8 +3605,8 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                           <th class="text-right">OS</th>
                           <th class="text-right">Agunan</th>
                           <th class="text-right">Jumlah</th>
-                          <th class="text-right">PPAP WD</th>
-                          <th class="text-right">PPAP Sistem</th>
+                          <th class="text-right">PPKA WD</th>
+                          <th class="text-right">PPKA Sistem</th>
                           <th class="text-right">Gap</th>
                         </tr>
                       </thead>
@@ -2554,7 +3642,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                   </div>
                   <div v-if="!kapPpapShortfallAccounts.length" class="empty-state pa-8">
                     <v-icon icon="ri-shield-check-line" size="36" color="#10b981" class="mb-2"></v-icon>
-                    <p>Tidak ada kontrak dengan shortfall PPAP WD pada scope filter ini.</p>
+                    <p>Tidak ada kontrak dengan shortfall PPKA WD pada scope filter ini.</p>
                   </div>
                 </div>
               </v-col>
@@ -2562,7 +3650,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 
             <v-row class="mt-4">
               <v-col cols="12">
-                <div class="kap-breakdown-card h-100">
+                <div class="kap-breakdown-card">
                   <div class="kap-detail-header">
                     <div>
                       <div class="kap-card-title">Top Contributor APYD TKS</div>
@@ -2583,7 +3671,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                         <tr v-for="item in pagedKapApydContributors" :key="`apyd-${item.nokontrak}`">
                           <td>
                             <div class="kap-account-name">{{ item.nama }}</div>
-                            <small>{{ item.nokontrak }} • {{ item.nama_ao }}</small>
+                            <small>{{ item.nokontrak }} - {{ item.nama_ao }}</small>
                           </td>
                           <td>
                             <span class="kol-badge" :class="`kol-badge--${item.colbaru}`">
@@ -2604,7 +3692,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
               </v-col>
 
               <v-col cols="12">
-                <div class="kap-breakdown-card h-100">
+                <div class="kap-breakdown-card">
                   <div class="kap-detail-header">
                     <div>
                       <div class="kap-card-title">Rincian Antar Bank Aktiva</div>
@@ -2669,7 +3757,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                   <div class="kap-detail-header">
                     <div>
                       <div class="kap-card-title">Akun Over-Reserved Terbesar</div>
-                      <p>Akun dengan PPAP sistem di atas PPAP WD. Ini bukan masalah otomatis, tetapi wajib dibaca agar agregat tidak menutupi shortfall individual.</p>
+                      <p>Akun dengan PPKA sistem di atas PPKA WD. Ini bukan masalah otomatis, tetapi wajib dibaca agar agregat tidak menutupi shortfall individual.</p>
                     </div>
                     <span class="quality-section-pill quality-section-pill--soft">
                       Review Agregat
@@ -2682,8 +3770,8 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                           <th class="text-left">Kontrak</th>
                           <th class="text-left">Nasabah</th>
                           <th class="text-left">Kol</th>
-                          <th class="text-right">PPAP WD</th>
-                          <th class="text-right">PPAP Sistem</th>
+                          <th class="text-right">PPKA WD</th>
+                          <th class="text-right">PPKA Sistem</th>
                           <th class="text-right">Surplus</th>
                         </tr>
                       </thead>
@@ -2692,7 +3780,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                           <td class="font-weight-bold">{{ item.nokontrak }}</td>
                           <td>
                             <div class="kap-account-name">{{ item.nama }}</div>
-                            <small>{{ item.produk }} • {{ item.nama_ao }}</small>
+                            <small>{{ item.produk }} - {{ item.nama_ao }}</small>
                           </td>
                           <td>
                             <span class="kol-badge" :class="`kol-badge--${item.colbaru}`">
@@ -2716,9 +3804,9 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
           </div>
         </v-window-item>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        <!-- ==================================
              TAB 4: RISK CONCENTRATION & EARLY WARNING
-        ══════════════════════════════════ -->
+        ================================== -->
         <v-window-item :value="3">
           <div class="quality-section-header mb-5">
             <div>
@@ -2732,6 +3820,46 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
             <span class="quality-section-pill quality-section-pill--danger">Risk Action View</span>
           </div>
 
+          <div class="risk-concentration-summary mb-6">
+            <div class="risk-concentration-summary__main">
+              <div>
+                <div class="risk-concentration-summary__eyebrow">Executive Risk Radar</div>
+                <h3>{{ riskConcentrationSummary.headline }}</h3>
+                <p>{{ riskConcentrationSummary.interpretation }}</p>
+              </div>
+              <span :class="['risk-level-chip', `risk-level-chip--${riskConcentrationSummary.warning_level}`]">
+                {{ riskConcentrationSummary.warning_level }}
+              </span>
+            </div>
+            <div class="risk-radar-grid">
+              <div class="risk-radar-item">
+                <span>Top Sector</span>
+                <strong>{{ riskConcentrationSummary.sector_name }}</strong>
+                <small>NPF {{ formatRp(riskConcentrationSummary.sector_npf) }}  -  {{ formatTruncatedPercentage(riskConcentrationSummary.sector_npf_ratio) }}</small>
+              </div>
+              <div class="risk-radar-item">
+                <span>Top Akad / Produk</span>
+                <strong>{{ riskConcentrationSummary.product_name }}</strong>
+                <small>NPF {{ formatRp(riskConcentrationSummary.product_npf) }}</small>
+              </div>
+              <div class="risk-radar-item">
+                <span>Top AO Risk</span>
+                <strong>{{ riskConcentrationSummary.ao_name }}</strong>
+                <small>NPF Ratio {{ formatTruncatedPercentage(riskConcentrationSummary.ao_npf_ratio) }}</small>
+              </div>
+              <div class="risk-radar-item">
+                <span>Top Obligor</span>
+                <strong>{{ riskConcentrationSummary.obligor_name }}</strong>
+                <small>Exposure {{ formatRp(riskConcentrationSummary.obligor_os) }}</small>
+              </div>
+              <div class="risk-radar-item risk-radar-item--danger">
+                <span>EWS Critical</span>
+                <strong>{{ riskConcentrationSummary.ews_critical }} debitur</strong>
+                <small>Net uncovered {{ formatRp(riskConcentrationSummary.ews_uncovered) }}</small>
+              </div>
+            </div>
+          </div>
+
           <v-row class="mb-6">
             <v-col cols="12" md="3">
               <div class="rgec-card rgec-card--rose">
@@ -2741,7 +3869,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                 <div>
                   <span class="rgec-card__label">PKR Ratio</span>
                   <h3>{{ formatTruncatedPercentage(pkrSummary.pkr_ratio) }}</h3>
-                  <p>{{ pkrSummary.pkr_noa || 0 }} rekening Kol 2-5 terhadap scope pembiayaan periode aktif.</p>
+                  <p>{{ pkrSummary.pkr_noa || 0 }} rekening masuk OS_PKR: Kol 1 valid/restrukturisasi ditambah Kol 2-5.</p>
                 </div>
               </div>
             </v-col>
@@ -2765,7 +3893,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                 <div>
                   <span class="rgec-card__label">OS PKR</span>
                   <h3>{{ formatRp(pkrSummary.pkr_os) }}</h3>
-                  <p>Total Kol 2-5 dari query PKR formal berbasis database snapshot.</p>
+                  <p>Kol 1 valid/restrukturisasi {{ formatRp(pkrSummary.restructured_lancar_os) }} + Kol 2-5 {{ formatRp(pkrSummary.pkr_non_lancar_os) }}.</p>
                 </div>
               </div>
             </v-col>
@@ -2783,6 +3911,175 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
             </v-col>
           </v-row>
 
+          <div class="watchlist-card action-queue-card mb-6">
+            <div class="watchlist-card__header">
+              <div class="watchlist-card__header-inner">
+                <div class="watchlist-icon watchlist-icon--danger">
+                  <v-icon icon="ri-sparkling-line" size="22" color="white"></v-icon>
+                </div>
+                <div>
+                  <div class="watchlist-title">Action Priority Queue</div>
+                  <div class="watchlist-subtitle">
+                    Antrian tindak lanjut otomatis dari PKR, shortfall PPKA, APYD, stress obligor, dan EWS agar tim remedial punya urutan kerja yang jelas.
+                  </div>
+                </div>
+              </div>
+              <span class="quality-section-pill quality-section-pill--danger">{{ actionQueueSummary.total }} prioritas</span>
+            </div>
+
+            <div class="action-queue-summary">
+              <div>
+                <span>Critical</span>
+                <strong>{{ actionQueueSummary.critical }}</strong>
+              </div>
+              <div>
+                <span>High</span>
+                <strong>{{ actionQueueSummary.high }}</strong>
+              </div>
+              <div>
+                <span>Medium</span>
+                <strong>{{ actionQueueSummary.medium }}</strong>
+              </div>
+              <div>
+                <span>In Progress</span>
+                <strong>{{ actionQueueSummary.inProgress }}</strong>
+              </div>
+              <div>
+                <span>Done</span>
+                <strong>{{ actionQueueSummary.done }}</strong>
+              </div>
+              <div>
+                <span>Overdue</span>
+                <strong>{{ actionQueueSummary.overdue }}</strong>
+              </div>
+              <div>
+                <span>Exposure Terbaca</span>
+                <strong>{{ formatRp(actionQueueSummary.exposure) }}</strong>
+              </div>
+            </div>
+
+            <div v-if="actionPriorityQueue.length" class="overflow-x-auto mt-4">
+              <table class="data-table kap-table action-queue-table">
+                <thead>
+                  <tr>
+                    <th class="text-left">Prioritas</th>
+                    <th class="text-left">Nasabah / Kontrak</th>
+                    <th class="text-left">Sinyal Risiko</th>
+                    <th class="text-left">AO / Cabang</th>
+                    <th class="text-center">Kol</th>
+                    <th class="text-right">Exposure</th>
+                    <th class="text-left">Workflow</th>
+                    <th class="text-left">Aksi Direkomendasikan</th>
+                    <th class="text-center">Update</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, index) in pagedActionPriorityQueue" :key="item.key">
+                    <td>
+                      <div class="action-priority-cell">
+                        <span :class="['action-severity-chip', `action-severity-chip--${item.severity}`]">
+                          {{ item.severity }}
+                        </span>
+                        <small>Score {{ item.score }}</small>
+                        <strong>#{{ ((actionQueuePage - 1) * tablePageSize) + index + 1 }}</strong>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="stress-debtor-name">{{ item.nama || '-' }}</div>
+                      <div class="stress-debtor-meta">{{ item.nokontrak || '-' }}  -  {{ item.source }}</div>
+                    </td>
+                    <td>
+                      <div class="action-signal-wrap">
+                        <span v-for="signal in item.signals" :key="`${item.key}-${signal}`">{{ signal }}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="stress-debtor-name">{{ item.ao || '-' }}</div>
+                      <div class="stress-debtor-meta">{{ item.cabang || '-' }}</div>
+                    </td>
+                    <td class="text-center">
+                      <span v-if="item.kol" :class="['kol-badge', getKolClass(item.kol)]">{{ kolektibilitasLabel(item.kol) }}</span>
+                      <span v-else>-</span>
+                    </td>
+                    <td class="text-right font-weight-bold">{{ formatRp(item.amount) }}</td>
+                    <td>
+                      <div class="workflow-cell">
+                        <span :class="['workflow-status-chip', actionWorkflowStatusClass(item.workflow_status)]">
+                          {{ actionWorkflowStatusLabel(item.workflow_status) }}
+                        </span>
+                        <small>{{ item.workflow_owner || 'Belum ada owner' }}</small>
+                        <small :class="item.workflow_overdue ? 'text-error font-weight-bold' : ''">
+                          Due: {{ item.workflow_due_date || '-' }}
+                        </small>
+                      </div>
+                    </td>
+                    <td class="action-text">{{ item.action }}</td>
+                    <td class="text-center">
+                      <v-btn size="small" variant="tonal" color="primary" @click="openActionWorkflowDialog(item)">
+                        Update
+                      </v-btn>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-if="actionQueuePageCount > 1" class="d-flex justify-end mt-3">
+                <v-pagination v-model="actionQueuePage" :length="actionQueuePageCount" density="compact" total-visible="5"></v-pagination>
+              </div>
+            </div>
+            <div v-else class="empty-state compact">
+              <v-icon icon="ri-shield-check-line"></v-icon>
+              <p>Tidak ada prioritas tindakan material pada filter berjalan.</p>
+            </div>
+          </div>
+
+          <div class="kap-trend-card mb-6">
+            <div class="kap-detail-header">
+              <div>
+                <div class="kap-card-title">Trend PKR Bulanan</div>
+                <p>
+                  Monitoring PKR ratio, OS PKR, Kol 1 restrukturisasi/valid, Kol 2 Watch,
+                  dan Kol 2-5 berdasarkan database snapshot bulanan yang tersedia.
+                </p>
+              </div>
+              <span class="quality-section-pill quality-section-pill--soft">
+                {{ pkrTrendMeta.available_months || pkrTrendAvailableRows.length }} bulan tersedia
+              </span>
+            </div>
+            <div v-if="pkrTrendAvailableRows.length" class="trend-chart-shell">
+              <VueApexCharts type="line" height="315" width="100%" :options="pkrTrendChartOpts" :series="pkrTrendChartSeries" />
+            </div>
+            <div class="overflow-x-auto mt-4">
+              <table class="data-table kap-table">
+                <thead>
+                  <tr>
+                    <th class="text-left">Bulan</th>
+                    <th class="text-left">Database</th>
+                    <th class="text-right">PKR</th>
+                    <th class="text-right">OS PKR</th>
+                    <th class="text-right">Kol 1 Restrukturisasi/Valid</th>
+                    <th class="text-right">Kol 2 Watch</th>
+                    <th class="text-right">Kol 2-5</th>
+                    <th class="text-right">Delta</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in pkrTrendRows" :key="`pkr-trend-${item.tahun}-${item.bulan}`">
+                    <td class="font-weight-bold">{{ item.label }}</td>
+                    <td>{{ item.source_database || item.message || '-' }}</td>
+                    <td class="text-right font-weight-bold">{{ item.available ? formatTruncatedPercentage(item.pkr_ratio) : '-' }}</td>
+                    <td class="text-right">{{ item.available ? formatRp(item.pkr_os) : '-' }}</td>
+                    <td class="text-right">{{ item.available ? formatRp(item.restructured_lancar_os) : '-' }}</td>
+                    <td class="text-right">{{ item.available ? formatRp(item.watch_kol2_os) : '-' }}</td>
+                    <td class="text-right">{{ item.available ? formatRp(item.pkr_non_lancar_os) : '-' }}</td>
+                    <td class="text-right" :class="Number(item.pkr_delta) > 0 ? 'text-error font-weight-bold' : 'text-success font-weight-bold'">
+                      {{ item.available ? formatTruncatedPercentage(item.pkr_delta) : '-' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <div class="watchlist-card mb-6">
             <div class="watchlist-card__header">
               <div class="watchlist-card__header-inner">
@@ -2792,7 +4089,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                 <div>
                   <div class="watchlist-title">Pembiayaan Kualitas Rendah (PKR) by Segmen, Cabang, dan Kol</div>
                   <div class="watchlist-subtitle">
-                    {{ pkrSummary.interpretation || 'PKR membaca Kol 2-5 sebagai sinyal kualitas rendah; Kol 1 dipakai untuk rekonsiliasi kontrak valid.' }}
+                    {{ pkrSummary.interpretation || 'PKR membaca Kol 1 valid/restrukturisasi dan Kol 2-5 sebagai sinyal kualitas rendah.' }}
                   </div>
                 </div>
               </div>
@@ -2828,7 +4125,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                   <tr v-for="item in pagedPkrRows" :key="`${item.periode}-${item.kdloc}-${item.segmen}-${item.colbaru}`">
                     <td>
                       <div class="font-weight-bold text-slate-800">{{ item.ket || '(Tanpa Segmen)' }}</div>
-                      <small>Cabang {{ item.kdloc || '-' }} Â· Periode {{ item.periode || '-' }}</small>
+                      <small>Cabang {{ item.kdloc || '-' }}  -  Periode {{ item.periode || '-' }}</small>
                     </td>
                     <td class="text-center">
                       <span class="kol-badge" :class="`kol-badge--${item.colbaru}`">{{ kolektibilitasLabel(item.colbaru) }}</span>
@@ -2853,26 +4150,138 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
             </div>
           </div>
 
+          <div class="watchlist-card mb-6">
+            <div class="watchlist-card__header">
+              <div class="watchlist-card__header-inner">
+                <div class="watchlist-icon">
+                  <v-icon icon="ri-user-search-line" size="22" color="white"></v-icon>
+                </div>
+                <div>
+                  <div class="watchlist-title">Drilldown Kontrak PKR Prioritas</div>
+                  <div class="watchlist-subtitle">
+                    Detail fasilitas pembentuk PKR untuk follow-up: Kol 1 restrukturisasi/valid,
+                    Kol 2 Watch, dan Kol 3-5 NPF.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="pa-0 overflow-x-auto">
+              <table v-if="!isLoading && pkrDetailRows.length" class="data-table watchlist-table">
+                <thead>
+                  <tr>
+                    <th class="text-left">Bucket / Nasabah</th>
+                    <th class="text-left">AO / Cabang</th>
+                    <th class="text-left">Produk</th>
+                    <th class="text-center">Kol</th>
+                    <th class="text-right">OS</th>
+                    <th class="text-right">Tunggakan</th>
+                    <th class="text-right">PPKA Sistem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in pagedPkrDetailRows" :key="`pkr-detail-${item.nokontrak}`">
+                    <td>
+                      <div class="font-weight-bold text-slate-800">{{ item.pkr_bucket }}</div>
+                      <div class="kap-account-name">{{ item.nama }}</div>
+                      <small>{{ item.nokontrak }}  -  {{ item.nocif }}</small>
+                    </td>
+                    <td>
+                      <div>{{ item.nama_ao }}</div>
+                      <small>{{ item.cabang }}  -  {{ item.segmen_nama }}</small>
+                    </td>
+                    <td>{{ item.produk }}</td>
+                    <td class="text-center">
+                      <span class="kol-badge" :class="`kol-badge--${item.colbaru}`">{{ kolektibilitasLabel(item.colbaru) }}</span>
+                    </td>
+                    <td class="text-right font-weight-bold">{{ formatRp(item.os_pokok) }}</td>
+                    <td class="text-right">{{ formatRp((Number(item.tunggakan_pokok) || 0) + (Number(item.tunggakan_margin) || 0)) }}</td>
+                    <td class="text-right">{{ formatRp(item.ppap_system) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-if="pkrDetailRows.length > tablePageSize" class="table-pagination">
+                <span>Menampilkan {{ pagedPkrDetailRows.length }} dari {{ pkrDetailRows.length }} kontrak PKR</span>
+                <v-pagination v-model="pkrDetailPage" :length="pkrDetailPageCount" density="compact" total-visible="5"></v-pagination>
+              </div>
+              <div v-if="isLoading" class="pa-16 text-center"><v-progress-circular indeterminate color="#0d9488"></v-progress-circular></div>
+              <div v-if="!isLoading && !pkrDetailRows.length" class="empty-state pa-12">
+                <v-icon icon="ri-shield-check-line" size="48" color="#10b981" class="mb-3"></v-icon>
+                <p>Tidak ada kontrak PKR detail pada filter/database aktif.</p>
+              </div>
+            </div>
+          </div>
+
           <v-row>
             <!-- Sector Chart -->
             <v-col cols="12" md="7" lg="8">
-              <div class="content-card h-100">
-                <div class="content-card__header">
+              <div class="sector-risk-panel">
+                <div class="sector-risk-panel__header">
                   <div>
-                    <div class="content-card__title">Konsentrasi Risiko Sektor Ekonomi</div>
-                    <div class="content-card__subtitle">Top 10 sektor menurut exposure dan NPF; dipakai untuk membaca concentration risk, bukan rekap portofolio umum.</div>
+                    <div class="sector-risk-panel__eyebrow">Sector Concentration Control</div>
+                    <div class="sector-risk-panel__title">Konsentrasi Risiko Sektor Ekonomi</div>
+                    <div class="sector-risk-panel__subtitle">Top sektor diurutkan dari nominal NPF terbesar, lengkap dengan exposure dan rasio NPF sektoral.</div>
                   </div>
-                  <div class="icon-badge" style="background: #f0f9ff; color: #0284c7;">
-                    <v-icon icon="ri-building-2-line" size="18"></v-icon>
+                  <span class="sector-risk-panel__pill">{{ sectorRiskRows.length }} sektor teratas</span>
+                </div>
+
+                <div class="sector-risk-kpis">
+                  <div>
+                    <span>Total Exposure Top Sektor</span>
+                    <strong>{{ formatRp(sectorRiskSummary.total_os) }}</strong>
+                  </div>
+                  <div>
+                    <span>NPF Top Sektor</span>
+                    <strong>{{ formatRp(sectorRiskSummary.npf_os) }}</strong>
+                  </div>
+                  <div>
+                    <span>Rasio NPF Top Sektor</span>
+                    <strong>{{ formatTruncatedPercentage(sectorRiskSummary.npf_ratio) }}</strong>
+                  </div>
+                  <div>
+                    <span>Sektor Paling Berisiko</span>
+                    <strong>{{ sectorRiskSummary.top_sector }}</strong>
                   </div>
                 </div>
-                <div class="content-card__body pa-4">
+
+                <div class="sector-risk-panel__body">
                   <div v-if="isLoading" class="chart-loading"><v-progress-circular indeterminate color="#0284c7" size="36"></v-progress-circular></div>
-                  <VueApexCharts v-else-if="qualityData.sector_data && qualityData.sector_data.length" type="bar" height="450" :options="sectorChartOpts" :series="sectorChartSeries" />
+                  <VueApexCharts v-else-if="sectorRiskRows.length" type="bar" height="340" :options="sectorChartOpts" :series="sectorChartSeries" />
                   <div v-else class="empty-state py-16">
                     <v-icon icon="ri-building-2-line" size="48" color="#cbd5e1" class="mb-3"></v-icon>
                     <p>Data Sektor tidak tersedia</p>
                   </div>
+                </div>
+
+                <div v-if="sectorRiskRows.length" class="sector-risk-table-wrap">
+                  <table class="sector-risk-table">
+                    <thead>
+                      <tr>
+                        <th>Sektor</th>
+                        <th class="text-right">Outstanding</th>
+                        <th class="text-right">NPF</th>
+                        <th class="text-right">Rasio NPF</th>
+                        <th class="text-right">NOA</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="item in sectorRiskRows" :key="`sector-risk-${item.sektor}`">
+                        <td>
+                          <div class="sector-risk-name">{{ item.sektor || '-' }}</div>
+                          <div class="sector-risk-bar">
+                            <span :style="`width: ${sectorRiskSummary.npf_os > 0 ? Math.min((item.npf_os / sectorRiskSummary.npf_os) * 100, 100) : 0}%`"></span>
+                          </div>
+                        </td>
+                        <td class="text-right font-weight-bold">{{ formatRp(item.total_os) }}</td>
+                        <td class="text-right text-error font-weight-bold">{{ formatRp(item.npf_os) }}</td>
+                        <td class="text-right">
+                          <span :class="['sector-ratio-chip', Number(item.npf_ratio) >= 5 ? 'sector-ratio-chip--danger' : Number(item.npf_ratio) >= 2 ? 'sector-ratio-chip--warning' : 'sector-ratio-chip--safe']">
+                            {{ formatTruncatedPercentage(item.npf_ratio) }}
+                          </span>
+                        </td>
+                        <td class="text-right">{{ formatWholeNumber(item.noa) }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </v-col>
@@ -2880,17 +4289,29 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
             <!-- Right Column -->
             <v-col cols="12" md="5" lg="4">
               <!-- Product Donut -->
-              <div class="content-card mb-6">
-                <div class="content-card__header">
+              <div class="product-risk-panel mb-6">
+                <div class="product-risk-panel__header">
                   <div>
                     <div class="content-card__title">Akad / Produk Risk Mix</div>
-                    <div class="content-card__subtitle">Komposisi produk sebagai konteks kualitas, bukan duplikasi nominatif.</div>
+                    <div class="content-card__subtitle">Komposisi produk dan kontribusi NPF untuk konteks kualitas.</div>
                   </div>
                 </div>
-                <div class="content-card__body d-flex justify-center align-center" style="min-height: 280px;">
+                <div class="product-risk-chart">
                   <div v-if="isLoading" class="chart-loading"><v-progress-circular indeterminate color="#6366f1" size="36"></v-progress-circular></div>
                   <VueApexCharts v-else-if="qualityData.product_data && qualityData.product_data.length" type="donut" height="300" :options="productChartOpts" :series="productChartSeries" class="w-100" />
                   <div v-else class="empty-state"><p>Data Produk tidak tersedia</p></div>
+                </div>
+                <div v-if="productRiskRows.length" class="product-risk-list">
+                  <div v-for="item in productRiskRows" :key="`product-risk-${item.produk}`" class="product-risk-item">
+                    <div>
+                      <strong>{{ item.produk }}</strong>
+                      <span>{{ formatWholeNumber(item.noa) }} rekening  -  NPF {{ formatTruncatedPercentage(item.npf_ratio) }}</span>
+                    </div>
+                    <div class="text-right">
+                      <strong>{{ formatRp(item.total_os) }}</strong>
+                      <span>{{ formatRp(item.npf_os) }}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -2908,33 +4329,67 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
             </v-col>
           </v-row>
 
-          <div class="watchlist-card mt-6">
-            <div class="watchlist-card__header">
+          <div class="ews-panel mt-6">
+            <div class="ews-panel__header">
               <div class="watchlist-card__header-inner">
                 <div class="watchlist-icon">
                   <v-icon icon="ri-spy-line" size="22" color="white"></v-icon>
                 </div>
                 <div>
-                  <div class="watchlist-title">Early Warning Watchlist: Top High-Risk Obligors (Kol 3-5)</div>
-                  <div class="watchlist-subtitle">Debitur dengan eksposur bermasalah tertinggi untuk prioritas remedial, collection, dan review CKPN/PPAP.</div>
+                  <div class="watchlist-title">Early Warning Watchlist: Top High-Risk Obligors</div>
+                  <div class="watchlist-subtitle">Prioritas remedial berbasis Kol 3-5, hari tunggakan, exposure, dan coverage agunan + PPKA.</div>
                 </div>
+              </div>
+              <span class="quality-section-pill quality-section-pill--danger">{{ ewsWatchlistSummary.total }} obligor</span>
+            </div>
+
+            <div class="ews-summary-grid">
+              <div>
+                <span>Critical</span>
+                <strong>{{ ewsWatchlistSummary.critical }}</strong>
+              </div>
+              <div>
+                <span>High</span>
+                <strong>{{ ewsWatchlistSummary.high }}</strong>
+              </div>
+              <div>
+                <span>Total Exposure</span>
+                <strong>{{ formatRp(ewsWatchlistSummary.exposure) }}</strong>
+              </div>
+              <div>
+                <span>Net Uncovered</span>
+                <strong>{{ formatRp(ewsWatchlistSummary.uncovered) }}</strong>
+              </div>
+              <div>
+                <span>Average Cover</span>
+                <strong>{{ formatTruncatedPercentage(ewsWatchlistSummary.avg_cover_ratio) }}</strong>
               </div>
             </div>
 
             <div class="pa-0 overflow-x-auto">
-              <table v-if="!isLoading && qualityData.alerts && qualityData.alerts.length" class="data-table watchlist-table">
+              <table v-if="!isLoading && ewsWatchlistRows.length" class="data-table watchlist-table ews-table">
                 <thead>
                   <tr>
+                    <th class="text-left">Severity</th>
                     <th class="text-left">Nasabah / Fasilitas</th>
                     <th class="text-left">Akad</th>
                     <th class="text-right">Baki Debet (O/S)</th>
                     <th class="text-center">Kolektibilitas</th>
                     <th class="text-center">Menunggak</th>
-                    <th class="text-right">Cover Agunan / PPAP</th>
+                    <th class="text-right">Cover Agunan + PPKA</th>
+                    <th class="text-left">Aksi</th>
+                    <th class="text-left">Workflow</th>
+                    <th class="text-center">Update</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="item in pagedAlerts" :key="item.nokontrak" class="watchlist-row">
+                  <tr v-for="item in pagedEwsWatchlistRows" :key="item.key" class="watchlist-row">
+                    <td>
+                      <div class="ews-severity-cell">
+                        <span :class="['action-severity-chip', `action-severity-chip--${item.severity}`]">{{ item.severity }}</span>
+                        <small>Score {{ item.severity_score }}</small>
+                      </div>
+                    </td>
                     <td>
                       <div class="font-weight-bold text-slate-800" style="font-size: 14px;">{{ item.nama }}</div>
                       <div class="d-flex align-center gap-1 mt-1" style="color: #94a3b8; font-size: 11px; font-family: monospace;">
@@ -2952,26 +4407,49 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
                     <td class="text-center">
                       <span class="tunggak-badge">
                         <v-icon icon="ri-time-line" size="12" class="mr-1"></v-icon>
-                        {{ item.haritgk }} Hari
+                        {{ item.days_past_due }} Hari
                       </span>
                     </td>
                     <td class="text-right">
-                      <div style="font-size: 12px; color: #64748b; margin-bottom: 2px;">
-                        Agunan: <strong style="color: #334155;">{{ formatRpSingkat(item.htgagun) }}</strong>
+                      <div class="ews-cover-cell">
+                        <strong>{{ formatTruncatedPercentage(item.cover_ratio) }}</strong>
+                        <span>Agunan {{ formatRp(item.collateral) }}</span>
+                        <span>PPKA {{ formatRp(item.ppka) }}</span>
+                        <small v-if="item.uncovered > 0">Uncovered {{ formatRp(item.uncovered) }}</small>
                       </div>
-                      <div style="font-size: 12px; color: #64748b;">
-                        PPAP: <strong style="color: #334155;">{{ formatRpSingkat(item.ppap) }}</strong>
+                    </td>
+                    <td class="action-text">{{ item.recommended_action }}</td>
+                    <td>
+                      <div class="workflow-cell">
+                        <span :class="['workflow-status-chip', actionWorkflowStatusClass(item.workflow_status)]">
+                          {{ actionWorkflowStatusLabel(item.workflow_status) }}
+                        </span>
+                        <small>{{ item.workflow_owner || 'Belum ada owner' }}</small>
+                        <small :class="item.workflow_overdue ? 'text-error font-weight-bold' : ''">
+                          Due: {{ item.workflow_due_date || '-' }}
+                        </small>
                       </div>
+                    </td>
+                    <td class="text-center">
+                      <v-btn
+                        size="small"
+                        variant="tonal"
+                        color="primary"
+                        prepend-icon="ri-edit-2-line"
+                        @click="openActionWorkflowDialog(item)"
+                      >
+                        Update
+                      </v-btn>
                     </td>
                   </tr>
                 </tbody>
               </table>
-              <div v-if="qualityData.alerts && qualityData.alerts.length > tablePageSize" class="table-pagination">
-                <span>Menampilkan {{ pagedAlerts.length }} dari {{ qualityData.alerts.length }} debitur</span>
+              <div v-if="ewsWatchlistRows.length > tablePageSize" class="table-pagination">
+                <span>Menampilkan {{ pagedEwsWatchlistRows.length }} dari {{ ewsWatchlistRows.length }} debitur</span>
                 <v-pagination v-model="alertsPage" :length="alertsPageCount" density="compact" total-visible="5"></v-pagination>
               </div>
               <div v-if="isLoading" class="pa-16 text-center"><v-progress-circular indeterminate color="#0d9488"></v-progress-circular></div>
-              <div v-if="!isLoading && (!qualityData.alerts || !qualityData.alerts.length)" class="empty-state pa-16">
+              <div v-if="!isLoading && !ewsWatchlistRows.length" class="empty-state pa-16">
                 <v-icon icon="ri-shield-check-line" size="56" color="#10b981" class="mb-3" style="opacity: 0.4;"></v-icon>
                 <p style="color: #94a3b8; font-size: 15px; font-weight: 500;">Portofolio bersih. Tidak ada obligor berisiko tinggi saat ini.</p>
               </div>
@@ -2979,136 +4457,55 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
           </div>
         </v-window-item>
 
-        <!-- ══════════════════════════════════
-             LEGACY RESTRUCTURING GUARD DISABLED - CONSOLIDATED INTO RISK/EWS
-        ══════════════════════════════════ -->
-        <v-window-item v-if="false" :value="99">
 
-          <!-- Restru Metrics -->
-          <v-row class="mb-6">
-            <v-col cols="12" md="4">
-              <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
-                <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
-                  <v-icon icon="ri-file-damage-line" size="120" color="#d97706" />
-                </div>
-                <v-card-text class="pa-5" style="position: relative; z-index: 1;">
-                  <div class="d-flex justify-space-between align-start">
-                    <div>
-                      <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL O/S RESTRUKTURISASI</p>
-                      <h2 class="text-h4 font-weight-bold mb-2" style="color: #d97706; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatRpSingkat(restruGuard.total_os_restru) }}</h2>
-                      <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;"><strong style="color: #334155;">{{ restruGuard.total_kontrak_restru }} kontrak</strong> direstrukturisasi</p>
-                    </div>
-                  </div>
-                </v-card-text>
-              </v-card>
-            </v-col>
 
-            <v-col cols="12" md="4">
-              <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
-                <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
-                  <v-icon icon="ri-pie-chart-line" size="120" color="#0284c7" />
-                </div>
-                <v-card-text class="pa-5" style="position: relative; z-index: 1;">
-                  <div class="d-flex justify-space-between align-start">
-                    <div>
-                      <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">RESTRU-TO-TOTAL RATIO</p>
-                      <h2 class="text-h4 font-weight-bold mb-2" style="color: #0284c7; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2;">{{ formatTruncatedPercentage(restruGuard.restru_to_total_ratio) }}</h2>
-                      <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Porsi fasilitas restrukturisasi</p>
-                    </div>
-                  </div>
-                </v-card-text>
-              </v-card>
-            </v-col>
-
-            <v-col cols="12" md="4">
-              <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
-                <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
-                  <v-icon icon="ri-pulse-line" size="120" :color="(restruGuard.vintage_failure_rate || 0) > 10 ? '#e11d48' : '#059669'" />
-                </div>
-                <v-card-text class="pa-5" style="position: relative; z-index: 1;">
-                  <div class="d-flex justify-space-between align-start">
-                    <div>
-                      <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">VINTAGE FAILURE RATE</p>
-                      <h2 class="text-h4 font-weight-bold mb-2"
-                          :style="{ color: (restruGuard.vintage_failure_rate || 0) > 10 ? '#e11d48' : '#059669', fontFamily: 'Plus Jakarta Sans, sans-serif', lineHeight: 1.2 }">
-                        {{ formatTruncatedPercentage(restruGuard.vintage_failure_rate) }}
-                      </h2>
-                      <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">{{ (restruGuard.vintage_failure_rate || 0) > 10 ? 'Indikasi Evergreening' : 'Kualitas Sehat' }}</p>
-                    </div>
-                  </div>
-                </v-card-text>
-              </v-card>
-            </v-col>
-          </v-row>
-
-          <!-- Watchlist Table -->
-          <div class="watchlist-card">
-            <div class="watchlist-card__header">
-              <div class="watchlist-card__header-inner">
-                <div class="watchlist-icon">
-                  <v-icon icon="ri-spy-line" size="22" color="white"></v-icon>
-                </div>
+    <v-dialog v-model="ppkaAdjustmentDialog" max-width="560" persistent>
+            <v-card class="action-workflow-dialog" elevation="0">
+              <div class="action-workflow-dialog__header">
                 <div>
-                  <div class="watchlist-title">Watchlist: Top High-Risk Obligors (Kol 3–5)</div>
-                  <div class="watchlist-subtitle">Daftar debitur dengan eksposur bermasalah tertinggi yang memerlukan penanganan khusus.</div>
+                  <div class="stress-detail-dialog__eyebrow">PPKA Manual Adjustment</div>
+                  <h3 class="stress-detail-dialog__title">{{ ppkaAdjustmentForm.nokontrak || 'Penyesuaian PPKA' }}</h3>
+                  <p class="stress-detail-dialog__subtitle">
+                    Gunakan hanya untuk penyesuaian yang sudah disetujui dan terdokumentasi. Nilai ini akan menjadi PPKA berlaku pada panel operasional.
+                  </p>
                 </div>
+                <button type="button" class="stress-detail-dialog__close" @click="ppkaAdjustmentDialog = false" aria-label="Tutup adjustment PPKA">
+                  <v-icon icon="ri-close-line" size="20"></v-icon>
+                </button>
               </div>
-            </div>
-
-            <div class="pa-0 overflow-x-auto">
-              <table v-if="!isLoading && qualityData.alerts && qualityData.alerts.length" class="data-table watchlist-table">
-                <thead>
-                  <tr>
-                    <th class="text-left">Nasabah / Fasilitas</th>
-                    <th class="text-left">Akad</th>
-                    <th class="text-right">Baki Debet (O/S)</th>
-                    <th class="text-center">Kolektibilitas</th>
-                    <th class="text-center">Menunggak</th>
-                    <th class="text-right">Cover Agunan / PPAP</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="item in pagedLegacyAlerts" :key="item.nokontrak" class="watchlist-row">
-                    <td>
-                      <div class="font-weight-bold text-slate-800" style="font-size: 14px;">{{ item.nama }}</div>
-                      <div class="d-flex align-center gap-1 mt-1" style="color: #94a3b8; font-size: 11px; font-family: monospace;">
-                        <v-icon icon="ri-file-list-3-line" size="11"></v-icon>
-                        {{ item.nokontrak }}
-                      </div>
-                    </td>
-                    <td style="color: #475569; font-size: 13px; font-weight: 500;">{{ item.jenis_akad }}</td>
-                    <td class="text-right font-weight-bold" style="color: #334155; font-size: 14px;">{{ formatRp(item.osmdlc) }}</td>
-                    <td class="text-center">
-                      <span class="kol-badge" :class="item.colbaru === '5' ? 'kol-badge--5' : item.colbaru === '4' ? 'kol-badge--4' : 'kol-badge--3'">
-                        KOL {{ item.colbaru }}
-                      </span>
-                    </td>
-                    <td class="text-center">
-                      <span class="tunggak-badge">
-                        <v-icon icon="ri-time-line" size="12" class="mr-1"></v-icon>
-                        {{ item.haritgk }} Hari
-                      </span>
-                    </td>
-                    <td class="text-right">
-                      <div style="font-size: 12px; color: #64748b; margin-bottom: 2px;">
-                        Agunan: <strong style="color: #334155;">{{ formatRpSingkat(item.htgagun) }}</strong>
-                      </div>
-                      <div style="font-size: 12px; color: #64748b;">
-                        PPAP: <strong style="color: #334155;">{{ formatRpSingkat(item.ppap) }}</strong>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-              <div v-else-if="isLoading" class="pa-16 text-center"><v-progress-circular indeterminate color="#0d9488"></v-progress-circular></div>
-              <div v-else class="empty-state pa-16">
-                <v-icon icon="ri-shield-check-line" size="56" color="#10b981" class="mb-3" style="opacity: 0.4;"></v-icon>
-                <p style="color: #94a3b8; font-size: 15px; font-weight: 500;">Portofolio bersih. Tidak ada obligor berisiko tinggi saat ini.</p>
-              </div>
-            </div>
-          </div>
-
-        </v-window-item>
+              <v-card-text class="pa-6">
+                <v-text-field
+                  v-model="ppkaAdjustmentForm.nokontrak"
+                  label="Nomor Kontrak"
+                  variant="outlined"
+                  density="comfortable"
+                  readonly
+                ></v-text-field>
+                <v-text-field
+                  v-model="ppkaAdjustmentForm.nominal_ppap"
+                  label="Nominal PPKA Baru"
+                  variant="outlined"
+                  density="comfortable"
+                  type="number"
+                  prefix="Rp"
+                ></v-text-field>
+                <v-textarea
+                  v-model="ppkaAdjustmentForm.alasan"
+                  label="Alasan Penyesuaian"
+                  variant="outlined"
+                  rows="4"
+                  auto-grow
+                  placeholder="Tuliskan dasar memo, validasi agunan, koreksi data, atau persetujuan manajemen."
+                ></v-textarea>
+              </v-card-text>
+              <v-card-actions class="pa-6 pt-0 justify-end">
+                <v-btn variant="text" @click="ppkaAdjustmentDialog = false">Batal</v-btn>
+                <v-btn color="warning" :loading="isSavingPpkaAdjustment" @click="submitPpkaAdjustment">
+                  Simpan Adjustment
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
 
       </v-window>
     </div>
@@ -3118,7 +4515,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-/* ─── Base ───────────────────────────────────────── */
+/* --- Base ----------------------------------------- */
 * { box-sizing: border-box; }
 .quality-console {
   font-family: 'Inter', sans-serif;
@@ -3126,7 +4523,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   min-height: 100vh;
 }
 
-/* ─── Hero Header ─────────────────────────────────── */
+/* --- Hero Header ----------------------------------- */
 .hero-header {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f3460 100%);
   position: relative;
@@ -3222,7 +4619,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 .pk-gradient-cukup { background: linear-gradient(135deg, #f59e0b, #d97706); }
 .pk-gradient-kurang { background: linear-gradient(135deg, #f43f5e, #e11d48); }
 
-/* ─── Filter Bar ──────────────────────────────────── */
+/* --- Filter Bar ------------------------------------ */
 .filter-bar {
   display: flex;
   align-items: center;
@@ -3299,7 +4696,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   font-weight: 500;
 }
 
-/* ─── Tab Navigation ──────────────────────────────── */
+/* --- Tab Navigation -------------------------------- */
 .tab-toolbar {
   display: flex;
   align-items: center;
@@ -3345,6 +4742,12 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   transform: translateY(-1px);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.10);
 }
+.export-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+  box-shadow: none;
+}
 .export-btn--excel {
   color: #047857;
   border-color: #bbf7d0;
@@ -3354,6 +4757,24 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   color: #be123c;
   border-color: #fecdd3;
   background: linear-gradient(180deg, #ffffff 0%, #fff1f2 100%);
+}
+.export-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #be123c;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 999px;
+  padding: 8px 11px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.export-spin {
+  animation: export-spin 0.8s linear infinite;
+}
+@keyframes export-spin {
+  to { transform: rotate(360deg); }
 }
 .tab-btn {
   display: inline-flex;
@@ -3377,7 +4798,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
 }
 
-/* ─── Content Card ────────────────────────────────── */
+/* --- Content Card ---------------------------------- */
 .content-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -3426,7 +4847,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   flex-shrink: 0;
 }
 
-/* ─── KPI Cards ───────────────────────────────────── */
+/* --- KPI Cards ------------------------------------- */
 .kpi-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -3496,7 +4917,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 .kpi-badge--success { background: #ecfdf5; color: #059669; }
 .kpi-badge--danger { background: #fff1f2; color: #e11d48; }
 
-/* ─── Status Chips ────────────────────────────────── */
+/* --- Status Chips ---------------------------------- */
 .status-chip {
   display: inline-flex;
   align-items: center;
@@ -3508,7 +4929,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 .status-chip--warning { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
 .status-chip--neutral { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 
-/* ─── Quality Tab Sectioning ─────────────────────── */
+/* --- Quality Tab Sectioning ----------------------- */
 .quality-section-header {
   display: flex;
   align-items: flex-end;
@@ -3592,7 +5013,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   }
 }
 
-/* ─── CKPN Model Panel ───────────────────────────── */
+/* --- CKPN Model Panel ----------------------------- */
 .ckpn-model-panel {
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid #e2e8f0;
@@ -4425,6 +5846,96 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   letter-spacing: -0.03em;
   word-break: break-word;
 }
+.ppka-operational-panel {
+  border-color: #fed7aa;
+  background:
+    radial-gradient(circle at top right, rgba(245, 158, 11, 0.12), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #fffaf3 100%);
+}
+.ppka-operational-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ppka-operational-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+.ppka-operational-summary > div,
+.ppka-distribution-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 14px 16px;
+  min-width: 0;
+}
+.ppka-operational-summary span,
+.ppka-distribution-item span {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ppka-operational-summary strong,
+.ppka-distribution-item strong {
+  display: block;
+  margin-top: 7px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+.ppka-operational-summary small {
+  display: block;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+.ppka-distribution-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.ppka-dist--safe { border-color: #bbf7d0; background: #f0fdf4; }
+.ppka-dist--watch { border-color: #bfdbfe; background: #eff6ff; }
+.ppka-dist--warning { border-color: #fde68a; background: #fffbeb; }
+.ppka-dist--danger { border-color: #fed7aa; background: #fff7ed; }
+.ppka-dist--critical { border-color: #fecdd3; background: #fff1f2; }
+.ppka-operational-filter {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(220px, 320px);
+  gap: 12px;
+  margin: 16px 0;
+}
+.ppka-adjustment-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.ppka-adjustment-chip--manual {
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+.ppka-adjustment-chip--system {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
 .aba-status-chip {
   display: inline-flex;
   align-items: center;
@@ -4727,6 +6238,9 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   .kap-anomaly-summary,
   .kap-source-grid,
   .aba-reconcile-strip,
+  .ppka-operational-summary,
+  .ppka-distribution-strip,
+  .ppka-operational-filter,
   .ckpn-param-grid,
   .ckpn-scope-grid {
     grid-template-columns: 1fr;
@@ -4736,7 +6250,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   }
 }
 
-/* ─── Stress Test Panel ───────────────────────────── */
+/* --- Stress Test Panel ----------------------------- */
 .stress-test-panel {
   border-radius: 20px;
   background: linear-gradient(135deg, #1a0a14 0%, #2d0a1e 40%, #3b0726 100%);
@@ -4847,7 +6361,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ─── Aging Rows ──────────────────────────────────── */
+/* --- Aging Rows ------------------------------------ */
 .stress-detail-button {
   display: inline-flex;
   align-items: center;
@@ -5089,7 +6603,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 .aging-ecl-chip--stage2 { background: #fffbeb; color: #d97706; }
 .aging-ecl-chip--stage3 { background: #fff1f2; color: #e11d48; }
 
-/* ─── Data Table ──────────────────────────────────── */
+/* --- Data Table ------------------------------------ */
 .data-table {
   width: 100%;
   border-collapse: separate;
@@ -5163,8 +6677,17 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   white-space: nowrap;
 }
 .export-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+.export-btn:disabled,
+.export-btn:disabled:hover {
+  cursor: not-allowed;
+  opacity: 0.58;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  transform: none;
+  box-shadow: none;
+}
 
-/* ─── Akad Risk Card ──────────────────────────────── */
+/* --- Akad Risk Card -------------------------------- */
 .akad-risk-card {
   background: linear-gradient(135deg, #312e81 0%, #4c1d95 100%);
   border-radius: 18px;
@@ -5207,7 +6730,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   line-height: 1.5;
 }
 
-/* ─── Watchlist Card ──────────────────────────────── */
+/* --- Watchlist Card -------------------------------- */
 .watchlist-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -5287,7 +6810,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   border-radius: 8px;
 }
 
-/* ─── Empty State ─────────────────────────────────── */
+/* --- Empty State ----------------------------------- */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -5299,7 +6822,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 }
 .empty-state p { font-size: 14px; font-weight: 500; margin: 0; }
 
-/* ─── Chart Loading ───────────────────────────────── */
+/* --- Chart Loading --------------------------------- */
 .chart-loading {
   display: flex;
   align-items: center;
@@ -5308,7 +6831,7 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
   width: 100%;
 }
 
-/* ─── Max Width ───────────────────────────────────── */
+/* --- Max Width ------------------------------------- */
 .max-w-7xl { max-width: 1280px; }
 .mx-auto { margin-left: auto; margin-right: auto; }
 .px-6 { padding-left: 24px; padding-right: 24px; }
@@ -5319,7 +6842,6 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 .mb-8 { margin-bottom: 32px; }
 .mt-6 { margin-top: 24px; }
 .mt-3 { margin-top: 12px; }
-.h-100 { height: 100%; }
 .w-100 { width: 100%; }
 .gap-2 { gap: 8px; }
 .gap-3 { gap: 12px; }
@@ -5345,7 +6867,745 @@ watch([selectedCabang, filters], fetchQualityData, { deep: true })
 .flex-grow-1 { flex-grow: 1; }
 .flex-shrink-0 { flex-shrink: 0; }
 .flex-column { flex-direction: column; }
-.overflow-x-auto { overflow-x: auto; }
+.overflow-x-auto {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+}
+.overflow-x-auto::-webkit-scrollbar {
+  height: 8px;
+}
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 999px;
+}
 .overflow-hidden { overflow: hidden; }
 .flex-wrap { flex-wrap: wrap; }
+
+.action-queue-card .watchlist-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.watchlist-icon--danger {
+  background: linear-gradient(135deg, #dc2626, #7f1d1d);
+}
+
+.action-queue-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  padding: 18px 24px 0;
+}
+
+.action-queue-summary > div {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  padding: 14px 16px;
+}
+
+.action-queue-summary span,
+.action-priority-cell small {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.action-queue-summary strong {
+  display: block;
+  margin-top: 6px;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.action-queue-table {
+  margin: 0 24px 20px;
+  width: calc(100% - 48px);
+}
+
+.action-priority-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.action-priority-cell strong {
+  color: #0f172a;
+  font-size: 12px;
+}
+
+.action-severity-chip {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.action-severity-chip--critical {
+  background: #be123c;
+  color: #ffffff;
+}
+
+.action-severity-chip--high {
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
+
+.action-severity-chip--medium {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.action-severity-chip--watch {
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+.action-signal-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 280px;
+}
+
+.action-signal-wrap span {
+  display: inline-flex;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.action-text {
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.45;
+  min-width: 260px;
+}
+
+.workflow-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 150px;
+}
+
+.workflow-cell small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.workflow-status-chip {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.workflow-status--open {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.workflow-status--progress {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.workflow-status--waiting {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.workflow-status--done {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.workflow-status--waived {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+
+.action-workflow-dialog {
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.action-workflow-dialog__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 24px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.action-workflow-context {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.action-workflow-context > div {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+  padding: 12px 14px;
+}
+
+.action-workflow-context span {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.action-workflow-context strong {
+  display: block;
+  margin-top: 5px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.sector-risk-panel,
+.product-risk-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #dbeafe;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+}
+
+.sector-risk-panel::before,
+.product-risk-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+  background: linear-gradient(90deg, #0f766e, #0284c7, #e11d48);
+}
+
+.sector-risk-panel__header,
+.product-risk-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 26px 14px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.sector-risk-panel__eyebrow {
+  color: #0f766e;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 6px;
+}
+
+.sector-risk-panel__title {
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.sector-risk-panel__subtitle {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-top: 4px;
+  max-width: 680px;
+}
+
+.sector-risk-panel__pill {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  border: 1px solid #bae6fd;
+  border-radius: 999px;
+  background: #f0f9ff;
+  color: #0369a1;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sector-risk-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 26px 4px;
+}
+
+.sector-risk-kpis > div {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 13px 14px;
+  min-width: 0;
+}
+
+.sector-risk-kpis span {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sector-risk-kpis strong {
+  display: block;
+  margin-top: 6px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.sector-risk-panel__body {
+  padding: 8px 18px 0;
+}
+
+.sector-risk-table-wrap {
+  padding: 6px 26px 24px;
+}
+
+.sector-risk-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.sector-risk-table th {
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 12px 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sector-risk-table td {
+  border-top: 1px solid #edf2f7;
+  color: #0f172a;
+  font-size: 12px;
+  padding: 12px 14px;
+  vertical-align: middle;
+}
+
+.sector-risk-name {
+  color: #0f172a;
+  font-weight: 900;
+}
+
+.sector-risk-bar {
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  margin-top: 7px;
+  overflow: hidden;
+}
+
+.sector-risk-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #fb7185, #be123c);
+}
+
+.sector-ratio-chip {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.sector-ratio-chip--danger {
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
+
+.sector-ratio-chip--warning {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.sector-ratio-chip--safe {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.product-risk-chart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  padding: 10px 12px 0;
+}
+
+.product-risk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 18px 18px;
+}
+
+.product-risk-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 10px 12px;
+}
+
+.product-risk-item strong {
+  display: block;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.product-risk-item span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.ews-panel {
+  overflow: hidden;
+  border: 1px solid #fecdd3;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(225, 29, 72, 0.10), transparent 32%),
+    linear-gradient(180deg, #ffffff 0%, #fff8fa 100%);
+  box-shadow: 0 18px 48px rgba(136, 19, 55, 0.10);
+}
+
+.ews-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: linear-gradient(135deg, #111827 0%, #3f0b1f 100%);
+  padding: 22px 26px;
+}
+
+.ews-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 18px 24px 6px;
+}
+
+.ews-summary-grid > div {
+  border: 1px solid #ffe4e6;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 14px 16px;
+}
+
+.ews-summary-grid span {
+  display: block;
+  color: #9f1239;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.ews-summary-grid strong {
+  display: block;
+  margin-top: 6px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.ews-table {
+  margin: 14px 24px 0;
+  width: calc(100% - 48px);
+  border: 1px solid #f1f5f9;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.ews-table th {
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+.ews-severity-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ews-severity-cell small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.ews-cover-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  min-width: 190px;
+}
+
+.ews-cover-cell strong {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.ews-cover-cell span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ews-cover-cell small {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.risk-concentration-summary {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #c7d2fe;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(79, 70, 229, 0.18), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(225, 29, 72, 0.12), transparent 32%),
+    linear-gradient(135deg, #0f172a 0%, #1e1b4b 52%, #4c0519 100%);
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.22);
+  color: #ffffff;
+}
+
+.risk-concentration-summary__main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 26px 28px 18px;
+}
+
+.risk-concentration-summary__eyebrow {
+  color: #a5b4fc;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.risk-concentration-summary h3 {
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 950;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+
+.risk-concentration-summary p {
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+  margin: 10px 0 0;
+  max-width: 980px;
+}
+
+.risk-level-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 9px 13px;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  white-space: nowrap;
+}
+
+.risk-level-chip--critical {
+  background: rgba(225, 29, 72, 0.22);
+  color: #fecdd3;
+}
+
+.risk-level-chip--high {
+  background: rgba(245, 158, 11, 0.22);
+  color: #fde68a;
+}
+
+.risk-level-chip--watch {
+  background: rgba(20, 184, 166, 0.20);
+  color: #99f6e4;
+}
+
+.risk-radar-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 28px 26px;
+}
+
+.risk-radar-item {
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  padding: 15px;
+}
+
+.risk-radar-item--danger {
+  border-color: rgba(251, 113, 133, 0.45);
+  background: rgba(190, 18, 60, 0.18);
+}
+
+.risk-radar-item span {
+  display: block;
+  color: #a5b4fc;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.risk-radar-item strong {
+  display: block;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.25;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+}
+
+.risk-radar-item small {
+  display: block;
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.45;
+  margin-top: 6px;
+}
+
+@media (max-width: 960px) {
+  .action-queue-card .watchlist-card__header,
+  .action-queue-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .action-queue-card .watchlist-card__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .action-workflow-context {
+    grid-template-columns: 1fr;
+  }
+
+  .ppka-operational-summary,
+  .ppka-distribution-strip,
+  .ppka-operational-filter {
+    grid-template-columns: 1fr;
+  }
+
+  .sector-risk-panel__header,
+  .product-risk-panel__header {
+    flex-direction: column;
+  }
+
+  .sector-risk-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .ews-panel__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .risk-concentration-summary__main {
+    flex-direction: column;
+  }
+
+  .risk-radar-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

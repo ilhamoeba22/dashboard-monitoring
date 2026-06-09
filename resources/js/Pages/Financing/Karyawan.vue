@@ -21,6 +21,15 @@ function debounce(fn, delay) {
 
 // State
 const loading = ref(false)
+const snackbar = ref(false)
+const snackbarMessage = ref('')
+const snackbarColor = ref('warning')
+
+function notify(message, color = 'warning') {
+  snackbarMessage.value = message
+  snackbarColor.value = color
+  snackbar.value = true
+}
 const search = ref('')
 const page = ref(1)
 const itemsPerPage = ref(15) // Default to 15
@@ -171,7 +180,7 @@ async function fetchAllDataForExport() {
     const response = await fetch(`/api/v1/financing/nominative?${params}`)
     const json = await response.json()
     if (json.period_meta?.period_available === false) {
-      alert(json.period_meta.message || `Data periode ${activePeriodLabel.value} belum tersedia di database.`)
+      notify(json.period_meta.message || `Data periode ${activePeriodLabel.value} belum tersedia di database.`)
       return []
     }
     return json.success ? json.data.data : []
@@ -204,7 +213,7 @@ const getDynamicFileName = (ext) => {
 
 const exportExcel = async () => {
   const data = await fetchAllDataForExport()
-  if (!data.length) return alert('Tidak ada data yang sesuai filter untuk diexport.')
+  if (!data.length) return notify('Tidak ada data yang sesuai filter untuk diexport.')
 
   const excelData = data.map((item, i) => ({
     'NO': i + 1,
@@ -244,7 +253,7 @@ const loadImage = (url) => {
 
 const exportPDF = async () => {
   const data = await fetchAllDataForExport()
-  if (!data.length) return alert('Tidak ada data yang sesuai filter untuk diexport.')
+  if (!data.length) return notify('Tidak ada data yang sesuai filter untuk diexport.')
 
   // Portrait Legal
   const doc = new jsPDF({ orientation: 'portrait', format: 'legal' })
@@ -658,6 +667,17 @@ onMounted(() => {
         </v-data-table-server>
       </v-card-text>
     </v-card>
+    <v-snackbar
+      v-model="snackbar"
+      :color="snackbarColor"
+      location="top right"
+      timeout="3600"
+      rounded="lg"
+      elevation="8"
+    >
+      {{ snackbarMessage }}
+    </v-snackbar>
+
   </div>
 </template>
 

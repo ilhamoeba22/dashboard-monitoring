@@ -9,7 +9,7 @@ use App\Models\Mci\MciBaseModel;
 /**
  * Model MCI: TOFEXCCOL
  * --------------------------------------------------------------------------
- * Domain   : PPAP / DPD / Coll
+ * Domain   : PPKA / DPD / Coll
  * Tabel    : [dbo].[TOFEXCCOL]
  * Kolom    : 14
  * Sumber   : Mapping_MCI_MAR26_01042026.sql / MCI_MAR26_01042026.xlsx

@@ -6,8 +6,10 @@ namespace App\Repositories\Mci;
 
 use App\Repositories\Interfaces\FinancingPenyelesaianRepositoryInterface;
 use App\Services\Mci\MciBaseRepository;
+use App\Services\Mci\MciConnectionService;
 use App\Models\ManualPpapAdjustment;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -18,9 +20,17 @@ use Illuminate\Support\Facades\DB;
  */
 class FinancingPenyelesaianRepository extends MciBaseRepository implements FinancingPenyelesaianRepositoryInterface
 {
+    /** @var array<string, mixed> */
+    private array $lastPeriodMeta = [];
+
     protected function getTableName(): string
     {
         return 'TOFLMB';
+    }
+
+    public function getLastPeriodMeta(): array
+    {
+        return $this->lastPeriodMeta;
     }
 
     // =========================================================================
@@ -237,11 +247,16 @@ class FinancingPenyelesaianRepository extends MciBaseRepository implements Finan
     {
         $start = microtime(true);
         $memory = memory_get_usage(true);
+        $periodContext = $this->resolvePeriodContext($filters, 'TOFLMB');
+        $periode = (string) $periodContext['requested_period'];
 
-        $cacheKey = 'financing:settlement:list:' . md5(serialize($filters));
+        $cacheKey = 'financing:settlement:list:' . md5(serialize($filters).json_encode($periodContext));
 
-        $result = $this->remember($cacheKey, function (): array {
-            // 100% Legacy Query dari mdb-dashboard
+        if (! $periodContext['period_available']) {
+            return collect([]);
+        }
+
+        $result = $this->remember($cacheKey, function () use ($periode): array {
             $sql = "
                 SELECT
                     -- Identitas Kontrak
@@ -300,10 +315,15 @@ class FinancingPenyelesaianRepository extends MciBaseRepository implements Finan
                 LEFT JOIN SEGMEN f ON a.segmen = f.kdseg
                 WHERE LTRIM(RTRIM(a.stsrec)) IN ('A', 'L')
                 AND LTRIM(RTRIM(a.tglbook)) = LTRIM(RTRIM(a.tgleff))
+                AND (
+                    (LTRIM(RTRIM(a.stsrec)) = 'A' AND LEFT(LTRIM(RTRIM(ISNULL(a.tgleff, ''))), 6) = ?)
+                    OR
+                    (LTRIM(RTRIM(a.stsrec)) = 'L' AND LEFT(LTRIM(RTRIM(ISNULL(a.tgllunas, ''))), 6) = ?)
+                )
                 ORDER BY a.tglbook DESC, a.nama ASC
             ";
 
-            $rawResults = DB::connection($this->connection)->select($sql);
+            $rawResults = DB::connection($this->connection)->select($sql, [$periode, $periode]);
             
             return array_map(function ($row) {
                 return [
@@ -334,12 +354,15 @@ class FinancingPenyelesaianRepository extends MciBaseRepository implements Finan
         return collect($result);
     }
 
-    public function getSettlementSummary(): array
+    public function getSettlementSummary(array $filters = []): array
     {
-        $data = $this->getSettlement([]);
+        $data = $this->getSettlement($filters);
 
         $realisasi = $data->where('stsrec', 'A');
         $pelunasan = $data->where('stsrec', 'L');
+        $earlySettlement = $pelunasan->filter(function ($item): bool {
+            return $this->isEarlySettlement((string) ($item['tglexp'] ?? ''), (string) ($item['tgllunas'] ?? ''));
+        });
 
         return [
             'total_realisasi_count' => $realisasi->count(),
@@ -349,7 +372,110 @@ class FinancingPenyelesaianRepository extends MciBaseRepository implements Finan
             'total_pelunasan_volume' => $pelunasan->sum('mdleom'),
             'total_pelunasan_margin' => $pelunasan->sum('mgneom'),
             'net_cash_flow' => $realisasi->sum('mdlawal') - $pelunasan->sum('mdleom'),
+            'early_settlement_count' => $earlySettlement->count(),
+            'early_settlement_volume' => $earlySettlement->sum('mdleom'),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    private function resolvePeriodContext(array $filters, string $sourceTable): array
+    {
+        $active = $this->getCurrentPeriodInternal();
+        $reqTahun = isset($filters['tahun']) && (int) $filters['tahun'] > 0 ? (int) $filters['tahun'] : (int) $active['year'];
+        $reqBulan = isset($filters['bulan']) && (int) $filters['bulan'] > 0 ? max(1, min(12, (int) $filters['bulan'])) : (int) $active['month'];
+        $periode = sprintf('%04d%02d', $reqTahun, $reqBulan);
+        $isHistorical = ($reqTahun !== (int) $active['year'] || $reqBulan !== (int) $active['month']);
+        $snapshotDb = $isHistorical ? $this->resolveMonthlySnapshotDatabase($reqTahun, $reqBulan) : null;
+        $periodAvailable = true;
+
+        if ($snapshotDb !== null) {
+            app(MciConnectionService::class)->switchToDatabase($snapshotDb);
+        } elseif ($isHistorical) {
+            $periodAvailable = false;
+        }
+
+        $sourceDb = $snapshotDb
+            ?: DB::connection($this->connection)->selectOne('SELECT DB_NAME() as database_name')->database_name ?? null;
+
+        $this->lastPeriodMeta = [
+            'requested_period' => $periode,
+            'active_period' => (string) $active['period'],
+            'is_historical' => $isHistorical,
+            'period_available' => $periodAvailable,
+            'source_table' => $sourceTable,
+            'source_database' => $sourceDb,
+            'message' => $periodAvailable
+                ? null
+                : "Database snapshot untuk periode {$periode} belum dikonfigurasi.",
+        ];
+
+        return $this->lastPeriodMeta;
+    }
+
+    private function resolveMonthlySnapshotDatabase(int $year, int $month): ?string
+    {
+        $monthPrefixes = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGT', 'SEP', 'OKT', 'NOV', 'DES'];
+        $yearSuffix = substr((string) $year, -2);
+        $monthPrefix = $monthPrefixes[$month - 1];
+        $envKey = 'MCI_DB_'.$monthPrefix.$yearSuffix;
+        $database = env($envKey);
+
+        if (is_string($database) && $database !== '') {
+            return $database;
+        }
+
+        $endOfMonth = (new \DateTimeImmutable(sprintf('%04d-%02d-01', $year, $month)))
+            ->modify('last day of this month')
+            ->format('dmY');
+
+        $cacheKey = "mci:penyelesaian:snapshot-db:{$year}:{$month}";
+
+        return Cache::remember($cacheKey, self::CACHE_SHORT, function () use ($monthPrefix, $yearSuffix, $endOfMonth): ?string {
+            $row = DB::connection($this->connection)->selectOne(
+                "
+                SELECT TOP 1 name
+                FROM sys.databases
+                WHERE name LIKE ?
+                   OR name LIKE ?
+                   OR name LIKE ?
+                ORDER BY
+                    CASE
+                        WHEN name LIKE ? THEN 1
+                        WHEN name LIKE ? THEN 2
+                        ELSE 3
+                    END,
+                    name DESC
+                ",
+                [
+                    "MCI_{$monthPrefix}{$yearSuffix}_%",
+                    "MCI_{$monthPrefix}_%{$endOfMonth}",
+                    "MCI_{$monthPrefix}%{$endOfMonth}",
+                    "MCI_{$monthPrefix}{$yearSuffix}_%",
+                    "MCI_{$monthPrefix}_%{$endOfMonth}",
+                ]
+            );
+
+            return is_object($row) && isset($row->name) ? (string) $row->name : null;
+        });
+    }
+
+    private function isEarlySettlement(string $tglexp, string $tgllunas): bool
+    {
+        if ($tglexp === '' || $tgllunas === '' || $tglexp === '-' || $tgllunas === '-') {
+            return false;
+        }
+
+        $expDate = \DateTimeImmutable::createFromFormat('Y-m-d', $tglexp);
+        $lunasDate = \DateTimeImmutable::createFromFormat('Y-m-d', $tgllunas);
+
+        if (! $expDate || ! $lunasDate) {
+            return false;
+        }
+
+        return ((int) $lunasDate->diff($expDate)->format('%r%a')) > 30;
     }
 
     // =========================================================================
@@ -362,13 +488,18 @@ class FinancingPenyelesaianRepository extends MciBaseRepository implements Finan
     {
         $start = microtime(true);
         $memory = memory_get_usage(true);
-
-        $tahun = (int) ($filters['tahun'] ?? date('Y'));
-        $bulan = isset($filters['bulan']) && $filters['bulan'] !== '' ? (int) $filters['bulan'] : null;
+        $periodContext = $this->resolvePeriodContext($filters, 'TOFLMB');
+        $tahun = (int) substr((string) $periodContext['requested_period'], 0, 4);
+        $bulan = (int) substr((string) $periodContext['requested_period'], 4, 2);
+        $periode = (string) $periodContext['requested_period'];
         
-        $cacheKey = 'financing:writeoff:' . $tahun . ':' . ($bulan ?? 'all');
+        $cacheKey = 'financing:writeoff:' . md5(serialize($filters).json_encode($periodContext));
 
-        $result = $this->remember($cacheKey, function () use ($tahun, $bulan): array {
+        if (! $periodContext['period_available']) {
+            return collect([]);
+        }
+
+        $result = $this->remember($cacheKey, function () use ($tahun, $periode): array {
             $sql = "
                 SELECT
                     a.nocif,
@@ -384,7 +515,7 @@ class FinancingPenyelesaianRepository extends MciBaseRepository implements Finan
                     CAST(ISNULL(rec.total_recovery, 0) AS FLOAT) AS total_bayar_tahun_ini,
                     CASE
                         WHEN ISNULL(a.mdlawal, 0) = 0 THEN 0
-                        ELSE ROUND((ISNULL(rec.total_recovery, 0) / NULLIF(a.mdlawal, 0)) * 100, 2)
+                        ELSE (ISNULL(rec.total_recovery, 0) / NULLIF(a.mdlawal, 0)) * 100
                     END AS recovery_rate
                 FROM TOFLMB a
                 LEFT JOIN AO b ON a.kdaoh = b.kdao
@@ -395,15 +526,10 @@ class FinancingPenyelesaianRepository extends MciBaseRepository implements Finan
                     GROUP BY SUBSTRING(noreff, 1, 10)
                 ) rec ON a.nokontrak = rec.nokontrak
                 WHERE a.stsacc = 'W'
-                AND YEAR(CAST(a.tglwo AS DATE)) = ?
+                AND LEFT(CONVERT(VARCHAR(8), CAST(a.tglwo AS DATE), 112), 6) = ?
             ";
 
-            $params = [$tahun, $tahun];
-
-            if ($bulan !== null) {
-                $sql .= " AND MONTH(CAST(a.tglwo AS DATE)) = ?";
-                $params[] = $bulan;
-            }
+            $params = [$tahun, $periode];
 
             $sql .= " ORDER BY a.tglwo DESC, a.nama ASC";
 
@@ -434,59 +560,28 @@ class FinancingPenyelesaianRepository extends MciBaseRepository implements Finan
 
     public function getWriteOffSummary(array $filters = []): array
     {
-        // Get full year data for chart even if month is filtered
-        $yearFilters = $filters;
-        unset($yearFilters['bulan']);
-        $fullYearData = $this->getWriteOff($yearFilters);
-        
-        // Get filtered data for scorecards
         $data = $this->getWriteOff($filters);
 
         $byAo = $data->groupBy('nmao')->map->count()->sortDesc();
         
-        // Populate monthly breakdown for the chart
-        $monthlyBreakdown = [];
-        $groupedByMonth = $fullYearData->groupBy(function($item) {
-            return date('m', strtotime($item['tglwo']));
-        });
-
-        foreach ($groupedByMonth as $month => $items) {
-            $monthlyBreakdown[$month] = [
-                'count' => $items->count(),
-                'volume' => $items->sum('mdlawal'),
-                'baki_debet' => $items->sum('baki_debet')
-            ];
-        }
-
-        // Determine active months based on current DB month and year
-        $tahun = (int) ($filters['tahun'] ?? date('Y'));
-        $currentMonthResult = DB::connection($this->connection)
-            ->select("SELECT SUBSTRING(MAX(tgl), 3, 2) AS current_month, SUBSTRING(MAX(tgl), 5, 4) AS current_year FROM TANGGAL");
-            
-        $currentDbYear = isset($currentMonthResult[0]->current_year)
-            ? (int) $currentMonthResult[0]->current_year
-            : (int) date('Y');
-            
-        $currentDbMonth = isset($currentMonthResult[0]->current_month)
-            ? (int) $currentMonthResult[0]->current_month
-            : (int) date('m');
-
-        if ($tahun < $currentDbYear) {
-            $currentMonthNum = 12;
-        } else {
-            $currentMonthNum = $currentDbMonth;
-        }
+        $byRecoveryBucket = [
+            'nol' => $data->filter(fn ($item) => (float) ($item['recovery_rate'] ?? 0) <= 0)->count(),
+            'rendah' => $data->filter(fn ($item) => (float) ($item['recovery_rate'] ?? 0) > 0 && (float) ($item['recovery_rate'] ?? 0) < 25)->count(),
+            'sedang' => $data->filter(fn ($item) => (float) ($item['recovery_rate'] ?? 0) >= 25 && (float) ($item['recovery_rate'] ?? 0) < 75)->count(),
+            'tinggi' => $data->filter(fn ($item) => (float) ($item['recovery_rate'] ?? 0) >= 75)->count(),
+        ];
 
         return [
             'total_writeoff_count' => $data->count(),
             'total_writeoff_volume' => $data->sum('mdlawal'),
             'total_baki_debet' => $data->sum('baki_debet'),
+            'total_sisa_margin' => $data->sum('sisa_margin'),
             'total_recovery' => $data->sum('total_bayar_tahun_ini'),
             'avg_recovery_rate' => $data->count() > 0 ? $data->avg('recovery_rate') : 0,
             'top_ao' => $byAo->keys()->first() ?? 'N/A',
             'top_ao_count' => $byAo->first() ?? 0,
-            'monthly_breakdown' => $monthlyBreakdown,
-            'current_month' => $currentMonthNum,
+            'recovery_bucket' => $byRecoveryBucket,
+            'current_month' => (int) substr((string) ($this->lastPeriodMeta['requested_period'] ?? date('Ym')), 4, 2),
         ];
     }
 
@@ -504,23 +599,25 @@ class FinancingPenyelesaianRepository extends MciBaseRepository implements Finan
         $dimensionKey = $filters['dimensi'] ?? 'ao';
         $activeOnly = filter_var($filters['active_only'] ?? true, FILTER_VALIDATE_BOOLEAN);
 
-        // Ambil bulan berjalan dan tahun dari tabel TANGGAL (kolom tgl VARCHAR DDMMYYYY)
-        $currentMonthResult = DB::connection($this->connection)
-            ->select("SELECT SUBSTRING(MAX(tgl), 3, 2) AS current_month, SUBSTRING(MAX(tgl), 5, 4) AS current_year FROM TANGGAL");
-        
-        $currentDbYear = isset($currentMonthResult[0]->current_year)
-            ? (int) $currentMonthResult[0]->current_year
-            : (int) date('Y');
-            
-        $currentDbMonth = isset($currentMonthResult[0]->current_month)
-            ? (int) $currentMonthResult[0]->current_month
-            : (int) date('m');
+        $active = $this->getCurrentPeriodInternal();
+        $currentDbYear = (int) $active['year'];
+        $currentDbMonth = (int) $active['month'];
 
         if ($tahun < $currentDbYear) {
             $currentMonthNum = 12;
         } else {
             $currentMonthNum = $currentDbMonth;
         }
+        $sourceDb = DB::connection($this->connection)->selectOne('SELECT DB_NAME() as database_name')->database_name ?? null;
+        $this->lastPeriodMeta = [
+            'requested_period' => sprintf('%04d%02d', $tahun, $currentMonthNum),
+            'active_period' => sprintf('%04d%02d', $currentDbYear, $currentDbMonth),
+            'is_historical' => $tahun !== $currentDbYear,
+            'period_available' => true,
+            'source_table' => 'TOFLMBEOM, TOFRS, TOFTRNH, TOFLMB',
+            'source_database' => $sourceDb,
+            'message' => null,
+        ];
 
         $cacheKey = 'financing:yield:' . $tahun . ':' . $dimensionKey . ':' . ($activeOnly ? 'A' : 'all') . ':m' . $currentMonthNum;
 
@@ -571,15 +668,14 @@ class FinancingPenyelesaianRepository extends MciBaseRepository implements Finan
                 $cols[] = "SUM(CASE WHEN d.tipe = 'TAG' AND d.periode = '{$tahun}{$num}' THEN d.nilai ELSE 0 END) AS {$name}_Tag";
                 $cols[] = "SUM(CASE WHEN d.tipe = 'BYR' AND d.periode = '{$tahun}{$num}' THEN d.nilai ELSE 0 END) AS {$name}_Byr";
 
-                // Fix: CAST numerator and denominator to DECIMAL(18,4) to prevent integer division
-                $cols[] = "CAST(ISNULL(CAST(SUM(CASE WHEN d.tipe = 'TAG' AND d.periode = '{$tahun}{$num}' THEN d.nilai ELSE 0 END) AS DECIMAL(18,4)) /
-                           NULLIF(CAST(SUM(CASE WHEN $osBaseCondition THEN d.nilai ELSE 0 END) AS DECIMAL(18,4)), 0) * 100, 0) AS DECIMAL(18,2)) AS {$name}_Yld_Tag";
+                $cols[] = "CAST(ISNULL(CAST(SUM(CASE WHEN d.tipe = 'TAG' AND d.periode = '{$tahun}{$num}' THEN d.nilai ELSE 0 END) AS DECIMAL(38,10)) /
+                           NULLIF(CAST(SUM(CASE WHEN $osBaseCondition THEN d.nilai ELSE 0 END) AS DECIMAL(38,10)), 0) * 100, 0) AS FLOAT) AS {$name}_Yld_Tag";
 
-                $cols[] = "CAST(ISNULL(CAST(SUM(CASE WHEN d.tipe = 'BYR' AND d.periode = '{$tahun}{$num}' THEN d.nilai ELSE 0 END) AS DECIMAL(18,4)) /
-                           NULLIF(CAST(SUM(CASE WHEN $osBaseCondition THEN d.nilai ELSE 0 END) AS DECIMAL(18,4)), 0) * 100, 0) AS DECIMAL(18,2)) AS {$name}_Yld_Byr";
+                $cols[] = "CAST(ISNULL(CAST(SUM(CASE WHEN d.tipe = 'BYR' AND d.periode = '{$tahun}{$num}' THEN d.nilai ELSE 0 END) AS DECIMAL(38,10)) /
+                           NULLIF(CAST(SUM(CASE WHEN $osBaseCondition THEN d.nilai ELSE 0 END) AS DECIMAL(38,10)), 0) * 100, 0) AS FLOAT) AS {$name}_Yld_Byr";
 
-                $cols[] = "CAST(ISNULL(CAST(SUM(CASE WHEN d.tipe = 'BYR' AND d.periode = '{$tahun}{$num}' THEN d.nilai ELSE 0 END) AS DECIMAL(18,4)) /
-                           NULLIF(CAST(SUM(CASE WHEN d.tipe = 'TAG' AND d.periode = '{$tahun}{$num}' THEN d.nilai ELSE 0 END) AS DECIMAL(18,4)), 0) * 100, 0) AS DECIMAL(18,2)) AS {$name}_Perf";
+                $cols[] = "CAST(ISNULL(CAST(SUM(CASE WHEN d.tipe = 'BYR' AND d.periode = '{$tahun}{$num}' THEN d.nilai ELSE 0 END) AS DECIMAL(38,10)) /
+                           NULLIF(CAST(SUM(CASE WHEN d.tipe = 'TAG' AND d.periode = '{$tahun}{$num}' THEN d.nilai ELSE 0 END) AS DECIMAL(38,10)), 0) * 100, 0) AS FLOAT) AS {$name}_Perf";
             }
 
             $monthlyCols = implode(", ", $cols);
@@ -663,18 +759,10 @@ class FinancingPenyelesaianRepository extends MciBaseRepository implements Finan
             ];
         }
 
-        // Determine active months based on current DB month and year (tgl VARCHAR DDMMYYYY)
         $tahun = (int) ($filters['tahun'] ?? date('Y'));
-        $currentMonthResult = DB::connection($this->connection)
-            ->select("SELECT SUBSTRING(MAX(tgl), 3, 2) AS current_month, SUBSTRING(MAX(tgl), 5, 4) AS current_year FROM TANGGAL");
-            
-        $currentDbYear = isset($currentMonthResult[0]->current_year)
-            ? (int) $currentMonthResult[0]->current_year
-            : (int) date('Y');
-            
-        $currentDbMonth = isset($currentMonthResult[0]->current_month)
-            ? (int) $currentMonthResult[0]->current_month
-            : (int) date('m');
+        $active = $this->getCurrentPeriodInternal();
+        $currentDbYear = (int) $active['year'];
+        $currentDbMonth = (int) $active['month'];
 
         if ($tahun < $currentDbYear) {
             $currentMonthNum = 12;
@@ -701,9 +789,9 @@ class FinancingPenyelesaianRepository extends MciBaseRepository implements Finan
             $count++;
         }
 
-        $avgYieldTag = $count > 0 ? round($avgYieldTag / $count, 2) : 0;
-        $avgYieldByr = $count > 0 ? round($avgYieldByr / $count, 2) : 0;
-        $avgPerf = $count > 0 ? round($avgPerf / $count, 2) : 0;
+        $avgYieldTag = $count > 0 ? $avgYieldTag / $count : 0;
+        $avgYieldByr = $count > 0 ? $avgYieldByr / $count : 0;
+        $avgPerf = $count > 0 ? $avgPerf / $count : 0;
 
         // Find best and worst performers based on average Yld_Byr
         $performers = $data->map(function($item) use ($months) {
@@ -731,9 +819,9 @@ class FinancingPenyelesaianRepository extends MciBaseRepository implements Finan
             'avg_yield_byr' => $avgYieldByr,
             'avg_performance' => $avgPerf,
             'best_performer' => $best['nama'] ?? 'N/A',
-            'best_performer_yield' => round($best['avg_yld'] ?? 0, 2),
+            'best_performer_yield' => $best['avg_yld'] ?? 0,
             'worst_performer' => $worst['nama'] ?? 'N/A',
-            'worst_performer_yield' => round($worst['avg_yld'] ?? 0, 2),
+            'worst_performer_yield' => $worst['avg_yld'] ?? 0,
             'total_dimensions' => $data->count(),
             'current_month' => $currentMonthNum,
             'active_only' => filter_var($filters['active_only'] ?? true, FILTER_VALIDATE_BOOLEAN),

@@ -43,15 +43,22 @@ class FinancingPenyelesaianController extends Controller
     public function settlement(Request $request): JsonResponse
     {
         try {
-            $data = $this->repository->getSettlement([]);
-            $summary = $this->repository->getSettlementSummary();
+            $filters = [
+                'tahun' => $request->query('tahun'),
+                'bulan' => $request->query('bulan'),
+            ];
+
+            $data = $this->repository->getSettlement($filters);
+            $summary = $this->repository->getSettlementSummary($filters);
 
             return response()->json([
                 'success' => true,
                 'data' => $data->values(),
                 'summary' => $summary,
+                'period_meta' => $this->repository->getLastPeriodMeta(),
                 'meta' => [
                     'total' => $data->count(),
+                    'filters' => $filters,
                     'generated_at' => now()->toIso8601String(),
                 ],
             ]);
@@ -68,6 +75,7 @@ class FinancingPenyelesaianController extends Controller
         try {
             $filters = [
                 'tahun' => $request->query('tahun', date('Y')),
+                'bulan' => $request->query('bulan'),
                 'ao' => $request->query('ao'),
                 'cabang' => $request->query('cabang'),
                 'recovery_min' => $request->query('recovery_min'),
@@ -84,6 +92,7 @@ class FinancingPenyelesaianController extends Controller
                 'success' => true,
                 'data' => $data->values(),
                 'summary' => $summary,
+                'period_meta' => $this->repository->getLastPeriodMeta(),
                 'meta' => [
                     'total' => $data->count(),
                     'filters' => $filters,
@@ -118,6 +127,7 @@ class FinancingPenyelesaianController extends Controller
                 'success' => true,
                 'data' => $data->values(),
                 'summary' => $summary,
+                'period_meta' => $this->repository->getLastPeriodMeta(),
                 'meta' => [
                     'total' => $data->count(),
                     'filters' => $filters,

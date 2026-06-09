@@ -9,7 +9,7 @@ use App\Models\Mci\MciBaseModel;
 /**
  * Model MCI: pbcatcol
  * --------------------------------------------------------------------------
- * Domain   : PPAP / DPD / Coll
+ * Domain   : PPKA / DPD / Coll
  * Tabel    : [dbo].[pbcatcol]
  * Kolom    : 20
  * Sumber   : Mapping_MCI_MAR26_01042026.sql / MCI_MAR26_01042026.xlsx

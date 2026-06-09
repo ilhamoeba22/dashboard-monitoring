@@ -12,7 +12,8 @@ interface FinancingPenyelesaianRepositoryInterface
     public function getPpkaSummary(array $filters = []): array;
     
     public function getSettlement(array $filters = []): Collection;
-    public function getSettlementSummary(): array;
+    public function getSettlementSummary(array $filters = []): array;
+    public function getLastPeriodMeta(): array;
     
     public function getWriteOff(array $filters = []): Collection;
     public function getWriteOffSummary(array $filters = []): array;

@@ -125,7 +125,7 @@ class FinancingGrowthRepository
             GROUP BY a.DimID, a.PeriodeIdx
         ";
 
-        return collect(DB::connection($this->connection)->select($sql, [$currentYear, $yoyBasePeriod]));
+        return collect($this->mciService->getConnection()->select($sql, [$currentYear, $yoyBasePeriod]));
     }
 
     private function transformToLegacyMatrix(Collection $rawData, array $validPeriods, string $yoyBasePeriod, string $tglSistem): array
@@ -194,6 +194,6 @@ class FinancingGrowthRepository
     private function calculatePct(float $curr, float $prev): float
     {
         if ($prev == 0) return $curr > 0 ? 100.0 : 0.0;
-        return (float)round((($curr - $prev) / $prev) * 100, 2);
+        return (($curr - $prev) / $prev) * 100;
     }
 }

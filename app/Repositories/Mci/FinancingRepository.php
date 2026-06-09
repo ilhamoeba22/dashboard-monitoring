@@ -204,7 +204,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
         // Transformasi koleksi (Logic Business mapping)
         $result->getCollection()->transform(function ($item) use ($isHistoris) {
             $age = $item->tgllhr ? Carbon::parse($item->tgllhr)->age : 0;
-            
+
             // Saldo Netto logic: sahirrp - (saldoblok + buffer 20k)
             $sahirrp = (float) ($item->sahirrp ?? 0);
             $saldoblok = (float) ($item->saldoblok ?? 0);
@@ -823,7 +823,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
         $segmenKey = $segmen ?: 'all';
         $cabangKey = $cabang ?: 'all';
 
-        $cacheKey = "financing:quality_analytics:g8-pkr-miapb-ayda:{$groupBy}:{$cabangKey}:{$tahunKey}:{$bulanKey}:{$segmenKey}";
+        $cacheKey = "financing:quality_analytics:g10-pkr-trend-ppka:{$groupBy}:{$cabangKey}:{$tahunKey}:{$bulanKey}:{$segmenKey}";
         $start    = microtime(true);
         $memory   = memory_get_usage(true);
 
@@ -832,7 +832,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
             $joinClause    = $dimConfig['join'];
             $labelSelect   = $dimConfig['label'];
 
-            // ── Mapping bulan angka → nama Indonesia (safe, tanpa FORMAT()) ──
+            // Mapping bulan angka ? nama Indonesia (safe, tanpa FORMAT())
             $monthNames = [
                 '01'=>'Jan','02'=>'Feb','03'=>'Mar','04'=>'Apr','05'=>'Mei',
                 '06'=>'Jun','07'=>'Jul','08'=>'Ags','09'=>'Sep',
@@ -1251,18 +1251,18 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
             $totalOS   = collect($kolRows)->sum('total_os');
             $totalNPF  = collect($kolRows)->whereIn('kol', ['3','4','5'])->sum('total_os');
             $totalFAR  = collect($kolRows)->whereIn('kol', ['2','3','4','5'])->sum('total_os');
-            
-            $queryPPAP = DB::connection($this->connection)->table($tableName)
+
+            $queryPpap = DB::connection($this->connection)->table($tableName)
                 ->where('stsrec','A')->where('stsacc','<>','W');
-            if ($cabang !== '') $queryPPAP->where('kdloc', $cabang);
-            if ($segmen !== '') $queryPPAP->where('segmen', $segmen);
-            if ($isHistoris) $queryPPAP->where('periode', sprintf('%04d%02d', $reqTahun, $reqBulan));
-            $totalPPAP = $queryPPAP->sum('ppap');
+            if ($cabang !== '') $queryPpap->where('kdloc', $cabang);
+            if ($segmen !== '') $queryPpap->where('segmen', $segmen);
+            if ($isHistoris) $queryPpap->where('periode', sprintf('%04d%02d', $reqTahun, $reqBulan));
+            $totalPpap = $queryPpap->sum('ppap');
 
             $npfGross      = $totalOS > 0 ? ($totalNPF / $totalOS) * 100                 : 0;
-            $npfNetVal     = max(0, $totalNPF - $totalPPAP);
+            $npfNetVal     = max(0, $totalNPF - $totalPpap);
             $npfNet        = $totalOS > 0 ? ($npfNetVal / $totalOS) * 100                : 0;
-            $coverageRatio = $totalNPF > 0 ? ($totalPPAP / $totalNPF) * 100             : 0;
+            $coverageRatio = $totalNPF > 0 ? ($totalPpap / $totalNPF) * 100             : 0;
             $farRatio      = $totalOS > 0 ? ($totalFAR / $totalOS) * 100                 : 0;
             $topAkad       = collect($akadRows)->sortByDesc('npf_os')->first();
             $fdrMetrics    = $this->getTksFdrMetrics($tableName, $isHistoris ? sprintf('%04d%02d', $reqTahun, $reqBulan) : null);
@@ -1270,7 +1270,12 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
             $kapMetrics    = $this->getKapRiskMetrics($tableName, $isHistoris, $mainFilter, $mainBindings, $reqTahun, $reqBulan);
             $pkrMetrics    = $this->getPkrMetrics($tableName, $isHistoris, $mainFilter, $mainBindings, $reqTahun, $reqBulan);
             $sourceDatabase = DB::connection($this->connection)->selectOne('SELECT DB_NAME() AS database_name')->database_name ?? null;
-            $kapPrudentialTrend = $this->getKapPrudentialTrend($reqTahun, $reqBulan, $mainFilter, $mainBindings, is_string($sourceDatabase) ? $sourceDatabase : null);
+            $trendFilter = $strCabang . $strSegmen;
+            $trendBindings = array_merge($bindCabang, $bindSegmen);
+            $kapPrudentialTrend = $this->getKapPrudentialTrend($reqTahun, $reqBulan, $trendFilter, $trendBindings, is_string($sourceDatabase) ? $sourceDatabase : null);
+            $pkrTrend = $this->getPkrTrend($reqTahun, $reqBulan, $mainFilter, $mainBindings, is_string($sourceDatabase) ? $sourceDatabase : null);
+            $pkrMetrics['trend'] = $pkrTrend['trend'];
+            $pkrMetrics['trend_meta'] = $pkrTrend['meta'];
             $kapMetrics['prudential_trend'] = $kapPrudentialTrend['trend'];
             $kapMetrics['anomaly_detector'] = $this->buildKapAnomalyDetector($kapMetrics, $kapPrudentialTrend['trend'], $kapPrudentialTrend['meta']);
             $kapMetrics['prudential_trend_meta'] = $kapPrudentialTrend['meta'];
@@ -1281,8 +1286,8 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
             $modalInti = (float) ($fdrComponents['modal_inti'] ?? 0);
             $aydaAmount = (float) ($fdrComponents['ayda_pengurang'] ?? 0);
             $asetBermasalah = (float) $totalNPF;
-            $ppapBermasalah = (float) ($kapSummary['ppap_system_npf'] ?? 0);
-            $miapbDenominator = $asetBermasalah - $ppapBermasalah;
+            $PpapBermasalah = (float) ($kapSummary['ppap_system_npf'] ?? 0);
+            $miapbDenominator = $asetBermasalah - $PpapBermasalah;
             $miapbRatio = $miapbDenominator > 0 ? ($modalInti / $miapbDenominator) * 100 : 0;
             $aydaRatio = $totalOS > 0 ? ($aydaAmount / $totalOS) * 100 : 0;
             $qualityRiskIndicators = [
@@ -1290,9 +1295,9 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     'ratio' => $miapbRatio,
                     'modal_inti' => $modalInti,
                     'aset_bermasalah' => $asetBermasalah,
-                    'ppap_bermasalah' => $ppapBermasalah,
+                    'ppap_bermasalah' => $PpapBermasalah,
                     'denominator' => $miapbDenominator,
-                    'formula' => 'Modal Inti / (Aset Bermasalah - PPAP Bermasalah)',
+                    'formula' => 'Modal Inti / (Aset Bermasalah - PPKA Bermasalah)',
                     'interpretation' => $this->interpretMiapbRatio($miapbRatio, $miapbDenominator),
                 ],
                 'ayda' => [
@@ -1358,7 +1363,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                 'summary' => [
                     'total_os'         => (float)$totalOS,
                     'total_npf'        => (float)$totalNPF,
-                    'total_ppap'       => (float)$totalPPAP,
+                    'total_ppap'       => (float)$totalPpap,
                     'npf_gross'        => $npfGross,
                     'npf_net'          => $npfNet,
                     'coverage_ratio'   => $coverageRatio,
@@ -1386,7 +1391,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
     }
 
     /**
-     * KAP/APYD/PPAP WD berbasis data prudential pembiayaan dan ABA.
+     * KAP/APYD/PPKA WD berbasis data prudential pembiayaan dan ABA.
      *
      * @param  list<mixed>  $mainBindings
      * @return array<string,mixed>
@@ -1763,8 +1768,8 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     CASE
                         WHEN colbaru NOT IN ('1','2','3','4','5') OR colbaru IS NULL THEN 'Kolektibilitas Tidak Valid'
                         WHEN os_pokok < 0 THEN 'Outstanding Negatif'
-                        WHEN ppap_system < 0 THEN 'PPAP Sistem Negatif'
-                        WHEN os_pokok > 0 AND ppap_system = 0 AND colbaru IN ('3','4','5') THEN 'PPAP Kosong untuk Kol 3-5'
+                        WHEN ppap_system < 0 THEN 'PPKA Sistem Negatif'
+                        WHEN os_pokok > 0 AND ppap_system = 0 AND colbaru IN ('3','4','5') THEN 'PPKA Kosong untuk Kol 3-5'
                         WHEN os_pokok > 0 AND has_tofjamin = 0 AND collateral_from_toflmb = 0 THEN 'Tidak Ada Agunan Terbaca'
                         WHEN os_pokok > 0 AND (ISNULL(collateral_from_tofjamin, 0) > os_pokok * 5 OR ISNULL(collateral_from_toflmb, 0) > os_pokok * 5) THEN 'Agunan Sangat Tinggi terhadap OS'
                         ELSE NULL
@@ -1824,26 +1829,26 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
             WHERE severity IS NOT NULL
         ", $mainBindings);
 
-        $ppapRekapMetrics = $this->getPpapRekapGapMetrics($tableName, $isHistoris, $mainFilter, $mainBindings, $reqTahun, $reqBulan, $includePpapDetails);
+        $PpapRekapMetrics = $this->getPpapRekapGapMetrics($tableName, $isHistoris, $mainFilter, $mainBindings, $reqTahun, $reqBulan, $includePpapDetails);
 
         $row = $summaryRows[0] ?? (object) [];
         $totalAktivaProduktif = (float) ($row->total_aktiva_produktif ?? 0);
         $apyd = (float) ($row->apyd ?? 0);
-        $ppapWajibDibentuk = (float) ($row->ppap_wajib_dibentuk ?? 0);
-        $ppapSystem = (float) ($row->ppap_system ?? 0);
-        $ppapRekapCurrent = (float) ($ppapRekapMetrics['current_ppap'] ?? 0);
-        $ppapRekapPrevious = (float) ($ppapRekapMetrics['previous_ppap'] ?? 0);
-        $ppapRekapGap = (float) ($ppapRekapMetrics['gap'] ?? 0);
+        $PpapWajibDibentuk = (float) ($row->ppap_wajib_dibentuk ?? 0);
+        $PpapSystem = (float) ($row->ppap_system ?? 0);
+        $PpapRekapCurrent = (float) ($PpapRekapMetrics['current_ppap'] ?? 0);
+        $PpapRekapPrevious = (float) ($PpapRekapMetrics['previous_ppap'] ?? 0);
+        $PpapRekapGap = (float) ($PpapRekapMetrics['gap'] ?? 0);
         $netExposureAgunan = (float) ($row->net_exposure_agunan ?? 0);
 
         $kapRatio = $totalAktivaProduktif > 0 ? (1 - ($apyd / $totalAktivaProduktif)) * 100 : 0;
         $apydRatio = $totalAktivaProduktif > 0 ? ($apyd / $totalAktivaProduktif) * 100 : 0;
         $npfGrossRatio = (float) ($row->total_pembiayaan ?? 0) > 0 ? ((float) ($row->npf_gross ?? 0) / (float) ($row->total_pembiayaan ?? 0)) * 100 : 0;
         $npfNettRatio = (float) ($row->total_pembiayaan ?? 0) > 0 ? (((float) ($row->npf_gross ?? 0) - (float) ($row->ppap_system_npf ?? 0)) / (float) ($row->total_pembiayaan ?? 0)) * 100 : 0;
-        $coveragePpapWd = $ppapWajibDibentuk > 0 ? ($ppapSystem / $ppapWajibDibentuk) * 100 : 0;
+        $coveragePpapWd = $PpapWajibDibentuk > 0 ? ($PpapSystem / $PpapWajibDibentuk) * 100 : 0;
         $collateralCoverage = $totalAktivaProduktif > 0 ? ((float) ($row->agunan_berbobot ?? 0) / $totalAktivaProduktif) * 100 : 0;
         $netExposureRatio = $totalAktivaProduktif > 0 ? ($netExposureAgunan / $totalAktivaProduktif) * 100 : 0;
-        $systemVsWdGap = $ppapSystem - $ppapWajibDibentuk;
+        $systemVsWdGap = $PpapSystem - $PpapWajibDibentuk;
         $shortfallCount = count($contractRows);
         $apydContributorCount = count($apydContributorRows);
         $abaMacet = (float) ($row->antar_bank_aktiva_macet ?? 0);
@@ -1869,34 +1874,34 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                 'basis' => 'TOFJAMIN aktif dijumlahkan per nomor kontrak, fallback ke htgagun jika kontrak tidak punya baris TOFJAMIN',
                 'amount' => (float) ($row->agunan_berbobot ?? 0),
                 'status' => (float) ($row->agunan_berbobot ?? 0) > 0 ? 'matched' : 'warning',
-                'note' => 'Dipakai untuk menghitung jumlah setelah agunan dan PPAP WD.',
+                'note' => 'Dipakai untuk menghitung jumlah setelah agunan dan PPKA WD.',
             ],
             [
-                'component' => 'PPAP Sistem',
+                'component' => 'PPKA Sistem',
                 'source_table' => $tableName,
-                'source_field' => 'ppap',
+                'source_field' => 'PPKA',
                 'basis' => "SUM(ppap) pada kontrak aktif sesuai filter",
-                'amount' => $ppapSystem,
-                'status' => $ppapSystem >= 0 ? 'matched' : 'danger',
-                'note' => 'Menjadi saldo cadangan pembanding untuk coverage terhadap PPAP WD dan rekonsiliasi pencadangan.',
+                'amount' => $PpapSystem,
+                'status' => $PpapSystem >= 0 ? 'matched' : 'danger',
+                'note' => 'Menjadi saldo cadangan pembanding untuk coverage terhadap PPKA WD dan rekonsiliasi pencadangan.',
             ],
             [
-                'component' => 'PPAP Template Bulan Berjalan',
+                'component' => 'PPKA Template Bulan Berjalan',
                 'source_table' => $tableName.' + TOFJAMIN',
                 'source_field' => 'osmdlc, htgagun, colbaru, jnsjamin, jnsikat, goljamin',
                 'basis' => 'Kol1 0,5% OS; Kol2 3%, Kol3 10%, Kol4 50%, Kol5 100% atas shortfall OS terhadap nilai likuidasi agunan',
-                'amount' => $ppapRekapCurrent,
-                'status' => $ppapRekapCurrent >= 0 ? 'matched' : 'danger',
-                'note' => 'Menjadi PPAP bulan berjalan untuk membaca GAP PPAP bulanan.',
+                'amount' => $PpapRekapCurrent,
+                'status' => $PpapRekapCurrent >= 0 ? 'matched' : 'danger',
+                'note' => 'Menjadi PPKA bulan berjalan untuk membaca GAP PPKA bulanan.',
             ],
             [
-                'component' => 'PPAP Pembanding Bulan Sebelumnya',
-                'source_table' => (string) ($ppapRekapMetrics['previous_database'] ?? '-'),
+                'component' => 'PPKA Pembanding Bulan Sebelumnya',
+                'source_table' => (string) ($PpapRekapMetrics['previous_database'] ?? '-'),
                 'source_field' => 'TOFLMB.ppap',
                 'basis' => 'SUM(ppap) dari snapshot bulan sebelumnya dengan filter cabang/segmen yang sepadan',
-                'amount' => $ppapRekapPrevious,
-                'status' => ($ppapRekapMetrics['previous_available'] ?? false) ? 'matched' : 'warning',
-                'note' => 'Dipakai sebagai baseline GAP PPAP bulanan; kontrak yang sudah lunas tetap mempengaruhi penurunan cadangan.',
+                'amount' => $PpapRekapPrevious,
+                'status' => ($PpapRekapMetrics['previous_available'] ?? false) ? 'matched' : 'warning',
+                'note' => 'Dipakai sebagai baseline GAP PPKA bulanan; kontrak yang sudah lunas tetap mempengaruhi penurunan cadangan.',
             ],
             [
                 'component' => 'Antar Bank Aktiva',
@@ -1937,17 +1942,17 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
         }
 
         if ($systemVsWdGap < 0) {
-            $recommendations[] = "Tindak Lanjut Pencadangan: terdapat {$shortfallCount} akun prioritas dengan PPAP sistem di bawah PPAP wajib dibentuk. Lakukan rekonsiliasi per kontrak, validasi agunan, dan siapkan memo penyesuaian cadangan untuk akun dengan gap terbesar.";
+            $recommendations[] = "Tindak Lanjut Pencadangan: terdapat {$shortfallCount} akun prioritas dengan PPKA sistem di bawah PPKA wajib dibentuk. Lakukan rekonsiliasi per kontrak, validasi agunan, dan siapkan memo penyesuaian cadangan untuk akun dengan gap terbesar.";
         } else {
-            $recommendations[] = "Kecukupan Cadangan Agregat: PPAP sistem secara total masih menutup PPAP wajib dibentuk. Tetap review {$shortfallCount} akun shortfall terbesar karena surplus agregat dapat menutupi kekurangan pada kontrak individual.";
+            $recommendations[] = "Kecukupan Cadangan Agregat: PPKA sistem secara total masih menutup PPKA wajib dibentuk. Tetap review {$shortfallCount} akun shortfall terbesar karena surplus agregat dapat menutupi kekurangan pada kontrak individual.";
         }
 
-        if ($ppapRekapGap > 0) {
-            $recommendations[] = 'Pergerakan PPAP Bulanan: kebutuhan PPAP bulan berjalan meningkat dibanding baseline bulan sebelumnya. Prioritaskan review kontrak yang naik kolektibilitasnya, validasi nilai likuidasi agunan, dan pastikan pembentukan cadangan sudah masuk rencana pencadangan periode berjalan.';
-        } elseif ($ppapRekapGap < 0) {
-            $recommendations[] = 'Pergerakan PPAP Bulanan: kebutuhan PPAP bulan berjalan menurun dibanding baseline bulan sebelumnya. Pastikan penurunan berasal dari pelunasan, perbaikan kolektibilitas, atau update agunan yang sah; hindari pelepasan cadangan tanpa bukti pendukung.';
+        if ($PpapRekapGap > 0) {
+            $recommendations[] = 'Pergerakan PPKA Bulanan: kebutuhan PPKA bulan berjalan meningkat dibanding baseline bulan sebelumnya. Prioritaskan review kontrak yang naik kolektibilitasnya, validasi nilai likuidasi agunan, dan pastikan pembentukan cadangan sudah masuk rencana pencadangan periode berjalan.';
+        } elseif ($PpapRekapGap < 0) {
+            $recommendations[] = 'Pergerakan PPKA Bulanan: kebutuhan PPKA bulan berjalan menurun dibanding baseline bulan sebelumnya. Pastikan penurunan berasal dari pelunasan, perbaikan kolektibilitas, atau update agunan yang sah; hindari pelepasan cadangan tanpa bukti pendukung.';
         } else {
-            $recommendations[] = 'Pergerakan PPAP Bulanan Stabil: tidak ada perubahan material kebutuhan PPAP terhadap baseline bulan sebelumnya. Tetap lakukan sampling kontrak Kol 2-5 untuk memastikan kualitas data agunan dan kolektibilitas tetap konsisten.';
+            $recommendations[] = 'Pergerakan PPKA Bulanan Stabil: tidak ada perubahan material kebutuhan PPKA terhadap baseline bulan sebelumnya. Tetap lakukan sampling kontrak Kol 2-5 untuk memastikan kualitas data agunan dan kolektibilitas tetap konsisten.';
         }
 
         if ($npfNettRatio > 5) {
@@ -1976,11 +1981,11 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
             'methodology' => [
                 'kap_formula' => 'Rasio KAP = 1 - (APYD / Aktiva Produktif)',
                 'apyd_formula' => 'APYD = Kol3 50% + Kol4 75% + Kol5 100% + APYD ABA berdasarkan kolektibilitas subledger',
-                'ppap_wd_formula' => 'PPAP WD = (Baki Debet - Agunan Dikuasai) x tarif prudential: Kol1 0%, Kol2 25%, Kol3 50%, Kol4 75%, Kol5 100%',
-                'ppap_gap_formula' => 'GAP PPAP Bulanan = PPAP template bulan berjalan - PPAP snapshot bulan sebelumnya',
+                'ppap_wd_formula' => 'PPKA WD = (Baki Debet - Agunan Dikuasai) x tarif prudential: Kol1 0%, Kol2 25%, Kol3 50%, Kol4 75%, Kol5 100%',
+                'ppap_gap_formula' => 'GAP PPKA Bulanan = PPKA template bulan berjalan - PPKA snapshot bulan sebelumnya',
                 'net_exposure_formula' => 'Jumlah/Net Exposure = Baki Debet - Agunan Dikuasai, tanpa floor dan tanpa pembulatan',
                 'collateral_source' => 'Agunan dikuasai dihitung dari TOFJAMIN.nomtaksasi yang dijumlahkan per nomor kontrak',
-                'ppap_template_source' => 'PPAP template memakai TOFLMB.osmdlc, TOFLMB.htgagun, TOFLMB.colbaru, TOFLMB.goljamin, dan TOFJAMIN.jnsjamin/jnsikat untuk aturan agunan khusus',
+                'ppap_template_source' => 'PPKA template memakai TOFLMB.osmdlc, TOFLMB.htgagun, TOFLMB.colbaru, TOFLMB.goljamin, dan TOFJAMIN.jnsjamin/jnsikat untuk aturan agunan khusus',
                 'aba_source' => 'Antar Bank Aktiva = MGL.sahirrp akun 50113%; kolektibilitas ABA diambil dari TOFABA.coll melalui RIGHT(nosbb,7)',
             ],
             'summary' => [
@@ -2005,15 +2010,15 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                 'npf_gross' => (float) ($row->npf_gross ?? 0),
                 'npf_gross_ratio' => $npfGrossRatio,
                 'npf_nett_ratio' => $npfNettRatio,
-                'ppap_wajib_dibentuk' => $ppapWajibDibentuk,
+                'ppap_wajib_dibentuk' => $PpapWajibDibentuk,
                 'ppap_wajib_dibentuk_financing' => (float) ($row->ppap_wajib_dibentuk_financing ?? 0),
-                'ppap_system' => $ppapSystem,
-                'ppap_rekap_current' => $ppapRekapCurrent,
-                'ppap_rekap_previous' => $ppapRekapPrevious,
-                'ppap_rekap_gap' => $ppapRekapGap,
-                'ppap_rekap_previous_available' => (bool) ($ppapRekapMetrics['previous_available'] ?? false),
-                'ppap_rekap_previous_database' => $ppapRekapMetrics['previous_database'] ?? null,
-                'ppap_gap' => $ppapRekapGap,
+                'ppap_system' => $PpapSystem,
+                'ppap_rekap_current' => $PpapRekapCurrent,
+                'ppap_rekap_previous' => $PpapRekapPrevious,
+                'ppap_rekap_gap' => $PpapRekapGap,
+                'ppap_rekap_previous_available' => (bool) ($PpapRekapMetrics['previous_available'] ?? false),
+                'ppap_rekap_previous_database' => $PpapRekapMetrics['previous_database'] ?? null,
+                'ppap_gap' => $PpapRekapGap,
                 'ppap_system_vs_wd_gap' => $systemVsWdGap,
                 'ppap_coverage_to_wd' => $coveragePpapWd,
                 'ppap_wd_npf' => (float) ($row->ppap_wd_npf ?? 0),
@@ -2022,7 +2027,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
             'breakdown' => $breakdownRows,
             'ppap_shortfall_accounts' => $contractRows,
             'ppap_over_reserved_accounts' => $overReservedRows,
-            'ppap_gap_detail' => $ppapRekapMetrics['detail'] ?? ['rows' => [], 'summary' => []],
+            'ppap_gap_detail' => $PpapRekapMetrics['detail'] ?? ['rows' => [], 'summary' => []],
             'apyd_contributors' => $apydContributorRows,
             'aba_detail' => [
                 'rows' => $abaRows,
@@ -2053,7 +2058,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     'danger_count' => $dataQualityDangerCount,
                     'warning_count' => $dataQualityWarningCount,
                     'safe_count' => 0,
-                    'policy' => 'Issue diperiksa dari kontrak aktif pada filter berjalan: kolektibilitas invalid, OS/PPAP negatif, PPAP kosong untuk Kol 3-5, agunan tidak terbaca, dan agunan ekstrem.',
+                    'policy' => 'Issue diperiksa dari kontrak aktif pada filter berjalan: kolektibilitas invalid, OS/PPKA negatif, PPKA kosong untuk Kol 3-5, agunan tidak terbaca, dan agunan ekstrem.',
                 ],
             ],
             'recommendations' => $recommendations,
@@ -2061,14 +2066,18 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
     }
 
     /**
-     * GAP PPAP bulanan mengikuti pola REKAP template:
-     * PPAP berjalan dihitung dari formula template, baseline memakai PPAP snapshot bulan sebelumnya.
+     * GAP PPKA bulanan mengikuti pola REKAP template:
+     * PPKA berjalan dihitung dari formula template, baseline memakai PPKA snapshot bulan sebelumnya.
      *
      * @param  list<mixed>  $mainBindings
      * @return array<string,mixed>
      */
     private function getPpapRekapGapMetrics(string $tableName, bool $isHistoris, string $mainFilter, array $mainBindings, int $reqTahun, int $reqBulan, bool $includeDetails = true): array
     {
+        $golJaminExpression = $this->tableHasColumn($tableName, 'goljamin')
+            ? "ISNULL(NULLIF(LTRIM(RTRIM(a.goljamin)), ''), '0')"
+            : "'0'";
+
         $previousYear = $reqBulan === 1 ? $reqTahun - 1 : $reqTahun;
         $previousMonth = $reqBulan === 1 ? 12 : $reqBulan - 1;
         $previousDatabase = $this->resolveMonthlySnapshotDatabase($previousYear, $previousMonth);
@@ -2086,7 +2095,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     CAST(ISNULL(a.htgagun, 0) AS DECIMAL(38,6)) AS htgagun,
                     ISNULL(NULLIF(LTRIM(RTRIM(j.jnsjamin)), ''), ISNULL(NULLIF(LTRIM(RTRIM(a.jnsagun)), ''), '0')) AS jns_agunan,
                     ISNULL(NULLIF(LTRIM(RTRIM(j.jnsikat)), ''), '0') AS jns_ikatan,
-                    ISNULL(NULLIF(LTRIM(RTRIM(a.goljamin)), ''), '0') AS gol_jamin
+                    {$golJaminExpression} AS gol_jamin
                 FROM {$tableName} a
                 OUTER APPLY (
                     SELECT TOP 1 j.jnsjamin, j.jnsikat
@@ -2126,8 +2135,8 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
         ", $mainBindings);
 
         $current = $currentRows[0] ?? (object) [];
-        $currentPpap = (float) ($current->current_ppap ?? 0);
-        $previousPpap = 0.0;
+        $currentPPKA = (float) ($current->current_ppap ?? 0);
+        $previousPPKA = 0.0;
         $previousNoa = 0;
 
         if ($previousTable !== null) {
@@ -2140,7 +2149,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
             ", $mainBindings);
 
             $previous = $previousRows[0] ?? (object) [];
-            $previousPpap = (float) ($previous->previous_ppap ?? 0);
+            $previousPPKA = (float) ($previous->previous_ppap ?? 0);
             $previousNoa = (int) ($previous->previous_noa ?? 0);
         }
 
@@ -2164,7 +2173,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                         CAST(ISNULL(a.htgagun, 0) AS DECIMAL(38,6)) AS htgagun,
                         ISNULL(NULLIF(LTRIM(RTRIM(j.jnsjamin)), ''), ISNULL(NULLIF(LTRIM(RTRIM(a.jnsagun)), ''), '0')) AS jns_agunan,
                         ISNULL(NULLIF(LTRIM(RTRIM(j.jnsikat)), ''), '0') AS jns_ikatan,
-                        ISNULL(NULLIF(LTRIM(RTRIM(a.goljamin)), ''), '0') AS gol_jamin
+                        {$golJaminExpression} AS gol_jamin
                     FROM {$tableName} a
                     LEFT JOIN SETUPLOAN p ON a.kdprd = p.kdprd
                     LEFT JOIN CABANG cab ON a.kdloc = cab.kdloc
@@ -2291,12 +2300,12 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
         }
 
         return [
-            'current_ppap' => $currentPpap,
+            'current_ppap' => $currentPPKA,
             'current_os' => (float) ($current->current_os ?? 0),
             'current_noa' => (int) ($current->current_noa ?? 0),
-            'previous_ppap' => $previousPpap,
+            'previous_ppap' => $previousPPKA,
             'previous_noa' => $previousNoa,
-            'gap' => $currentPpap - $previousPpap,
+            'gap' => $currentPPKA - $previousPPKA,
             'previous_database' => $previousDatabase,
             'previous_available' => $previousAvailable,
             'detail' => $detail,
@@ -2318,12 +2327,26 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
     private function getPkrMetrics(string $tableName, bool $isHistoris, string $mainFilter, array $mainBindings, int $reqTahun, int $reqBulan): array
     {
         $periode = sprintf('%04d%02d', $reqTahun, $reqBulan);
-        $periodeSelect = $isHistoris ? 'e.periode' : "'{$periode}'";
-        $periodeFilter = $isHistoris ? ' AND e.periode = ?' : '';
-        $periodeBindings = $isHistoris ? [$periode] : [];
+        $hasEomPeriod = false;
+        try {
+            $hasEomPeriod = DB::connection($this->connection)
+                ->table('TOFLMBEOM')
+                ->where('periode', $periode)
+                ->exists();
+        } catch (\Throwable) {
+            $hasEomPeriod = false;
+        }
+
+        $pkrTableName = $hasEomPeriod ? 'TOFLMBEOM' : $tableName;
+        $usesPeriodTable = $hasEomPeriod || $isHistoris;
+        $periodeSelect = $usesPeriodTable ? 'e.periode' : "'{$periode}'";
+        $periodeFilter = $usesPeriodTable ? ' AND e.periode = ?' : '';
+        $periodeBindings = $usesPeriodTable ? [$periode] : [];
         $filterWithoutPeriod = preg_replace('/\s+AND\s+a\.periode\s=\s\?/i', '', $mainFilter) ?? $mainFilter;
         $filterForEom = str_replace('a.', 'e.', $filterWithoutPeriod).$periodeFilter;
-        $bindingsForEom = array_values(array_slice($mainBindings, 0, count($mainBindings) - count($periodeBindings)));
+        $bindingsForEom = $isHistoris
+            ? array_values(array_slice($mainBindings, 0, max(0, count($mainBindings) - 1)))
+            : $mainBindings;
         $queryBindings = array_merge($bindingsForEom, $periodeBindings, $bindingsForEom, $periodeBindings);
 
         try {
@@ -2349,7 +2372,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                         e.colbaru,
                         SUM(CAST(ISNULL(e.osmdlc, 0) AS DECIMAL(38,6))) AS tot_osmdlc_awal,
                         COUNT(*) AS tot_rec_awal
-                    FROM {$tableName} e
+                    FROM {$pkrTableName} e
                     INNER JOIN TOFLMB t ON e.nokontrak = t.nokontrak
                     LEFT JOIN SEGMEN s ON t.segmen = s.kdseg
                     WHERE e.stsrec IN ('A','N')
@@ -2357,7 +2380,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                       AND e.stsacc NOT IN ('W','C')
                       AND e.ststrn = '*'
                       {$filterForEom}
-                    GROUP BY e.kdloc, t.segmen, s.ket, e.colbaru".($isHistoris ? ', e.periode' : '')."
+                    GROUP BY e.kdloc, t.segmen, s.ket, e.colbaru".($usesPeriodTable ? ', e.periode' : '')."
                 ),
                 QueryDataFilter AS (
                     SELECT
@@ -2368,7 +2391,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                         e.colbaru,
                         SUM(CAST(ISNULL(e.osmdlc, 0) AS DECIMAL(38,6))) AS tot_osmdlc_filter,
                         COUNT(e.nokontrak) AS tot_rec_filter
-                    FROM {$tableName} e
+                    FROM {$pkrTableName} e
                     INNER JOIN KontrakValid kv ON e.nokontrak = kv.nokontrak
                     INNER JOIN TOFLMB t ON e.nokontrak = t.nokontrak
                     LEFT JOIN SEGMEN s ON t.segmen = s.kdseg
@@ -2377,7 +2400,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                       AND e.stsacc NOT IN ('W','C')
                       AND e.ststrn = '*'
                       {$filterForEom}
-                    GROUP BY e.kdloc, t.segmen, s.ket, e.colbaru".($isHistoris ? ', e.periode' : '')."
+                    GROUP BY e.kdloc, t.segmen, s.ket, e.colbaru".($usesPeriodTable ? ', e.periode' : '')."
                 )
                 SELECT
                     COALESCE(q1.periode, q2.periode) AS periode,
@@ -2426,8 +2449,11 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                     'total_scope_os' => 0,
                 ],
                 'rows' => [],
+                'detail_rows' => [],
+                'trend' => [],
+                'trend_meta' => [],
                 'methodology' => [
-                    'formula' => 'PKR = Kol 2 + Kol 3 + Kol 4 + Kol 5; Kol 1 hanya dipakai untuk rekonsiliasi kontrak valid',
+                    'formula' => 'PKR = OS_PKR Kol 1 restrukturisasi/kontrak valid + Kol 2 + Kol 3 + Kol 4 + Kol 5',
                     'basis' => 'TOFLMBEOM/TOFLMB dengan filter aktif, pokpby NOT IN 12/30/18, stsacc bukan W/C, ststrn=*',
                 ],
             ];
@@ -2436,44 +2462,259 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
         $totalScopeOs = 0.0;
         $pkrOs = 0.0;
         $pkrNoa = 0;
+        $pkrNonLancarOs = 0.0;
+        $pkrNonLancarNoa = 0;
+        $restructuredLancarOs = 0.0;
+        $restructuredLancarNoa = 0;
         $watchKol2Os = 0.0;
         $excludedLancarOs = 0.0;
 
         foreach ($rows as $row) {
             $col = (string) ($row->colbaru ?? '');
             $totalScopeOs += (float) ($row->osmdlc_semua_data ?? 0);
+            $pkrOs += (float) ($row->os_pkr ?? 0);
+            $pkrNoa += (int) ($row->noa_pkr ?? 0);
             if (in_array($col, ['2','3','4','5'], true)) {
-                $pkrOs += (float) ($row->os_pkr ?? 0);
-                $pkrNoa += (int) ($row->noa_pkr ?? 0);
+                $pkrNonLancarOs += (float) ($row->os_pkr ?? 0);
+                $pkrNonLancarNoa += (int) ($row->noa_pkr ?? 0);
             }
             if ($col === '2') {
                 $watchKol2Os += (float) ($row->os_pkr ?? 0);
             }
             if ($col === '1') {
+                $restructuredLancarOs += (float) ($row->os_pkr ?? 0);
+                $restructuredLancarNoa += (int) ($row->noa_pkr ?? 0);
                 $excludedLancarOs += (float) ($row->selisih_osmdlc ?? 0);
             }
         }
+
+        $detailRows = $this->getPkrContractDetails($pkrTableName, $usesPeriodTable, $filterWithoutPeriod, $bindingsForEom, $periode);
 
         return [
             'summary' => [
                 'available' => true,
                 'periode' => $periode,
+                'source_table' => $pkrTableName,
+                'source_policy' => $hasEomPeriod ? 'Menggunakan TOFLMBEOM sesuai periode karena data EOM tersedia.' : 'Fallback ke tabel aktif karena TOFLMBEOM periode terpilih belum tersedia.',
                 'pkr_os' => $pkrOs,
                 'pkr_noa' => $pkrNoa,
                 'pkr_ratio' => $totalScopeOs > 0 ? ($pkrOs / $totalScopeOs) * 100 : 0,
                 'total_scope_os' => $totalScopeOs,
+                'pkr_non_lancar_os' => $pkrNonLancarOs,
+                'pkr_non_lancar_noa' => $pkrNonLancarNoa,
+                'restructured_lancar_os' => $restructuredLancarOs,
+                'restructured_lancar_noa' => $restructuredLancarNoa,
                 'watch_kol2_os' => $watchKol2Os,
                 'watch_kol2_ratio' => $totalScopeOs > 0 ? ($watchKol2Os / $totalScopeOs) * 100 : 0,
                 'excluded_lancar_os' => $excludedLancarOs,
                 'interpretation' => $this->interpretPkrRatio($totalScopeOs > 0 ? ($pkrOs / $totalScopeOs) * 100 : 0, $watchKol2Os),
             ],
             'rows' => $rows,
+            'detail_rows' => $detailRows,
             'methodology' => [
-                'formula' => 'PKR = Kol 2 + Kol 3 + Kol 4 + Kol 5 terhadap total scope pembiayaan',
-                'kol1_policy' => 'Kol 1 ditampilkan untuk rekonsiliasi; OS_PKR Kol 1 hanya kontrak valid dari TOFLMBHP terbaru',
+                'formula' => 'PKR = OS_PKR Kol 1 restrukturisasi/kontrak valid + Kol 2 + Kol 3 + Kol 4 + Kol 5 terhadap total scope pembiayaan',
+                'kol1_policy' => 'Kol 1 masuk PKR hanya sebesar OS_PKR dari QueryDataFilter, yaitu kontrak yang masih valid berdasarkan TOFLMBHP terbaru.',
                 'basis' => 'TOFLMBEOM/TOFLMB dengan filter aktif, pokpby NOT IN 12/30/18, stsacc bukan W/C, ststrn=*',
             ],
         ];
+    }
+
+    /**
+     * Detail kontrak pembentuk PKR: Kol 1 valid/restrukturisasi dan seluruh Kol 2-5.
+     *
+     * @param  list<mixed>  $bindingsForFilter
+     * @return list<object>
+     */
+    private function getPkrContractDetails(string $pkrTableName, bool $usesPeriodTable, string $mainFilterWithoutPeriod, array $bindingsForFilter, string $periode): array
+    {
+        $periodeFilter = $usesPeriodTable ? ' AND e.periode = ?' : '';
+        $periodeSelect = $usesPeriodTable ? 'e.periode' : "'{$periode}'";
+        $filterForEom = str_replace('a.', 'e.', $mainFilterWithoutPeriod).$periodeFilter;
+        $bindings = array_merge($bindingsForFilter, $usesPeriodTable ? [$periode] : []);
+
+        try {
+            return DB::connection($this->connection)->select("
+                WITH DataTerbaru AS (
+                    SELECT
+                        hp.nokontrak,
+                        ROW_NUMBER() OVER(PARTITION BY hp.nokontrak ORDER BY LEFT(hp.inptgl, 8) DESC) AS rn,
+                        MAX(CASE WHEN hp.stsrec IN ('A','N') THEN 1 ELSE 0 END) OVER(PARTITION BY hp.nokontrak) AS has_restru_history
+                    FROM TOFLMB t
+                    INNER JOIN TOFLMBHP hp ON t.nokontrak = hp.nokontrak
+                    INNER JOIN MCIF c ON c.NOCIF = t.NOCIF
+                    WHERE hp.stsrec IN ('A','N') AND t.stsrec IN ('A','N')
+                ),
+                KontrakValid AS (
+                    SELECT nokontrak, has_restru_history
+                    FROM DataTerbaru
+                    WHERE rn = 1
+                ),
+                Base AS (
+                    SELECT
+                        {$periodeSelect} AS periode,
+                        e.nokontrak,
+                        e.nocif,
+                        LTRIM(RTRIM(e.nama)) AS nama,
+                        e.kdloc,
+                        ISNULL(cab.nama, '(Tanpa Cabang)') AS cabang,
+                        t.segmen,
+                        ISNULL(s.ket, '(Tanpa Segmen)') AS segmen_nama,
+                        e.kdaoh,
+                        ISNULL(ao.nmao, '(Tanpa AO)') AS nama_ao,
+                        e.kdprd,
+                        ISNULL(p.ket, 'Tanpa Produk') AS produk,
+                        e.colbaru,
+                        CAST(ISNULL(e.osmdlc, 0) AS DECIMAL(38,6)) AS os_pokok,
+                        CAST(ISNULL(e.ppap, 0) AS DECIMAL(38,6)) AS ppap_system,
+                        CAST(ISNULL(e.tgkmdl, 0) AS DECIMAL(38,6)) AS tunggakan_pokok,
+                        CAST(ISNULL(e.tgkmgn, 0) AS DECIMAL(38,6)) AS tunggakan_margin,
+                        ISNULL(kv.has_restru_history, 0) AS has_restru_history,
+                        CASE
+                            WHEN e.colbaru = '1' AND kv.nokontrak IS NOT NULL THEN 'Kol 1 Restrukturisasi/Valid'
+                            WHEN e.colbaru = '2' THEN 'Kol 2 Watch'
+                            WHEN e.colbaru IN ('3','4','5') THEN 'Kol 3-5 NPF'
+                            ELSE 'Di Luar PKR'
+                        END AS pkr_bucket
+                    FROM {$pkrTableName} e
+                    INNER JOIN TOFLMB t ON e.nokontrak = t.nokontrak
+                    LEFT JOIN KontrakValid kv ON e.nokontrak = kv.nokontrak
+                    LEFT JOIN SEGMEN s ON t.segmen = s.kdseg
+                    LEFT JOIN CABANG cab ON e.kdloc = cab.kdloc
+                    LEFT JOIN AO ao ON e.kdaoh = ao.kdao
+                    LEFT JOIN SETUPLOAN p ON e.kdprd = p.kdprd
+                    WHERE e.stsrec IN ('A','N')
+                      AND e.pokpby NOT IN ('12','30','18')
+                      AND e.stsacc NOT IN ('W','C')
+                      AND e.ststrn = '*'
+                      {$filterForEom}
+                )
+                SELECT TOP 1000 *
+                FROM Base
+                WHERE colbaru IN ('2','3','4','5')
+                   OR (colbaru = '1' AND pkr_bucket = 'Kol 1 Restrukturisasi/Valid')
+                ORDER BY
+                    CASE pkr_bucket
+                        WHEN 'Kol 1 Restrukturisasi/Valid' THEN 1
+                        WHEN 'Kol 2 Watch' THEN 2
+                        ELSE 3
+                    END,
+                    os_pokok DESC,
+                    nokontrak ASC
+            ", $bindings);
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * Trend PKR bulanan dari snapshot database yang tersedia.
+     *
+     * @param  list<mixed>  $mainBindings
+     * @return array{trend: list<array<string,mixed>>, meta: array<string,mixed>}
+     */
+    private function getPkrTrend(int $reqTahun, int $reqBulan, string $mainFilter, array $mainBindings, ?string $restoreDatabase): array
+    {
+        $monthNames = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
+            7 => 'Jul', 8 => 'Ags', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des',
+        ];
+        $activePeriod = $this->getCurrentPeriodInternal();
+        $currentYear = (int) $activePeriod['year'];
+        $currentMonth = (int) $activePeriod['month'];
+        $lastMonth = max(1, min(12, $reqBulan));
+        $trend = [];
+        $available = 0;
+        $missing = 0;
+
+        try {
+            for ($month = 1; $month <= $lastMonth; $month++) {
+                $database = $this->resolveMonthlySnapshotDatabase($reqTahun, $month);
+                $isCurrentRuntime = $database === null && $reqTahun === $currentYear && $month === $currentMonth;
+
+                if ($database !== null) {
+                    app(MciConnectionService::class)->switchToDatabase($database);
+                } elseif ($isCurrentRuntime && $restoreDatabase !== null) {
+                    app(MciConnectionService::class)->switchToDatabase($restoreDatabase);
+                    $database = $restoreDatabase;
+                } else {
+                    $missing++;
+                    $trend[] = [
+                        'tahun' => $reqTahun,
+                        'bulan' => $month,
+                        'label' => $monthNames[$month] ?? (string) $month,
+                        'source_database' => null,
+                        'available' => false,
+                        'message' => 'Database snapshot belum tersedia',
+                    ];
+                    continue;
+                }
+
+                $metrics = $this->getPkrMetrics('TOFLMB', false, $mainFilter, $mainBindings, $reqTahun, $month);
+                $summary = $metrics['summary'] ?? [];
+                $available++;
+
+                $trend[] = [
+                    'tahun' => $reqTahun,
+                    'bulan' => $month,
+                    'label' => $monthNames[$month] ?? (string) $month,
+                    'source_database' => $database,
+                    'available' => (bool) ($summary['available'] ?? false),
+                    'pkr_ratio' => (float) ($summary['pkr_ratio'] ?? 0),
+                    'pkr_os' => (float) ($summary['pkr_os'] ?? 0),
+                    'pkr_noa' => (int) ($summary['pkr_noa'] ?? 0),
+                    'total_scope_os' => (float) ($summary['total_scope_os'] ?? 0),
+                    'restructured_lancar_os' => (float) ($summary['restructured_lancar_os'] ?? 0),
+                    'restructured_lancar_noa' => (int) ($summary['restructured_lancar_noa'] ?? 0),
+                    'pkr_non_lancar_os' => (float) ($summary['pkr_non_lancar_os'] ?? 0),
+                    'pkr_non_lancar_noa' => (int) ($summary['pkr_non_lancar_noa'] ?? 0),
+                    'watch_kol2_os' => (float) ($summary['watch_kol2_os'] ?? 0),
+                    'watch_kol2_ratio' => (float) ($summary['watch_kol2_ratio'] ?? 0),
+                ];
+            }
+        } finally {
+            if ($restoreDatabase !== null) {
+                app(MciConnectionService::class)->switchToDatabase($restoreDatabase);
+            }
+        }
+
+        return [
+            'trend' => $this->appendPkrTrendDeltas($trend),
+            'meta' => [
+                'requested_year' => $reqTahun,
+                'requested_month' => $reqBulan,
+                'available_months' => $available,
+                'missing_months' => $missing,
+                'source_policy' => 'Trend PKR memakai snapshot database bulanan yang tersedia; bulan tanpa database ditandai unavailable.',
+            ],
+        ];
+    }
+
+    /**
+     * @param  list<array<string,mixed>>  $trend
+     * @return list<array<string,mixed>>
+     */
+    private function appendPkrTrendDeltas(array $trend): array
+    {
+        $previous = null;
+        foreach ($trend as $index => $row) {
+            if (! ($row['available'] ?? false)) {
+                $trend[$index]['pkr_delta'] = null;
+                $trend[$index]['pkr_os_delta'] = null;
+                continue;
+            }
+
+            if ($previous === null) {
+                $trend[$index]['pkr_delta'] = 0;
+                $trend[$index]['pkr_os_delta'] = 0;
+            } else {
+                $trend[$index]['pkr_delta'] = (float) ($row['pkr_ratio'] ?? 0) - (float) ($previous['pkr_ratio'] ?? 0);
+                $trend[$index]['pkr_os_delta'] = (float) ($row['pkr_os'] ?? 0) - (float) ($previous['pkr_os'] ?? 0);
+            }
+
+            $previous = $row;
+        }
+
+        return $trend;
     }
 
     /**
@@ -2590,15 +2831,15 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
     private function interpretMiapbRatio(float $ratio, float $denominator): string
     {
         if ($denominator <= 0) {
-            return 'Aset bermasalah sudah tertutup PPAP bermasalah pada denominator MIAPB; tetap validasi kualitas PPAP per debitur besar.';
+            return 'Aset bermasalah sudah tertutup PPKA bermasalah pada denominator MIAPB; tetap validasi kualitas PPKA per debitur besar.';
         }
 
         if ($ratio >= 200) {
-            return 'Modal inti sangat kuat terhadap aset bermasalah neto setelah PPAP; risiko penyerapan kerugian relatif terkendali.';
+            return 'Modal inti sangat kuat terhadap aset bermasalah neto setelah PPKA; risiko penyerapan kerugian relatif terkendali.';
         }
 
         if ($ratio >= 100) {
-            return 'Modal inti masih menutup aset bermasalah neto, namun perlu pemantauan bila NPF atau gap PPAP meningkat.';
+            return 'Modal inti masih menutup aset bermasalah neto, namun perlu pemantauan bila NPF atau gap PPKA meningkat.';
         }
 
         return 'Modal inti lebih rendah dari aset bermasalah neto; perlu rencana penyehatan kualitas, penguatan cadangan, dan kontrol ekspansi berisiko.';
@@ -2807,10 +3048,10 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
         if ((float) ($summary['ppap_system_vs_wd_gap'] ?? 0) < 0) {
             $items[] = [
                 'severity' => 'danger',
-                'title' => 'PPAP Sistem di Bawah PPAP WD',
+                'title' => 'PPKA Sistem di Bawah PPKA WD',
                 'metric' => 'Gap Sistem vs WD',
                 'value' => (float) ($summary['ppap_system_vs_wd_gap'] ?? 0),
-                'message' => 'PPAP sistem belum menutup PPAP wajib dibentuk secara prudential pada posisi bulan aktif.',
+                'message' => 'PPKA sistem belum menutup PPKA wajib dibentuk secara prudential pada posisi bulan aktif.',
                 'action' => 'Lakukan rekonsiliasi kontrak shortfall, validasi agunan, dan siapkan adjustment cadangan bila diperlukan.',
             ];
         }
@@ -2818,12 +3059,12 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
         if ((bool) ($summary['ppap_rekap_previous_available'] ?? false) && abs((float) ($summary['ppap_gap'] ?? 0)) > 0) {
             $items[] = [
                 'severity' => (float) ($summary['ppap_gap'] ?? 0) > 0 ? 'warning' : 'safe',
-                'title' => (float) ($summary['ppap_gap'] ?? 0) > 0 ? 'PPAP Bulanan Meningkat' : 'PPAP Bulanan Menurun',
-                'metric' => 'Gap PPAP Bulanan',
+                'title' => (float) ($summary['ppap_gap'] ?? 0) > 0 ? 'PPKA Bulanan Meningkat' : 'PPKA Bulanan Menurun',
+                'metric' => 'Gap PPKA Bulanan',
                 'value' => (float) ($summary['ppap_gap'] ?? 0),
                 'message' => (float) ($summary['ppap_gap'] ?? 0) > 0
-                    ? 'Kebutuhan PPAP template bulan berjalan lebih tinggi dibanding snapshot bulan sebelumnya.'
-                    : 'Kebutuhan PPAP template bulan berjalan lebih rendah dibanding snapshot bulan sebelumnya.',
+                    ? 'Kebutuhan PPKA template bulan berjalan lebih tinggi dibanding snapshot bulan sebelumnya.'
+                    : 'Kebutuhan PPKA template bulan berjalan lebih rendah dibanding snapshot bulan sebelumnya.',
                 'action' => (float) ($summary['ppap_gap'] ?? 0) > 0
                     ? 'Validasi kontrak penyumbang kenaikan, perubahan kolektibilitas, dan nilai likuidasi agunan.'
                     : 'Pastikan penurunan didukung pelunasan, perbaikan kolektibilitas, atau update agunan yang terdokumentasi.',
@@ -2858,7 +3099,7 @@ class FinancingRepository extends MciBaseRepository implements FinancingReposito
                 'title' => 'Tidak Ada Anomali Material',
                 'metric' => 'Prudential Check',
                 'value' => 0,
-                'message' => 'Tidak terdeteksi tekanan material dari KAP, APYD, PPAP gap, net exposure, maupun ABA pada filter aktif.',
+                'message' => 'Tidak terdeteksi tekanan material dari KAP, APYD, PPKA gap, net exposure, maupun ABA pada filter aktif.',
                 'action' => 'Pertahankan monitoring bulanan dan gunakan trend sebagai baseline early warning periode berikutnya.',
             ];
         }

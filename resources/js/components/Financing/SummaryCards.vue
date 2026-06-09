@@ -58,13 +58,13 @@ const cards = computed(() => [
 
 // Format value
 function formatValue(value, format) {
-  if (value === null || value === undefined) return '—'
+  if (value === null || value === undefined) return '-'
   
   switch (format) {
     case 'number':
-      return formatExactNumber(value, '—')
+      return formatExactNumber(value, '-')
     case 'currency':
-      return formatExactRupiah(value, '—')
+      return formatExactRupiah(value, '-')
     case 'percent':
       return formatTruncatedPercentage(value)
     case 'decimal':
@@ -98,7 +98,7 @@ function getCardColor(card) {
       <v-card
         elevation="0"
         border
-        class="content-card h-100"
+        class="content-card"
         :class="`content-card--${getCardColor(card)}`"
       >
         <div class="content-card__accent-top" :class="`bg-${card.color}`"></div>

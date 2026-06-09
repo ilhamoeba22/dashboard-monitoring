@@ -9,7 +9,7 @@ use App\Models\Mci\MciBaseModel;
 /**
  * Model MCI: TOFMPCOLHIST
  * --------------------------------------------------------------------------
- * Domain   : PPAP / DPD / Coll
+ * Domain   : PPKA / DPD / Coll
  * Tabel    : [dbo].[TOFMPCOLHIST]
  * Kolom    : 8
  * Sumber   : Mapping_MCI_MAR26_01042026.sql / MCI_MAR26_01042026.xlsx

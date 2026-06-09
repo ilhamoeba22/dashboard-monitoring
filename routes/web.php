@@ -35,14 +35,14 @@ Route::prefix('financing')->group(function () {
     Route::get('/top-up', fn() => Inertia::render('Financing/TopUp'))->name('financing.top-up');
 
     // G7: Penyelesaian
-    Route::get('/ppka', fn() => Inertia::render('Financing/Ppka'))->name('financing.ppka');
+    Route::redirect('/ppka', '/financing/quality')->name('financing.ppka');
     Route::get('/settlement', fn() => Inertia::render('Financing/Settlement'))->name('financing.settlement');
     Route::get('/write-off', fn() => Inertia::render('Financing/WriteOff'))->name('financing.write-off');
     Route::get('/yield', fn() => Inertia::render('Financing/Yield'))->name('financing.yield');
 
     // G8: Performance
     Route::get('/repayment-rate', fn() => Inertia::render('Financing/RepaymentRate'))->name('financing.repayment-rate');
-    Route::get('/repayment-rate-new', fn() => Inertia::render('Financing/RepaymentRateNew'))->name('financing.repayment-rate-new');
+    Route::redirect('/repayment-rate-new', '/financing/repayment-rate?tab=new')->name('financing.repayment-rate-new');
 });
 
 Route::prefix('cif')->group(function () {

@@ -4,7 +4,7 @@ import { useFinancingStore } from '@/stores/financingStore'
 import SummaryCards from '@/components/Financing/SummaryCards.vue'
 import { computed, onMounted } from 'vue'
 import '@/assets/css/financing-shared.css'
-import { formatExactRupiah, formatBanking6, formatTruncatedPercentage } from '@/utils/money'
+import { formatExactRupiah, formatTruncatedPercentage } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -24,7 +24,7 @@ const quickLinks = [
 
 // Formatting Helpers
 function formatCurrency(value) {
-  return formatExactRupiah(value, '—')
+  return formatExactRupiah(value, '-')
 }
 
 // Chart Configurations
@@ -45,8 +45,7 @@ const donutChartOptions = computed(() => {
     dataLabels: {
       enabled: true,
       formatter: (val, { seriesIndex, w }) => {
-          // Persentase terlihat bagus (2 desimal)
-          return val.toFixed(2) + '%'
+          return formatTruncatedPercentage(val)
       },
       dropShadow: { enabled: false },
       style: { fontSize: '11px', fontWeight: 'bold', colors: ['#334155'] }
@@ -64,15 +63,15 @@ const donutChartOptions = computed(() => {
                 fontWeight: '900', 
                 color: '#1e293b', 
                 offsetY: 5,
-                formatter: val => formatBanking6(val) // 6 Digit awal (skala jutaan) tanpa pembulatan
+                formatter: val => formatExactRupiah(val)
             },
             total: {
               show: true, 
               showAlways: true, 
-              label: 'Total OS (Jt)',
+              label: 'Total OS',
               color: '#94a3b8',
               fontSize: '11px',
-              formatter: w => formatBanking6(w.globals.seriesTotals.reduce((a, b) => a + b, 0))
+              formatter: w => formatExactRupiah(w.globals.seriesTotals.reduce((a, b) => a + b, 0))
             }
           }
         }
@@ -113,7 +112,7 @@ const areaChartOptions = computed(() => {
     fill: { type: 'solid', opacity: [1, 1] },
     xaxis: { categories, tooltip: { enabled: false } },
     yaxis: [
-      { labels: { formatter: v => formatBanking6(v) }, title: { text: 'Total O/S (Jutaan)', style: { fontWeight: 600 } } },
+      { labels: { formatter: v => formatExactRupiah(v) }, title: { text: 'Total O/S', style: { fontWeight: 600 } } },
       { opposite: true, min: 0, labels: { formatter: v => formatTruncatedPercentage(v) }, title: { text: 'Rasio NPF (%)', style: { fontWeight: 600 } } }
     ],
     tooltip: { 
@@ -121,7 +120,7 @@ const areaChartOptions = computed(() => {
       intersect: false,
       y: { 
         formatter: function (val, { seriesIndex, dataPointIndex }) {
-          if (typeof val === 'undefined' || val === null) return '—';
+          if (typeof val === 'undefined' || val === null) return '-';
 
           if (seriesIndex === 0) {
             return formatCurrency(val);
@@ -174,7 +173,7 @@ onMounted(() => store.loadAll())
 <template>
   <div class="fin-page px-4 pt-0">
 
-    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+    <!-- -- HERO HEADER ------------------------------------------- -->
     <div class="fin-hero mb-6">
       <div class="fin-hero__deco"></div>
       <div class="fin-hero__inner">
@@ -184,9 +183,9 @@ onMounted(() => store.loadAll())
           </div>
           <div class="fin-hero__meta">
             <h1 class="fin-hero__title">Executive Overview</h1>
-            <p class="fin-hero__subtitle">High-level realtime intelligence — portofolio pembiayaan aktif bank syariah</p>
+            <p class="fin-hero__subtitle">High-level realtime intelligence - portofolio pembiayaan aktif bank syariah</p>
             <div class="fin-hero__badges">
-              <span class="fin-badge fin-badge--teal">🏦 Islamic Banking</span>
+              <span class="fin-badge fin-badge--teal">Islamic Banking</span>
               <span class="fin-badge fin-badge--glass">
                 <v-icon size="10" color="white">ri-database-2-line</v-icon>
                 {{ rtData?.database || 'Memuat...' }}
@@ -197,7 +196,7 @@ onMounted(() => store.loadAll())
       </div>
     </div>
 
-    <!-- ── LOADING SKELETON ─────────────────────────────────────── -->
+    <!-- -- LOADING SKELETON --------------------------------------- -->
     <div v-if="isLoading">
       <v-row class="mb-4">
         <v-col v-for="i in 4" :key="i" cols="12" sm="6" lg="3">
@@ -210,7 +209,7 @@ onMounted(() => store.loadAll())
       </v-row>
     </div>
 
-    <!-- ── DASHBOARD CONTENT ────────────────────────────────────── -->
+    <!-- -- DASHBOARD CONTENT -------------------------------------- -->
     <template v-else-if="hasData">
 
       <!-- Quick Links Navigation -->
@@ -245,7 +244,7 @@ onMounted(() => store.loadAll())
       <v-row class="mt-4 mb-6">
         <!-- Donut Chart -->
         <v-col cols="12" lg="4">
-          <div class="content-card h-100">
+          <div class="content-card">
             <div class="content-card__accent-top" style="background: linear-gradient(90deg, #059669, #10b981);"></div>
             <div class="content-card__header">
               <div>
@@ -273,7 +272,7 @@ onMounted(() => store.loadAll())
 
         <!-- Area Chart -->
         <v-col cols="12" lg="8">
-          <div class="content-card h-100">
+          <div class="content-card">
             <div class="content-card__accent-top" style="background: linear-gradient(90deg, #059669, #0284c7);"></div>
             <div class="content-card__header">
               <div>
@@ -282,7 +281,7 @@ onMounted(() => store.loadAll())
               </div>
               <a href="/financing/perkembangan" style="text-decoration: none;">
                 <div class="fin-badge fin-badge--glass" style="background: rgba(13,148,136,0.12); color: #0d9488; border-color: rgba(13,148,136,0.2);">
-                  Detail MoM/YoY →
+                  Detail MoM/YoY ->
                 </div>
               </a>
             </div>
@@ -311,7 +310,7 @@ onMounted(() => store.loadAll())
             </div>
             <div>
               <div class="content-card__title">Top High-Risk Alerts (NPF)</div>
-              <div class="content-card__subtitle">Prioritas penagihan hari ini — Top 5 Outstanding Macet</div>
+              <div class="content-card__subtitle">Prioritas penagihan hari ini - Top 5 Outstanding Macet</div>
             </div>
           </div>
           <a href="/financing/quality" style="text-decoration: none;">

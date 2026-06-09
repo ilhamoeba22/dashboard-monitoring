@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { formatExactRupiah, formatExactNumber } from '@/utils/money'
+import { formatExactRupiah, formatExactNumber, formatTruncatedPercentage } from '@/utils/money'
 
 const props = defineProps({
   data: {
@@ -10,7 +10,7 @@ const props = defineProps({
 })
 
 // Metrics Configuration matching MDB Logic
-// Total O/S, Total NPF (Kol 3,4,5), Rasio NPF (%), Total Pencadangan (PPAP)
+// Total O/S, Total NPF (Kol 3,4,5), Rasio NPF (%), Total Pencadangan (PPKA)
 const cards = computed(() => [
   {
     id: 'total_os',
@@ -57,7 +57,7 @@ function formatValue(value, format) {
     case 'currency':
       return formatExactRupiah(value, '0')
     case 'percent':
-      return `${value}%`
+      return formatTruncatedPercentage(value)
     default:
       return formatExactNumber(value, '0')
   }
@@ -81,7 +81,7 @@ function getCurrencyPrefix(format) {
         elevation="0"
         border
         rounded="xl"
-        class="metric-card h-100 transition-swing"
+        class="metric-card transition-swing"
       >
         <div
           class="card-accent"

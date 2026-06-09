@@ -123,14 +123,14 @@ return [
             'url' => env('SQL_SERVER_URL'),
             'host' => env('SQL_SERVER_HOST', '192.168.1.130'),
             'port' => env('SQL_SERVER_PORT', '44333'),
-            'database' => env('SQL_SERVER_DATABASE', 'MCI_MAR26_01042026'),
+            'database' => env('SQL_SERVER_DATABASE') ?: 'MCI_MAR26_01042026',
             'username' => env('SQL_SERVER_USERNAME', 'sa'),
             'password' => env('SQL_SERVER_PASSWORD', ''),
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
-            'encrypt' => strtolower((string) env('SQL_SERVER_ENCRYPT', 'no')) === 'no' ? null : env('SQL_SERVER_ENCRYPT'),
-            'trust_server_certificate' => strtolower((string) env('SQL_SERVER_ENCRYPT', 'no')) === 'no' ? null : env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
+            'encrypt' => env('SQL_SERVER_ENCRYPT', 'no'),
+            'trust_server_certificate' => env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
         ],
 
         // HISTORY: Maret 2026 (MCI_MAR26_01042026)
@@ -143,8 +143,8 @@ return [
             'password' => env('SQL_SERVER_PASSWORD', ''),
             'charset' => 'utf8',
             'prefix' => '',
-            'encrypt' => strtolower((string) env('SQL_SERVER_ENCRYPT', 'no')) === 'no' ? null : env('SQL_SERVER_ENCRYPT'),
-            'trust_server_certificate' => strtolower((string) env('SQL_SERVER_ENCRYPT', 'no')) === 'no' ? null : env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
+            'encrypt' => env('SQL_SERVER_ENCRYPT', 'no'),
+            'trust_server_certificate' => env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
         ],
 
         // HISTORY: Februari 2026 (MCI_FEB26_01032026)
@@ -157,8 +157,8 @@ return [
             'password' => env('SQL_SERVER_PASSWORD', ''),
             'charset' => 'utf8',
             'prefix' => '',
-            'encrypt' => strtolower((string) env('SQL_SERVER_ENCRYPT', 'no')) === 'no' ? null : env('SQL_SERVER_ENCRYPT'),
-            'trust_server_certificate' => strtolower((string) env('SQL_SERVER_ENCRYPT', 'no')) === 'no' ? null : env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
+            'encrypt' => env('SQL_SERVER_ENCRYPT', 'no'),
+            'trust_server_certificate' => env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
         ],
 
         // HISTORY: Januari 2026 (MCI_JAN_31012026)
@@ -171,8 +171,8 @@ return [
             'password' => env('SQL_SERVER_PASSWORD', ''),
             'charset' => 'utf8',
             'prefix' => '',
-            'encrypt' => strtolower((string) env('SQL_SERVER_ENCRYPT', 'no')) === 'no' ? null : env('SQL_SERVER_ENCRYPT'),
-            'trust_server_certificate' => strtolower((string) env('SQL_SERVER_ENCRYPT', 'no')) === 'no' ? null : env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
+            'encrypt' => env('SQL_SERVER_ENCRYPT', 'no'),
+            'trust_server_certificate' => env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
         ],
 
     ],

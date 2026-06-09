@@ -9,7 +9,7 @@ use App\Models\Mci\MciBaseModel;
 /**
  * Model MCI: TMPTSBBPPAP
  * --------------------------------------------------------------------------
- * Domain   : PPAP / DPD / Coll
+ * Domain   : PPKA / DPD / Coll
  * Tabel    : [dbo].[TMPTSBBPPAP]
  * Kolom    : 5
  * Sumber   : Mapping_MCI_MAR26_01042026.sql / MCI_MAR26_01042026.xlsx

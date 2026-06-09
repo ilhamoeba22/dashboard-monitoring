@@ -9,7 +9,7 @@ use App\Models\Mci\MciBaseModel;
 /**
  * Model MCI: bobot_ppap
  * --------------------------------------------------------------------------
- * Domain   : PPAP / DPD / Coll
+ * Domain   : PPKA / DPD / Coll
  * Tabel    : [dbo].[bobot_ppap]
  * Kolom    : 15
  * Sumber   : Mapping_MCI_MAR26_01042026.sql / MCI_MAR26_01042026.xlsx

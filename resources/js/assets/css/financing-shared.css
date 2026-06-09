@@ -421,11 +421,6 @@
   line-height: 1.3;
 }
 
-/* Uniform KPI Card Height */
-.v-card.h-100 {
-  min-height: 160px;
-}
-
 /* Semantic KPI Variants */
 .kpi-card--success .kpi-card__value { color: var(--fin-success); }
 .kpi-card--danger  .kpi-card__value { color: var(--fin-danger); }

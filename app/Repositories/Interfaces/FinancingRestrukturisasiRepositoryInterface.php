@@ -42,5 +42,5 @@ interface FinancingRestrukturisasiRepositoryInterface
      *
      * @return array<string, mixed>
      */
-    public function getTopUpSummary(): array;
+    public function getTopUpSummary(array $filters = []): array;
 }

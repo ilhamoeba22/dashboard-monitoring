@@ -16,7 +16,7 @@ const bars = [40, 65, 55, 80, 75, 90, 70, 85, 95, 100, 88, 92]
 </script>
 
 <template>
-  <v-card elevation="0" border rounded="xl" class="h-100 analytical-card">
+  <v-card elevation="0" border rounded="xl" class="analytical-card">
     <v-card-item>
       <template #title>
         <span class="text-h6 font-weight-bold text-slate-800">Tren Pertumbuhan & Risiko</span>

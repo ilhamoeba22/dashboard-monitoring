@@ -31,6 +31,9 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
     /** @var array<string, mixed> */
     private array $lastPeriodMeta = [];
 
+    /** @var array<string, mixed> */
+    private array $lastCollMonitoringMeta = [];
+
     private const CACHE_TTL = 60; // 60 seconds
 
     public function __construct(MciConnectionService $mciService)
@@ -43,8 +46,13 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
         return $this->lastPeriodMeta;
     }
 
+    public function getLastCollMonitoringMeta(): array
+    {
+        return $this->lastCollMonitoringMeta;
+    }
+
     /**
-     * Execute raw query — wajib panggil getConnection() dulu agar
+     * Execute raw query - wajib panggil getConnection() dulu agar
      * SQL Server switch ke database aktif (snapshot bulan berjalan).
      */
     private function executeRaw(string $sql, array $params = [], bool $forceActive = true): array
@@ -66,7 +74,7 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
     }
 
     /**
-     * Jatuh Tempo List — Nasabah yang tglexp di bulan & tahun sistem berjalan.
+     * Jatuh Tempo List - Nasabah yang tglexp di bulan & tahun sistem berjalan.
      * Rumus saldo tabungan: sahirrp - (saldoblok + minsaldo)
      * Rumus tunggakan real-time: SUM(tagmdl - byrmdl) WHERE stsbyr != 'L'
      */
@@ -85,7 +93,7 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
             $month = substr((string) $periodContext['requested_period'], 4, 2);
 
             // 2. Build WHERE clause + params
-            // tglexp format: YYYYMMDD (e.g. '20280701') → tahun=substr(1,4), bulan=substr(5,2)
+            // tglexp format: YYYYMMDD (e.g. '20280701') -> tahun=substr(1,4), bulan=substr(5,2)
             $whereParts = [
                 "a.stsrec = 'A'",
                 "a.stsacc <> 'W'",
@@ -155,7 +163,10 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
                 ORDER BY a.tglexp ASC, c.nmao ASC, CAST(a.colbaru AS INT) DESC
             ";
 
-            return $this->executeRaw($sql, $params, false);
+            return array_map(
+                static fn (object $row): array => (array) $row,
+                $this->executeRaw($sql, $params, false)
+            );
         });
     }
 
@@ -164,8 +175,8 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
      */
     private function resolvePeriodContext(int $tahun = 0, int $bulan = 0): array
     {
-        $this->mciService->getConnection();
-        $tglRow = DB::connection($this->connection)->selectOne('SELECT TOP 1 tgl FROM TANGGAL');
+        $connection = $this->mciService->getConnection();
+        $tglRow = $connection->selectOne('SELECT TOP 1 tgl FROM TANGGAL');
         $tglRaw = is_object($tglRow) ? (string) ($tglRow->tgl ?? '') : '';
         $activeYear = strlen($tglRaw) === 8 ? (int) substr($tglRaw, 4, 4) : (int) date('Y');
         $activeMonth = strlen($tglRaw) === 8 ? (int) substr($tglRaw, 2, 2) : (int) date('m');
@@ -185,7 +196,7 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
         }
 
         $sourceDb = $snapshotDb
-            ?: DB::connection($this->connection)->selectOne('SELECT DB_NAME() as database_name')->database_name ?? null;
+            ?: $connection->selectOne('SELECT DB_NAME() as database_name')->database_name ?? null;
 
         $this->lastPeriodMeta = [
             'requested_period' => $periode,
@@ -206,9 +217,47 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
     {
         $monthPrefixes = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGT', 'SEP', 'OKT', 'NOV', 'DES'];
         $yearSuffix = substr((string) $year, -2);
-        $database = env('MCI_DB_'.$monthPrefixes[$month - 1].$yearSuffix);
+        $monthPrefix = $monthPrefixes[$month - 1];
+        $envKey = 'MCI_DB_'.$monthPrefix.$yearSuffix;
+        $database = env($envKey);
 
-        return is_string($database) && $database !== '' ? $database : null;
+        if (is_string($database) && $database !== '') {
+            return $database;
+        }
+
+        $endOfMonth = (new \DateTimeImmutable(sprintf('%04d-%02d-01', $year, $month)))
+            ->modify('last day of this month')
+            ->format('dmY');
+
+        $cacheKey = "mci:tunggakan:snapshot-db:{$year}:{$month}";
+
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($monthPrefix, $yearSuffix, $endOfMonth): ?string {
+            $row = DB::connection($this->connection)->selectOne(
+                "
+                SELECT TOP 1 name
+                FROM sys.databases
+                WHERE name LIKE ?
+                   OR name LIKE ?
+                   OR name LIKE ?
+                ORDER BY
+                    CASE
+                        WHEN name LIKE ? THEN 1
+                        WHEN name LIKE ? THEN 2
+                        ELSE 3
+                    END,
+                    name DESC
+                ",
+                [
+                    "MCI_{$monthPrefix}{$yearSuffix}_%",
+                    "MCI_{$monthPrefix}_%{$endOfMonth}",
+                    "MCI_{$monthPrefix}%{$endOfMonth}",
+                    "MCI_{$monthPrefix}{$yearSuffix}_%",
+                    "MCI_{$monthPrefix}_%{$endOfMonth}",
+                ]
+            );
+
+            return is_object($row) && isset($row->name) ? (string) $row->name : null;
+        });
     }
 
     /**
@@ -225,21 +274,31 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
     {
         $activeDb = $this->mciService->getActiveDatabase();
         $cacheKey = 'financing.tunggakan.collmonitoring.' . md5($activeDb . ($kdloc ?? 'ALL') . ($kdaoh ?? 'ALL'));
+        $connection = $this->mciService->getConnection();
+        $tanggalRow = $connection->selectOne('SELECT TOP 1 tgl FROM TANGGAL WHERE tgl = (SELECT MAX(tgl) FROM TANGGAL)');
+        $databaseRow = $connection->selectOne('SELECT DB_NAME() AS database_name');
+        $tglRaw = is_object($tanggalRow) ? (string) ($tanggalRow->tgl ?? '') : '';
+        $periode = strlen($tglRaw) === 8 ? substr($tglRaw, 4, 4).substr($tglRaw, 2, 2) : null;
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($kdloc, $kdaoh) {
-            // Force switch ke database aktif
-            $this->mciService->getConnection();
+        $this->lastCollMonitoringMeta = [
+            'source_database' => is_object($databaseRow) ? ($databaseRow->database_name ?? null) : null,
+            'source_table' => 'TOFLMB + TOFRS + TOFMPCOL + TOFTCOL',
+            'tanggal_hitung_raw' => $tglRaw !== '' ? $tglRaw : null,
+            'active_period' => $periode,
+            'basis' => 'Proyeksi kolektibilitas akhir bulan aktif CBS',
+        ];
 
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($kdloc, $kdaoh, $connection) {
             // Build filter WHERE tambahan (opsional)
             $extraWhere = '';
             if ($kdloc && $kdloc !== 'Semua Cabang') {
-                $extraWhere .= " AND cab.nama = " . DB::connection($this->connection)->getPdo()->quote($kdloc);
+                $extraWhere .= " AND cab.nama = " . $connection->getPdo()->quote($kdloc);
             }
             if ($kdaoh && $kdaoh !== 'Semua AO') {
-                $extraWhere .= " AND aotable.nmao = " . DB::connection($this->connection)->getPdo()->quote($kdaoh);
+                $extraWhere .= " AND aotable.nmao = " . $connection->getPdo()->quote($kdaoh);
             }
 
-            // Query T-SQL raksasa — dijalankan sebagai satu string via select()
+            // Query T-SQL raksasa - dijalankan sebagai satu string via select()
             // PDO SQLSRV mendukung multiple statements dalam satu execute jika
             // ATTR_EMULATE_PREPARES = true (default di sqlsrv driver).
             // Namun untuk keamanan, kita pisahkan DECLARE ke dalam subquery inline.
@@ -253,12 +312,12 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
                             SUBSTRING(tgl,5,4) + SUBSTRING(tgl,3,2) + SUBSTRING(tgl,1,2)
                         ) AS TglHitung,
                         -- Legacy EOM replacement (SQL 2008 compatible)
-                        DATEADD(month, DATEDIFF(month, 0, 
+                        DATEADD(month, DATEDIFF(month, 0,
                             CONVERT(DATE, SUBSTRING(tgl,5,4) + SUBSTRING(tgl,3,2) + SUBSTRING(tgl,1,2))
                         ) + 1, 0) - 1 AS TglEOM,
                         DATEDIFF(dd,
                             CONVERT(DATE, SUBSTRING(tgl,5,4) + SUBSTRING(tgl,3,2) + SUBSTRING(tgl,1,2)),
-                            DATEADD(month, DATEDIFF(month, 0, 
+                            DATEADD(month, DATEDIFF(month, 0,
                                 CONVERT(DATE, SUBSTRING(tgl,5,4) + SUBSTRING(tgl,3,2) + SUBSTRING(tgl,1,2))
                             ) + 1, 0) - 1
                         ) AS SisaHari
@@ -274,9 +333,9 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
                         , 0) AS RatioBH_Calc
                     FROM TOFRS t1
                     CROSS JOIN SystemDate sd
-                    -- tgltagih format YYYYMMDD — pakai CASE + ISDATE (Legacy 2008 compatibility)
-                    WHERE (CASE WHEN ISDATE(NULLIF(REPLACE(t1.tgltagih,' ',''), '')) = 1 
-                                THEN CONVERT(DATE, NULLIF(REPLACE(t1.tgltagih,' ',''), ''), 112) 
+                    -- tgltagih format YYYYMMDD - pakai CASE + ISDATE (Legacy 2008 compatibility)
+                    WHERE (CASE WHEN ISDATE(NULLIF(REPLACE(t1.tgltagih,' ',''), '')) = 1
+                                THEN CONVERT(DATE, NULLIF(REPLACE(t1.tgltagih,' ',''), ''), 112)
                                 ELSE NULL END) <= sd.TglEOM
                     GROUP BY t1.nokontrak
                 ),
@@ -290,8 +349,8 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
                         SELECT
                             LTRIM(RTRIM(nokontrak)) AS nokontrak,
                             colbaru AS Col_Manual,
-                            (CASE WHEN ISDATE(NULLIF(REPLACE(tglexp,' ',''), '')) = 1 
-                                  THEN CONVERT(DATE, NULLIF(REPLACE(tglexp,' ',''), ''), 112) 
+                            (CASE WHEN ISDATE(NULLIF(REPLACE(tglexp,' ',''), '')) = 1
+                                  THEN CONVERT(DATE, NULLIF(REPLACE(tglexp,' ',''), ''), 112)
                                   ELSE NULL END) AS Tgl_Exp_Manual,
                             LTRIM(RTRIM(ket)) AS Ket_Manual,
                             ROW_NUMBER() OVER(
@@ -317,12 +376,12 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
                         ISNULL(seg.ket,  '-')               AS Segmentasi_Pembiayaan,
                         ISNULL(guna.ket, '-')               AS Jenis_Penggunaan,
                         ISNULL(ts.RatioBH_Calc, 0)          AS RatioBH_Calc,
-                        -- tglexp format YYYYMMDD, tgleff format YYYYMMDD → CASE + ISDATE (Legacy 2008 compatibility)
-                        (CASE WHEN ISDATE(NULLIF(REPLACE(tflmb.tglexp,' ',''), '')) = 1 
-                              THEN CONVERT(DATE, NULLIF(REPLACE(tflmb.tglexp,' ',''), ''), 112) 
+                        -- tglexp format YYYYMMDD, tgleff format YYYYMMDD -> CASE + ISDATE (Legacy 2008 compatibility)
+                        (CASE WHEN ISDATE(NULLIF(REPLACE(tflmb.tglexp,' ',''), '')) = 1
+                              THEN CONVERT(DATE, NULLIF(REPLACE(tflmb.tglexp,' ',''), ''), 112)
                               ELSE NULL END) AS Tgl_Exp_Date,
-                        (CASE WHEN ISDATE(NULLIF(REPLACE(tflmb.tgleff,' ',''), '')) = 1 
-                              THEN CONVERT(DATE, NULLIF(REPLACE(tflmb.tgleff,' ',''), ''), 112) 
+                        (CASE WHEN ISDATE(NULLIF(REPLACE(tflmb.tgleff,' ',''), '')) = 1
+                              THEN CONVERT(DATE, NULLIF(REPLACE(tflmb.tgleff,' ',''), ''), 112)
                               ELSE NULL END) AS Tgl_Eff_Date,
                         op.Col_Manual    AS fcl_col_manual,
                         op.Tgl_Exp_Manual AS fcl_tgl_manual,
@@ -331,11 +390,11 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
 
                         -- Hitung sisa hari sampai EOM
                         CASE
-                            WHEN sd.TglEOM > (CASE WHEN ISDATE(NULLIF(REPLACE(tflmb.tglexp,' ',''), '')) = 1 
-                                                   THEN CONVERT(DATE, NULLIF(REPLACE(tflmb.tglexp,' ',''), ''), 112) 
+                            WHEN sd.TglEOM > (CASE WHEN ISDATE(NULLIF(REPLACE(tflmb.tglexp,' ',''), '')) = 1
+                                                   THEN CONVERT(DATE, NULLIF(REPLACE(tflmb.tglexp,' ',''), ''), 112)
                                                    ELSE NULL END)
-                                THEN DATEDIFF(dd, (CASE WHEN ISDATE(NULLIF(REPLACE(tflmb.tglexp,' ',''), '')) = 1 
-                                                        THEN CONVERT(DATE, NULLIF(REPLACE(tflmb.tglexp,' ',''), ''), 112) 
+                                THEN DATEDIFF(dd, (CASE WHEN ISDATE(NULLIF(REPLACE(tflmb.tglexp,' ',''), '')) = 1
+                                                        THEN CONVERT(DATE, NULLIF(REPLACE(tflmb.tglexp,' ',''), ''), 112)
                                                         ELSE NULL END), sd.TglEOM)
                             ELSE tflmb.haritgk + sd.SisaHari
                         END AS haritgk_eom_real,
@@ -396,8 +455,8 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
                         CASE
                             WHEN fcl_ket_manual IS NOT NULL
                                 AND fcl_tgl_manual >= TglEOM
-                                AND DATEDIFF(MONTH, (CASE WHEN ISDATE(NULLIF(REPLACE(tgleff,' ',''), '')) = 1 
-                                                          THEN CONVERT(DATE, NULLIF(REPLACE(tgleff,' ',''), ''), 112) 
+                                AND DATEDIFF(MONTH, (CASE WHEN ISDATE(NULLIF(REPLACE(tgleff,' ',''), '')) = 1
+                                                          THEN CONVERT(DATE, NULLIF(REPLACE(tgleff,' ',''), ''), 112)
                                                           ELSE NULL END), TglEOM) <= 3
                                 THEN CAST(ISNULL(fcl_col_manual, colbaru) AS INT)
                             ELSE (
@@ -435,7 +494,7 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
                     fa.coleom           AS col_awal_kontrak,
                     MAX(fa.Contract_Col_Curr) OVER(PARTITION BY fa.nocif) AS colbaru_final_curr,
                     fa.Col_One_Obligor  AS colbaru_final_eom,
-                    -- Keterangan aksi — persis sama dengan legacy MDB
+                    -- Keterangan aksi - persis sama dengan legacy MDB
                     CASE
                         WHEN fa.Col_One_Obligor > fa.Contract_Col_Individu THEN
                             CASE
@@ -447,8 +506,8 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
                             + ' oleh No Kontrak: ' + fa.Kontrak_Penyebab
                         WHEN fa.fcl_ket_manual IS NOT NULL
                             AND fa.fcl_tgl_manual >= fa.TglEOM
-                            AND DATEDIFF(MONTH, (CASE WHEN ISDATE(NULLIF(REPLACE(fa.tgleff,' ',''), '')) = 1 
-                                                      THEN CONVERT(DATE, NULLIF(REPLACE(fa.tgleff,' ',''), ''), 112) 
+                            AND DATEDIFF(MONTH, (CASE WHEN ISDATE(NULLIF(REPLACE(fa.tgleff,' ',''), '')) = 1
+                                                      THEN CONVERT(DATE, NULLIF(REPLACE(fa.tgleff,' ',''), ''), 112)
                                                       ELSE NULL END), fa.TglEOM) <= 3
                             THEN 'MANUAL: ' + fa.fcl_ket_manual
                         WHEN RTRIM(fa.kdcol) = '20' THEN
@@ -482,7 +541,10 @@ class FinancingTunggakanRepository implements FinancingTunggakanRepositoryInterf
                 ORDER BY fa.nmao ASC, fa.Col_One_Obligor DESC
             ";
 
-            return $this->executeRaw($sql);
+            return array_map(
+                static fn (object $row): array => (array) $row,
+                $this->executeRaw($sql, [], false)
+            );
         });
     }
 }

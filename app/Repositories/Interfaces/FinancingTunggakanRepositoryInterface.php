@@ -23,6 +23,13 @@ interface FinancingTunggakanRepositoryInterface
     public function getLastPeriodMeta(): array;
 
     /**
+     * Metadata dari query coll monitoring terakhir.
+     *
+     * @return array<string, mixed>
+     */
+    public function getLastCollMonitoringMeta(): array;
+
+    /**
      * Get end-of-month projection for collectibility changes (Coll Monitoring).
      *
      * @param string|null $kdloc Filter by cabang (optional)

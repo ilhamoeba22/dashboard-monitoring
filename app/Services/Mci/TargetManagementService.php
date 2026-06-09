@@ -377,8 +377,10 @@ class TargetManagementService
             $totalRealisasi += $aoTotalRealisasi;
 
             // Calculate Metrics
-            $pct = $aoTargetYtd > 0 ? round(($aoTotalRealisasi / $aoTargetYtd) * 100, 1) : 0;
+            $pct = $aoTargetYtd > 0 ? ($aoTotalRealisasi / $aoTargetYtd) * 100 : 0;
             $gap = $aoTotalRealisasi - $aoTargetYtd; // Positive gap means surplus (overachieved)
+            $targetRemaining = max($aoTargetYtd - $aoTotalRealisasi, 0);
+            $targetSurplus = max($aoTotalRealisasi - $aoTargetYtd, 0);
 
             $status = 'underperforming';
             if ($pct >= 100) $status = 'overachieved';
@@ -410,6 +412,9 @@ class TargetManagementService
                 'realisasi'    => $aoTotalRealisasi,
                 'pct'          => $pct,
                 'gap'          => $gap,
+                'target_gap'   => $gap,
+                'target_remaining' => $targetRemaining,
+                'target_surplus' => $targetSurplus,
                 'status'       => $status,
                 'chart_target' => $aoCumTarget,
                 'chart_realisasi'=> $aoCumReal,
@@ -425,8 +430,10 @@ class TargetManagementService
             $targetYtdTotal += $chartTarget[$i];
         }
 
-        $pacingPct = $targetYtdTotal > 0 ? round(($totalRealisasi / $targetYtdTotal) * 100, 1) : 0;
+        $pacingPct = $targetYtdTotal > 0 ? ($totalRealisasi / $targetYtdTotal) * 100 : 0;
         $sisaGap = $totalRealisasi - $targetYtdTotal;
+        $targetRemaining = max($targetYtdTotal - $totalRealisasi, 0);
+        $targetSurplus = max($totalRealisasi - $targetYtdTotal, 0);
 
         // Cumulative Arrays for Chart
         $cumTarget = [];
@@ -455,6 +462,9 @@ class TargetManagementService
                 'total_target_ytd'    => $targetYtdTotal,
                 'pacing_pct'          => $pacingPct,
                 'gap_miliar'          => $sisaGap,
+                'target_gap'          => $sisaGap,
+                'target_remaining'    => $targetRemaining,
+                'target_surplus'      => $targetSurplus,
                 'current_month'       => $currentPeriod,
                 'sparkline'           => array_slice(array_values($chartRealisasi), max(0, $currentPeriod - 6), 6),
             ],

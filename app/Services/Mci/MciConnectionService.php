@@ -74,13 +74,7 @@ class MciConnectionService
      */
     public function getActiveDatabase(): string
     {
-        // 1. Dari cache (paling cepat)
-        $cached = Cache::get(self::CACHE_KEY_ACTIVE_DB);
-        if (is_string($cached) && $cached !== '') {
-            return $cached;
-        }
-
-        // 2. Dari environment variable (.env MCI_ACTIVE_DB)
+        // 1. Dari environment variable (.env MCI_ACTIVE_DATABASE) jika admin melakukan override manual.
         $fromEnv = config('mci.active_database', '');
         if (is_string($fromEnv) && $fromEnv !== '') {
             Cache::put(self::CACHE_KEY_ACTIVE_DB, $fromEnv, self::CACHE_TTL_ACTIVE);
@@ -88,12 +82,18 @@ class MciConnectionService
             return $fromEnv;
         }
 
-        // 3. Auto-detect dari SQL Server (fallback terakhir)
+        // 2. Jika tidak ada override manual, latest SQL Server menjadi sumber kebenaran.
         $latest = $this->detectLatestDatabase();
         if ($latest !== null) {
             $this->persistActiveDatabase($latest);
 
             return $latest;
+        }
+
+        // 3. Cache hanya fallback terakhir saat SQL Server discovery gagal.
+        $cached = Cache::get(self::CACHE_KEY_ACTIVE_DB);
+        if (is_string($cached) && $cached !== '') {
+            return $cached;
         }
 
         return '';
@@ -322,6 +322,8 @@ class MciConnectionService
         if ($activeDb !== '') {
             Config::set("database.connections.{$this->connectionName}.database", $activeDb);
             DB::purge($this->connectionName);
+
+            return DB::reconnect($this->connectionName);
         }
 
         return DB::connection($this->connectionName);
@@ -340,7 +342,7 @@ class MciConnectionService
         Config::set("database.connections.{$this->connectionName}.database", $database);
         DB::purge($this->connectionName);
 
-        return DB::connection($this->connectionName);
+        return DB::reconnect($this->connectionName);
     }
 
     /**

@@ -5,7 +5,7 @@ import DefaultLayout from '@/layouts/default.vue'
 import axios from 'axios'
 import VueApexCharts from 'vue3-apexcharts'
 import '@/assets/css/financing-shared.css'
-import { formatExactNumber, formatExactRupiah, formatCompactRupiah, formatTruncatedPercentage } from '@/utils/money'
+import { formatExactNumber, formatExactRupiah, formatTruncatedPercentage } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
@@ -18,6 +18,7 @@ const selectedTahun = ref(null)
 const selectedBulan = ref(null)
 const viewMode = ref('grid')
 const hideEmptyRows = ref(true)
+const isExporting = ref(false)
 
 const rekapData = ref({
   rows: [],
@@ -59,25 +60,36 @@ const filteredRows = computed(() => {
 })
 
 const totals = computed(() => rekapData.value.totals)
+const dimensionLabel = computed(() => dimensionOptions.find(d => d.value === selectedDimension.value)?.label || 'Dimensi')
+const selectedCabangLabel = computed(() => cabangs.value.find(c => c.kdloc === selectedCabang.value)?.nama || 'Konsolidasi Seluruh Cabang')
 const periodUnavailable = computed(() => rekapData.value.meta?.period_available === false)
 const activePeriodLabel = computed(() => {
   if (!selectedTahun.value || !selectedBulan.value) return 'Periode aktif CBS'
   const month = monthOptions.find(item => item.value === selectedBulan.value)?.title || '-'
   return `${month} ${selectedTahun.value}`
 })
+const sourceInfoLabel = computed(() => {
+  const database = rekapData.value.meta?.source_database || '-'
+  const table = rekapData.value.meta?.source_table || '-'
+  return `${database} · ${table}`
+})
+const sortedRowsByOs = computed(() => [...filteredRows.value].sort((a, b) => Number(b.total_os || 0) - Number(a.total_os || 0)))
+const sortedRowsByNpf = computed(() => [...filteredRows.value].sort((a, b) => Number(b.npf_os || 0) - Number(a.npf_os || 0)))
+const topContributor = computed(() => sortedRowsByOs.value[0] || null)
+const topNpfContributor = computed(() => sortedRowsByNpf.value.find(row => Number(row.npf_os || 0) > 0) || null)
+const concentrationRatio = computed(() => totals.value.total_os > 0 && topContributor.value ? (Number(topContributor.value.total_os || 0) / Number(totals.value.total_os || 0)) * 100 : 0)
+const npfContributionRatio = computed(() => totals.value.npf_os > 0 && topNpfContributor.value ? (Number(topNpfContributor.value.npf_os || 0) / Number(totals.value.npf_os || 0)) * 100 : 0)
+const operationalInsight = computed(() => {
+  if (periodUnavailable.value) return 'Periode belum tersedia, sehingga dashboard tidak menampilkan tabel agar user tidak membaca data yang salah.'
+  if (!filteredRows.value.length) return 'Tidak ada portofolio pada kombinasi filter ini.'
+  if ((totals.value.npf_ratio || 0) > 5) return 'NPF konsolidasi melewati ambang pengawasan; gunakan Quality & Risk untuk drill-down penyebab dan action owner.'
+  if (concentrationRatio.value >= 35) return 'Portofolio terkonsentrasi pada satu dimensi dominan; pantau limit konsentrasi dan diversifikasi bisnis.'
+  return 'Portofolio dapat dipakai sebagai master rekap volume; analisis kualitas detail tetap ditempatkan di Quality & Risk.'
+})
 
 // Helper: Format Rupiah
 const formatRp = (value) => {
   return formatExactRupiah(value)
-}
-
-const formatRpSingkat = (v) => {
-  if (!v && v !== 0) return 'Rp 0'
-  const num = Math.abs(v)
-  const sign = v < 0 ? '-' : ''
-  if (num >= 1e9) return `${sign}Rp ${(num / 1e9).toFixed(2)} M`
-  if (num >= 1e6) return `${sign}Rp ${(num / 1e6).toFixed(1)} Jt`
-  return `${sign}Rp ${num.toLocaleString('id-ID')}`
 }
 
 const formatNumber = (value) => {
@@ -119,7 +131,7 @@ const treeMapOpts = computed(() => ({
   dataLabels: {
     enabled: true,
     formatter: (text, op) => {
-        return text + ": " + formatRpSingkat(op.value)
+        return text + ": " + formatRp(op.value)
     }
   },
   plotOptions: {
@@ -167,6 +179,105 @@ const donutOpts = computed(() => ({
 }))
 
 // ─── API Calls ───────────────────────────────────────────────
+const buildExportRows = () => filteredRows.value.map(row => ({
+  Dimensi: row.label || '-',
+  Kode: row.id || '-',
+  NOA: Number(row.noa || 0),
+  'Total OS': Number(row.total_os || 0),
+  'Kol 1 OS': Number(row.kol1_os || 0),
+  'Kol 1 NOA': Number(row.kol1_noa || 0),
+  'Kol 2 OS': Number(row.kol2_os || 0),
+  'Kol 2 NOA': Number(row.kol2_noa || 0),
+  'Kol 3 OS': Number(row.kol3_os || 0),
+  'Kol 3 NOA': Number(row.kol3_noa || 0),
+  'Kol 4 OS': Number(row.kol4_os || 0),
+  'Kol 4 NOA': Number(row.kol4_noa || 0),
+  'Kol 5 OS': Number(row.kol5_os || 0),
+  'Kol 5 NOA': Number(row.kol5_noa || 0),
+  'NPF OS': Number(row.npf_os || 0),
+  'NPF NOA': Number(row.npf_noa || 0),
+  'NPF %': Number(row.npf_ratio || 0),
+  PPKA: Number(row.total_ppap || 0),
+}))
+
+const buildMetadataRows = () => [
+  { Field: 'Laporan', Value: 'Master Rekap Console Pembiayaan' },
+  { Field: 'Periode', Value: activePeriodLabel.value },
+  { Field: 'Dimensi', Value: dimensionLabel.value },
+  { Field: 'Cabang', Value: selectedCabangLabel.value },
+  { Field: 'Sumber Data', Value: sourceInfoLabel.value },
+  { Field: 'Generated At', Value: new Date().toLocaleString('id-ID') },
+]
+
+const exportExcel = async () => {
+  if (isExporting.value) return
+  isExporting.value = true
+  try {
+    const XLSX = await import('xlsx')
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(buildMetadataRows()), '00 Metadata')
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(buildExportRows()), '01 Rekap Detail')
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet([{
+      NOA: totals.value.noa,
+      'Total OS': totals.value.total_os,
+      'NPF OS': totals.value.npf_os,
+      'NPF NOA': totals.value.npf_noa,
+      'NPF %': totals.value.npf_ratio,
+      PPKA: totals.value.total_ppap,
+    }]), '02 Total')
+    XLSX.writeFile(workbook, `rekap-pembiayaan-${selectedDimension.value}-${activePeriodLabel.value.replace(/\s+/g, '-')}.xlsx`)
+  } finally {
+    isExporting.value = false
+  }
+}
+
+const exportPdf = async () => {
+  if (isExporting.value) return
+  isExporting.value = true
+  try {
+    const { default: jsPDF } = await import('jspdf')
+    await import('jspdf-autotable')
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(15)
+    doc.text('Master Rekap Console Pembiayaan', 40, 38)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    doc.text(`${activePeriodLabel.value} · ${dimensionLabel.value} · ${selectedCabangLabel.value}`, 40, 56)
+    doc.autoTable({
+      startY: 76,
+      head: [['Dimensi', 'NOA', 'Total OS', 'Kol 1', 'Kol 2', 'Kol 3', 'Kol 4', 'Kol 5', 'NPF %', 'PPKA']],
+      body: buildExportRows().map(row => [
+        row.Dimensi,
+        formatNumber(row.NOA),
+        formatRp(row['Total OS']),
+        formatRp(row['Kol 1 OS']),
+        formatRp(row['Kol 2 OS']),
+        formatRp(row['Kol 3 OS']),
+        formatRp(row['Kol 4 OS']),
+        formatRp(row['Kol 5 OS']),
+        formatTruncatedPercentage(row['NPF %']),
+        formatRp(row.PPKA),
+      ]),
+      styles: { fontSize: 7, cellPadding: 4, overflow: 'linebreak' },
+      headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      margin: { left: 32, right: 32 },
+    })
+    const pageCount = doc.internal.getNumberOfPages()
+    for (let page = 1; page <= pageCount; page += 1) {
+      doc.setPage(page)
+      doc.setFontSize(8)
+      doc.setTextColor(100)
+      doc.text(`Sumber: ${sourceInfoLabel.value}`, 32, doc.internal.pageSize.height - 18)
+      doc.text(`Halaman ${page}/${pageCount}`, doc.internal.pageSize.width - 90, doc.internal.pageSize.height - 18)
+    }
+    doc.save(`rekap-pembiayaan-${selectedDimension.value}-${activePeriodLabel.value.replace(/\s+/g, '-')}.pdf`)
+  } finally {
+    isExporting.value = false
+  }
+}
+
 const fetchCabangs = async () => {
   try {
     const res = await axios.get('/api/v1/financing/cabangs')
@@ -245,10 +356,34 @@ watch([selectedDimension, selectedCabang, selectedTahun, selectedBulan], () => {
               </div>
               <h1 class="rekap-hero__title">Master Rekap Console</h1>
               <p class="rekap-hero__subtitle">
-                Volume &amp; distribusi bisnis pembiayaan per dimensi — Analisis risiko di
+                Volume &amp; distribusi bisnis pembiayaan per dimensi ? analisis risiko detail di
                 <a href="/financing/quality" style="color: #5eead4; font-weight: 700; text-decoration: underline;">Quality Console</a>
               </p>
             </div>
+          </div>
+          <div class="rekap-export-actions">
+            <v-btn
+              size="small"
+              variant="flat"
+              color="success"
+              rounded="lg"
+              :loading="isExporting"
+              prepend-icon="ri-file-excel-2-line"
+              @click="exportExcel"
+            >
+              Excel
+            </v-btn>
+            <v-btn
+              size="small"
+              variant="flat"
+              color="error"
+              rounded="lg"
+              :loading="isExporting"
+              prepend-icon="ri-file-pdf-2-line"
+              @click="exportPdf"
+            >
+              PDF
+            </v-btn>
           </div>
         </div>
 
@@ -384,7 +519,7 @@ watch([selectedDimension, selectedCabang, selectedTahun, selectedBulan], () => {
         <!-- Active Filter Info -->
         <div class="filter-info-bar mt-3">
           <v-icon icon="ri-information-line" size="13" color="#94a3b8" class="mr-1"></v-icon>
-          <span>Menampilkan data: {{ dimensionOptions.find(d => d.value === selectedDimension)?.label || 'Dimensi' }}{{ selectedCabang ? ' | ' + (cabangs.find(c => c.kdloc === selectedCabang)?.nama || '') : ' | Konsolidasi Seluruh Cabang' }} | Periode: {{ activePeriodLabel }} | Metrik: {{ selectedMetric === 'os' ? 'Outstanding (Rp)' : 'Nasabah (NOA)' }}</span>
+          <span>Menampilkan data: {{ dimensionLabel }} | {{ selectedCabangLabel }} | Periode: {{ activePeriodLabel }} | Sumber: {{ sourceInfoLabel }} | Metrik: {{ selectedMetric === 'os' ? 'Outstanding (Rp)' : 'Nasabah (NOA)' }}</span>
         </div>
 
       </div>
@@ -403,9 +538,27 @@ watch([selectedDimension, selectedCabang, selectedTahun, selectedBulan], () => {
       <div class="font-weight-bold mb-1">Periode {{ activePeriodLabel }} belum tersedia</div>
       <div class="text-body-2">{{ rekapData.meta?.message || 'Database snapshot/historis periode ini belum tersedia.' }}</div>
     </v-alert>
+
+    <div class="rekap-insight-panel mb-6">
+      <div class="rekap-insight-card rekap-insight-card--primary">
+        <span>Insight Operasional</span>
+        <strong>{{ operationalInsight }}</strong>
+      </div>
+      <div class="rekap-insight-card">
+        <span>Kontributor OS Terbesar</span>
+        <strong>{{ topContributor?.label || '-' }}</strong>
+        <small>{{ topContributor ? `${formatRp(topContributor.total_os)} · ${formatTruncatedPercentage(concentrationRatio)}` : 'Tidak ada data' }}</small>
+      </div>
+      <div class="rekap-insight-card">
+        <span>Kontributor NPF Terbesar</span>
+        <strong>{{ topNpfContributor?.label || '-' }}</strong>
+        <small>{{ topNpfContributor ? `${formatRp(topNpfContributor.npf_os)} · ${formatTruncatedPercentage(npfContributionRatio)}` : 'Tidak ada NPF' }}</small>
+      </div>
+    </div>
+
     <v-row class="mb-6">
       <v-col cols="12" sm="6" lg="3">
-        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+        <v-card class="rounded-xl border shadow-sm transition-swing" elevation="0" style="position: relative; overflow: hidden;">
           <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
             <v-icon icon="ri-wallet-3-line" size="120" color="#3b82f6" />
           </div>
@@ -422,7 +575,7 @@ watch([selectedDimension, selectedCabang, selectedTahun, selectedBulan], () => {
       </v-col>
 
       <v-col cols="12" sm="6" lg="3">
-        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+        <v-card class="rounded-xl border shadow-sm transition-swing" elevation="0" style="position: relative; overflow: hidden;">
           <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
             <v-icon icon="ri-file-list-3-line" size="120" color="#10b981" />
           </div>
@@ -439,7 +592,7 @@ watch([selectedDimension, selectedCabang, selectedTahun, selectedBulan], () => {
       </v-col>
 
       <v-col cols="12" sm="6" lg="3">
-        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+        <v-card class="rounded-xl border shadow-sm transition-swing" elevation="0" style="position: relative; overflow: hidden;">
           <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
             <v-icon icon="ri-error-warning-line" size="120" :color="totals.npf_ratio > 5 ? '#ef4444' : (totals.npf_ratio > 3 ? '#f59e0b' : '#10b981')" />
           </div>
@@ -461,14 +614,14 @@ watch([selectedDimension, selectedCabang, selectedTahun, selectedBulan], () => {
       </v-col>
 
       <v-col cols="12" sm="6" lg="3">
-        <v-card class="rounded-xl border shadow-sm transition-swing h-100" elevation="0" style="position: relative; overflow: hidden;">
+        <v-card class="rounded-xl border shadow-sm transition-swing" elevation="0" style="position: relative; overflow: hidden;">
           <div style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; opacity: 0.08;">
             <v-icon icon="ri-safe-2-line" size="120" color="#8b5cf6" />
           </div>
           <v-card-text class="pa-5" style="position: relative; z-index: 1;">
             <div class="d-flex justify-space-between align-start">
               <div>
-                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL PPAP</p>
+                <p class="text-caption font-weight-bold text-uppercase tracking-widest mb-1" style="color: #64748B; font-family: 'Inter', sans-serif;">TOTAL PPKA</p>
                 <h2 class="fin-money-exact mb-2" style="color: #8b5cf6;">{{ formatRp(totals.total_ppap) }}</h2>
                 <p class="text-caption text-medium-emphasis mb-0" style="font-family: 'Inter', sans-serif;">Cadangan kerugian</p>
               </div>
@@ -482,7 +635,7 @@ watch([selectedDimension, selectedCabang, selectedTahun, selectedBulan], () => {
     <div class="content-card">
       <div class="content-card__header">
         <div>
-          <div class="content-card__title">Detail {{ dimensionOptions.find(d => d.value === selectedDimension)?.label || 'Dimensi' }}</div>
+          <div class="content-card__title">Detail {{ dimensionLabel }}</div>
           <div class="content-card__subtitle">Rincian agregasi portofolio</div>
         </div>
         <div class="d-flex align-center gap-2">
@@ -512,22 +665,24 @@ watch([selectedDimension, selectedCabang, selectedTahun, selectedBulan], () => {
                 <th>Label</th>
                 <th style="text-align:right;">NOA</th>
                 <th style="text-align:right;">Total O/S</th>
+                <th style="text-align:right;">PPKA</th>
                 <th style="text-align:right;">Kol 1 (Lancar)</th>
                 <th style="text-align:right;">Kol 2 (DPK)</th>
                 <th style="text-align:right;">Kol 3 (KL)</th>
                 <th style="text-align:right;">Kol 4 (D)</th>
-                <th style="text-align:right;">Kol 5 (M)</th>
+                <th style="text-align:right;">Kol 5 Macet</th>
                 <th style="text-align:center;">NPF %</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="filteredRows.length === 0">
-                <td colspan="9" class="text-center py-8 text-medium-emphasis">Tidak ada data untuk ditampilkan</td>
+                <td colspan="10" class="text-center py-8 text-medium-emphasis">Tidak ada data untuk ditampilkan</td>
               </tr>
               <tr v-for="(row, idx) in filteredRows" :key="idx">
                 <td class="font-weight-bold" style="color: #1e293b;">{{ row.label }}</td>
                 <td style="text-align:right; font-weight: 500;">{{ formatNumber(row.noa) }}</td>
                 <td style="text-align:right; font-weight: 700;">{{ formatRp(row.total_os) }}</td>
+                <td style="text-align:right; font-weight: 600; color: #7c3aed;">{{ formatRp(row.total_ppap) }}</td>
                 <td style="text-align:right;">{{ formatMetric(row.kol1_os, row.kol1_noa) }}</td>
                 <td style="text-align:right;">{{ formatMetric(row.kol2_os, row.kol2_noa) }}</td>
                 <td style="text-align:right;">{{ formatMetric(row.kol3_os, row.kol3_noa) }}</td>
@@ -545,6 +700,7 @@ watch([selectedDimension, selectedCabang, selectedTahun, selectedBulan], () => {
                 <td>TOTAL KESELURUHAN</td>
                 <td style="text-align:right;">{{ formatNumber(totals.noa) }}</td>
                 <td style="text-align:right;">{{ formatRp(totals.total_os) }}</td>
+                <td style="text-align:right;">{{ formatRp(totals.total_ppap) }}</td>
                 <td colspan="5"></td>
                 <td style="text-align:center;">
                   <span class="fin-pill" :style="getNpfCellStyle(totals.npf_ratio)">
@@ -561,7 +717,7 @@ watch([selectedDimension, selectedCabang, selectedTahun, selectedBulan], () => {
           <v-row>
             <v-col cols="12">
               <v-card variant="outlined" class="rounded-lg border">
-                <v-card-title class="text-subtitle-1 font-weight-bold pa-4 pb-0">Distribusi Outstanding per {{ dimensionOptions.find(d => d.value === selectedDimension)?.label }}</v-card-title>
+                <v-card-title class="text-subtitle-1 font-weight-bold pa-4 pb-0">Distribusi Outstanding per {{ dimensionLabel }}</v-card-title>
                 <v-card-text>
                   <VueApexCharts type="treemap" height="500" :options="treeMapOpts" :series="treeMapSeries" />
                 </v-card-text>
@@ -632,6 +788,13 @@ watch([selectedDimension, selectedCabang, selectedTahun, selectedBulan], () => {
   color: #94a3b8;
   margin: 0;
   font-weight: 400;
+}
+
+.rekap-export-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 /* Badges */
@@ -728,8 +891,60 @@ watch([selectedDimension, selectedCabang, selectedTahun, selectedBulan], () => {
   display: flex;
   align-items: center;
   font-size: 12px;
-  color: #475569;
+  color: #cbd5e1;
   font-weight: 500;
+}
+
+.rekap-insight-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(240px, 0.8fr) minmax(240px, 0.8fr);
+  gap: 16px;
+}
+
+.rekap-insight-card {
+  min-height: 112px;
+  border: 1px solid #dbe7f3;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  padding: 18px 20px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+}
+
+.rekap-insight-card span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rekap-insight-card strong {
+  color: #0f172a;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.rekap-insight-card small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rekap-insight-card--primary {
+  background:
+    radial-gradient(circle at top right, rgba(20, 184, 166, 0.18), transparent 34%),
+    linear-gradient(145deg, #ecfeff 0%, #ffffff 72%);
+  border-color: #99f6e4;
+}
+
+.rekap-insight-card--primary strong {
+  color: #0f766e;
+  font-size: 15px;
 }
 
 /* ─── Layout Helpers ──────────────────────────────── */
@@ -750,4 +965,20 @@ watch([selectedDimension, selectedCabang, selectedTahun, selectedBulan], () => {
 .gap-5 { gap: 20px; }
 .gap-6 { gap: 24px; }
 .pb-12 { padding-bottom: 48px; }
+
+@media (max-width: 1100px) {
+  .rekap-insight-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .rekap-export-actions {
+    width: 100%;
+  }
+
+  .rekap-export-actions .v-btn {
+    flex: 1;
+  }
+}
 </style>

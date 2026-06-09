@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+﻿import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { formatExactRupiah } from '@/utils/money'
 
@@ -8,10 +8,10 @@ export const useTunggakanStore = defineStore('tunggakan', () => {
   // State
   const jatuhTempoData = ref([])
   const collMonitoringData = ref([])
-  
+
   const loadingJatuhTempo = ref(false)
   const loadingCollMonitoring = ref(false)
-  
+
   const errorJatuhTempo = ref(null)
   const errorCollMonitoring = ref(null)
   const periodMeta = ref({
@@ -23,34 +23,41 @@ export const useTunggakanStore = defineStore('tunggakan', () => {
     source_database: null,
     message: null,
   })
-  
+  const collMonitoringMeta = ref({
+    source_database: null,
+    source_table: 'TOFLMB + TOFRS + TOFMPCOL + TOFTCOL',
+    tanggal_hitung_raw: null,
+    active_period: null,
+    basis: null,
+  })
+
   // Filters
   const selectedCabang = ref('Semua Cabang')
   const selectedAo = ref('Semua AO')
   const selectedTahun = ref(null)
   const selectedBulan = ref(null)
-  
+
   // Getters untuk UI Jatuh Tempo
   const totalJatuhTempo = computed(() => jatuhTempoData.value.length)
   const totalTagihanPokok = computed(() => jatuhTempoData.value.reduce((acc, curr) => acc + parseFloat(curr.tgkmdl || 0), 0))
   const totalTagihanMargin = computed(() => jatuhTempoData.value.reduce((acc, curr) => acc + parseFloat(curr.tgkmgn || 0), 0))
-  
+
   // Menghitung berapa nasabah yang saldonya CUKUP vs KURANG
   const saldoStatus = computed(() => {
     let cukup = 0
     let kurang = 0
-    
+
     jatuhTempoData.value.forEach(item => {
       const tagihanTotal = parseFloat(item.tgkmdl || 0) + parseFloat(item.tgkmgn || 0)
       const saldoEfektif = parseFloat(item.saving_balance || 0)
-      
+
       if (saldoEfektif >= tagihanTotal) {
         cukup++
       } else {
         kurang++
       }
     })
-    
+
     return { cukup, kurang }
   })
 
@@ -61,22 +68,22 @@ export const useTunggakanStore = defineStore('tunggakan', () => {
       .filter(item => parseInt(item.colbaru_final_eom) > parseInt(item.colbaru_final_curr) && parseInt(item.colbaru_final_eom) >= 3)
       .reduce((acc, curr) => acc + parseFloat(curr.osmdlc || 0), 0)
   })
-  
+
   // Actions
   async function fetchJatuhTempo() {
     loadingJatuhTempo.value = true
     errorJatuhTempo.value = null
-    
+
     try {
       const params = new URLSearchParams()
       if (selectedCabang.value !== 'Semua Cabang') params.append('cabang', selectedCabang.value)
       if (selectedAo.value !== 'Semua AO') params.append('ao', selectedAo.value)
       if (selectedTahun.value) params.append('tahun', selectedTahun.value)
       if (selectedBulan.value) params.append('bulan', selectedBulan.value)
-        
+
       const response = await fetch(`${API}/jatuh-tempo?${params.toString()}`)
       const json = await response.json()
-      
+
       if (json.success) {
         periodMeta.value = json.period_meta || periodMeta.value
         const requested = String(periodMeta.value?.requested_period || '')
@@ -99,17 +106,18 @@ export const useTunggakanStore = defineStore('tunggakan', () => {
   async function fetchCollMonitoring() {
     loadingCollMonitoring.value = true
     errorCollMonitoring.value = null
-    
+
     try {
       const params = new URLSearchParams()
       if (selectedCabang.value !== 'Semua Cabang') params.append('cabang', selectedCabang.value)
       if (selectedAo.value !== 'Semua AO') params.append('ao', selectedAo.value)
-        
+
       const response = await fetch(`${API}/coll-monitoring?${params.toString()}`)
       const json = await response.json()
-      
+
       if (json.success) {
         collMonitoringData.value = json.data
+        collMonitoringMeta.value = json.meta || collMonitoringMeta.value
       } else {
         throw new Error(json.error || 'Gagal memuat data coll monitoring')
       }
@@ -120,19 +128,19 @@ export const useTunggakanStore = defineStore('tunggakan', () => {
       loadingCollMonitoring.value = false
     }
   }
-  
+
   // Helper
   function formatRp(value) {
-    return formatExactRupiah(value, '—')
+    return formatExactRupiah(value, '-')
   }
-  
+
   function formatShortRp(value) {
-    return formatExactRupiah(value, '—')
+    return formatExactRupiah(value, '-')
   }
 
   return {
     jatuhTempoData, collMonitoringData,
-    periodMeta,
+    periodMeta, collMonitoringMeta,
     loadingJatuhTempo, loadingCollMonitoring,
     errorJatuhTempo, errorCollMonitoring,
     selectedCabang, selectedAo, selectedTahun, selectedBulan,

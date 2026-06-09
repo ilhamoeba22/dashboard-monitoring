@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\v1;
 
 use App\Http\Controllers\Controller;
+use App\Models\FinancingQualityActionWorkflow;
 use App\Repositories\Interfaces\FinancingRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 
 class FinancingController extends Controller
 {
@@ -56,12 +59,7 @@ class FinancingController extends Controller
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memuat data nominatif pembiayaan',
-                'debug' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ], 500);
+            return response()->json($this->errorPayload('Gagal memuat data nominatif pembiayaan', $e), 500);
         }
     }
 
@@ -174,11 +172,7 @@ class FinancingController extends Controller
                 'data' => $data,
             ]);
         } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memuat rekapitulasi pembiayaan',
-                'debug' => $e->getMessage(),
-            ], 500);
+            return response()->json($this->errorPayload('Gagal memuat rekapitulasi pembiayaan', $e), 500);
         }
     }
 
@@ -223,11 +217,7 @@ class FinancingController extends Controller
                 'message' => $e->getMessage(),
             ], 422);
         } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memuat Master Rekap Console.',
-                'debug'   => $e->getMessage(),
-            ], 500);
+            return response()->json($this->errorPayload('Gagal memuat Master Rekap Console.', $e), 500);
         }
     }
 
@@ -254,11 +244,94 @@ class FinancingController extends Controller
                 'data' => $data,
             ]);
         } catch (\Throwable $e) {
+            return response()->json($this->errorPayload('Gagal memuat Asset Quality Analytics', $e), 500);
+        }
+    }
+
+    public function qualityActionWorkflows(Request $request): JsonResponse
+    {
+        try {
+            if (! Schema::hasTable('financing_quality_action_workflows')) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'indexed' => new \stdClass(),
+                    'migration_required' => true,
+                    'message' => 'Workflow tindakan belum aktif. Jalankan migration aplikasi terlebih dahulu.',
+                ]);
+            }
+
+            $tahun = (int) $request->query('tahun', date('Y'));
+            $bulan = (int) $request->query('bulan', date('m'));
+
+            $rows = FinancingQualityActionWorkflow::query()
+                ->where('period_year', $tahun)
+                ->where('period_month', $bulan)
+                ->orderByRaw("FIELD(status, 'open', 'in_progress', 'waiting', 'done', 'waived')")
+                ->orderByDesc('score')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $rows,
+                'indexed' => $rows->keyBy('action_key'),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json($this->errorPayload('Gagal memuat workflow tindakan kualitas.', $e), 500);
+        }
+    }
+
+    public function saveQualityActionWorkflow(Request $request): JsonResponse
+    {
+        try {
+            if (! Schema::hasTable('financing_quality_action_workflows')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Workflow tindakan belum aktif. Jalankan migration aplikasi terlebih dahulu.',
+                ], 503);
+            }
+
+            $validated = $request->validate([
+                'period_year' => ['required', 'integer', 'min:2020', 'max:2100'],
+                'period_month' => ['required', 'integer', 'min:1', 'max:12'],
+                'action_key' => ['required', 'string', 'max:160'],
+                'nokontrak' => ['nullable', 'string', 'max:50'],
+                'nama' => ['nullable', 'string', 'max:180'],
+                'source' => ['nullable', 'string', 'max:60'],
+                'signals' => ['nullable', 'array'],
+                'severity' => ['nullable', 'string', 'max:20'],
+                'score' => ['nullable', 'integer', 'min:0', 'max:1000'],
+                'exposure' => ['nullable', 'numeric'],
+                'status' => ['required', Rule::in(['open', 'in_progress', 'waiting', 'done', 'waived'])],
+                'owner' => ['nullable', 'string', 'max:120'],
+                'due_date' => ['nullable', 'date'],
+                'note' => ['nullable', 'string', 'max:5000'],
+                'reviewed_by' => ['nullable', 'string', 'max:120'],
+            ]);
+
+            $validated['completed_at'] = $validated['status'] === 'done' ? now() : null;
+
+            $workflow = FinancingQualityActionWorkflow::updateOrCreate(
+                [
+                    'period_year' => $validated['period_year'],
+                    'period_month' => $validated['period_month'],
+                    'action_key' => $validated['action_key'],
+                ],
+                $validated
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => $workflow->refresh(),
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal memuat Asset Quality Analytics',
-                'debug' => $e->getMessage(),
-            ], 500);
+                'message' => 'Input workflow tindakan tidak valid.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Throwable $e) {
+            return response()->json($this->errorPayload('Gagal menyimpan workflow tindakan kualitas.', $e), 500);
         }
     }
 
@@ -303,10 +376,7 @@ class FinancingController extends Controller
                 'columns_exist' => $colCheck,
             ]);
         } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'debug'   => $e->getMessage(),
-            ], 500);
+            return response()->json($this->errorPayload('Gagal memuat diagnostic kualitas pembiayaan.', $e), 500);
         }
     }
 
@@ -356,6 +426,20 @@ class FinancingController extends Controller
         ];
 
         @file_put_contents(base_path('debug-f35f8f.log'), json_encode($payload, JSON_UNESCAPED_SLASHES).PHP_EOL, FILE_APPEND);
+    }
+
+    private function errorPayload(string $message, \Throwable $e, array $extra = []): array
+    {
+        $payload = array_merge([
+            'success' => false,
+            'message' => $message,
+        ], $extra);
+
+        if (config('app.debug')) {
+            $payload['debug'] = $e->getMessage();
+        }
+
+        return $payload;
     }
     // #endregion
 }

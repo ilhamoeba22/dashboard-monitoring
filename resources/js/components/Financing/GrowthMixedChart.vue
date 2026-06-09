@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { formatExactRupiah, formatTruncatedPercentage, formatScale } from '@/utils/money'
+import { formatExactRupiah, formatTruncatedPercentage } from '@/utils/money'
 
 const props = defineProps({
   data: {
@@ -122,7 +122,7 @@ const chartOptions = computed(() => ({
         style: { color: '#10B981', fontWeight: 600 }
       },
       labels: {
-        formatter: (val) => formatScale(val, 1e9, ' M'),
+        formatter: (val) => formatExactRupiah(val),
         style: { colors: '#94a3b8' }
       }
     },

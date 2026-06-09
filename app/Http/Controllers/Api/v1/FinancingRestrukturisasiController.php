@@ -67,15 +67,18 @@ class FinancingRestrukturisasiController extends Controller
         try {
             $filters = [
                 'ao_baru' => $request->query('ao_baru'),
+                'tahun'  => $request->query('tahun'),
+                'bulan'  => $request->query('bulan'),
             ];
 
             $data    = $this->repository->getTopUp($filters);
-            $summary = $this->repository->getTopUpSummary();
+            $summary = $this->repository->getTopUpSummary($filters);
 
             return response()->json([
                 'success' => true,
                 'data'    => $data->values(),
                 'summary' => $summary,
+                'period_meta' => $this->repository->getLastPeriodMeta(),
                 'meta'    => [
                     'total'        => $data->count(),
                     'generated_at' => now()->toIso8601String(),

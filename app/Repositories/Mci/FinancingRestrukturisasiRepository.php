@@ -8,6 +8,7 @@ use App\Repositories\Interfaces\FinancingRestrukturisasiRepositoryInterface;
 use App\Services\Mci\MciBaseRepository;
 use App\Services\Mci\MciConnectionService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\DB;
  * Sumber Legacy: FinancingRestrukturisasiController.php & FinancingTopUpController.php
  * Tabel Utama : TOFLMBHP (addendum restrukturisasi), TOFLMB (kontrak aktif)
  *
- * SQL Server 2008 Compatible — No TRY_CONVERT, No EOMONTH, No FORMAT().
+ * SQL Server 2008 Compatible - No TRY_CONVERT, No EOMONTH, No FORMAT().
  */
 class FinancingRestrukturisasiRepository extends MciBaseRepository implements FinancingRestrukturisasiRepositoryInterface
 {
@@ -34,7 +35,7 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
     }
 
     // =========================================================================
-    // G6 — RESTRUKTURISASI / ADDENDUM
+    // G6 - RESTRUKTURISASI / ADDENDUM
     // =========================================================================
 
     /**
@@ -74,6 +75,11 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
                         FROM TOFLMBHP hp
                         WHERE LTRIM(RTRIM(hp.nokontrak)) = LTRIM(RTRIM(a.nokontrak))
                     ), 0) as total_restrukturisasi"),
+                    DB::raw("ISNULL((
+                        SELECT COUNT(1)
+                        FROM TOFLMBHP hp
+                        WHERE LTRIM(RTRIM(hp.nokontrak)) = LTRIM(RTRIM(a.nokontrak))
+                    ), 0) as jumlah_riwayat_restrukturisasi"),
                     DB::raw('LTRIM(RTRIM(b.nama)) as nama'),
                     
                     DB::raw("CASE WHEN ISDATE(NULLIF(LTRIM(RTRIM(a.tglakado)),'')) = 1 THEN CONVERT(VARCHAR(10), CONVERT(DATE, LTRIM(RTRIM(a.tglakado)), 112), 105) ELSE '-' END as tglakad_lama"),
@@ -135,6 +141,7 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
                     'nokontrak'       => trim((string) ($row->nokontrak ?? '')),
                     'ke'              => (int) ($row->ke ?? 0),
                     'total_restrukturisasi' => (int) ($row->total_restrukturisasi ?? $row->ke ?? 0),
+                    'jumlah_riwayat_restrukturisasi' => (int) ($row->jumlah_riwayat_restrukturisasi ?? 0),
                     'nama'            => (string) ($row->nama ?? ''),
                     'tglakad_lama'    => (string) ($row->tglakad_lama ?? '-'),
                     'jw_lama'         => (int) ($row->jw_lama ?? 0),
@@ -183,8 +190,14 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
         $data = $this->getRestrukturisasi($filters);
 
         $uniqueNasabah = $data->pluck('nocif')->unique()->count();
-        $avgKe         = $data->avg('ke') ?? 0;
+        $avgKe         = $data->avg('total_restrukturisasi') ?? 0;
         $totalKontrak  = $data->count();
+        $totalOsBaru   = $data->sum('osmdl_baru');
+        $totalOsSaatIni = $data->sum('osmdlc_saat_ini');
+        $frekuensiTinggi = $data->filter(fn ($r) => (int) ($r['total_restrukturisasi'] ?? 0) >= 3)->count();
+        $osFrekuensiTinggi = $data
+            ->filter(fn ($r) => (int) ($r['total_restrukturisasi'] ?? 0) >= 3)
+            ->sum('osmdlc_saat_ini');
 
         // Distribusi perubahan kol (sebelum vs sesudah)
         $membaik  = $data->filter(fn ($r) => (int)$r['col_stlh_rest'] < (int)$r['col_sblm_rest'])->count();
@@ -194,10 +207,14 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
         return [
             'total_kontrak'   => $totalKontrak,
             'total_nasabah'   => $uniqueNasabah,
-            'avg_ke'          => round((float)$avgKe, 1),
+            'avg_ke'          => (float) $avgKe,
             'kol_membaik'     => $membaik,
             'kol_memburuk'    => $memburuk,
             'kol_tetap'       => $tetap,
+            'total_os_baru'   => $totalOsBaru,
+            'total_os_saat_ini' => $totalOsSaatIni,
+            'frekuensi_tinggi' => $frekuensiTinggi,
+            'os_frekuensi_tinggi' => $osFrekuensiTinggi,
         ];
     }
 
@@ -243,20 +260,58 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
     {
         $monthPrefixes = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGT', 'SEP', 'OKT', 'NOV', 'DES'];
         $yearSuffix = substr((string) $year, -2);
-        $database = env('MCI_DB_'.$monthPrefixes[$month - 1].$yearSuffix);
+        $monthPrefix = $monthPrefixes[$month - 1];
+        $envKey = 'MCI_DB_'.$monthPrefix.$yearSuffix;
+        $database = env($envKey);
 
-        return is_string($database) && $database !== '' ? $database : null;
+        if (is_string($database) && $database !== '') {
+            return $database;
+        }
+
+        $endOfMonth = (new \DateTimeImmutable(sprintf('%04d-%02d-01', $year, $month)))
+            ->modify('last day of this month')
+            ->format('dmY');
+
+        $cacheKey = "mci:restrukturisasi:snapshot-db:{$year}:{$month}";
+
+        return Cache::remember($cacheKey, self::CACHE_SHORT, function () use ($monthPrefix, $yearSuffix, $endOfMonth): ?string {
+            $row = DB::connection($this->connection)->selectOne(
+                "
+                SELECT TOP 1 name
+                FROM sys.databases
+                WHERE name LIKE ?
+                   OR name LIKE ?
+                   OR name LIKE ?
+                ORDER BY
+                    CASE
+                        WHEN name LIKE ? THEN 1
+                        WHEN name LIKE ? THEN 2
+                        ELSE 3
+                    END,
+                    name DESC
+                ",
+                [
+                    "MCI_{$monthPrefix}{$yearSuffix}_%",
+                    "MCI_{$monthPrefix}_%{$endOfMonth}",
+                    "MCI_{$monthPrefix}%{$endOfMonth}",
+                    "MCI_{$monthPrefix}{$yearSuffix}_%",
+                    "MCI_{$monthPrefix}_%{$endOfMonth}",
+                ]
+            );
+
+            return is_object($row) && isset($row->name) ? (string) $row->name : null;
+        });
     }
 
 
 
     // =========================================================================
-    // G6 — TOP-UP
+    // G6 - TOP-UP
     // =========================================================================
 
     /**
      * Dapatkan daftar kontrak top-up pada periode (bulan) berjalan CBS.
-     * Sumber: TOFLMB self-JOIN via nocif, filter tgllunas ≈ tgleff bulan aktif.
+     * Sumber: TOFLMB self-JOIN via nocif, filter tgllunas sekitar tgleff bulan aktif.
      * Legacy ref: FinancingTopUpController@index
      *
      * @param  array<string, mixed>  $filters
@@ -265,17 +320,15 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
     {
         $start  = microtime(true);
         $memory = memory_get_usage(true);
+        $periodContext = $this->resolvePeriodContext($filters);
+        $this->lastPeriodMeta['source_table'] = 'TOFLMB self-join';
+        $periodeYm = (string) $periodContext['requested_period'];
 
-        // Ambil periode aktif dari tabel TANGGAL
-        $tglRow = DB::connection($this->connection)->table('TANGGAL')->first();
-        $tglRaw = is_object($tglRow) ? (string)($tglRow->tgl ?? '') : '';
+        $cacheKey = 'financing:topup:list:' . md5(serialize($filters).json_encode($periodContext));
 
-        // Parse periode YYYYMM dari ddmmYYYY
-        $periodeYm = (strlen($tglRaw) === 8)
-            ? substr($tglRaw, 4, 4) . substr($tglRaw, 2, 2)
-            : date('Ym');
-
-        $cacheKey = 'financing:topup:list:' . $periodeYm . ':' . md5(serialize($filters));
+        if (! $periodContext['period_available']) {
+            return collect([]);
+        }
 
         $result = $this->remember($cacheKey, function () use ($periodeYm, $filters): array {
             $query = DB::connection($this->connection)
@@ -288,8 +341,11 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
                     DB::raw('LTRIM(RTRIM(a.nama)) as nama'),
                     DB::raw('LTRIM(RTRIM(a.nokontrak)) as kontrak_lama'),
                     DB::raw('LTRIM(RTRIM(b.nokontrak)) as kontrak_baru'),
-                    DB::raw('CAST(ISNULL(a.mdlawal, 0) AS FLOAT) as plafon_lama'),
-                    DB::raw('CAST(ISNULL(b.mdlawal, 0) AS FLOAT) as plafon_baru'),
+                    DB::raw('CAST(ISNULL(a.mdlawal, 0) AS DECIMAL(18,2)) as plafon_lama'),
+                    DB::raw('CAST(ISNULL(b.mdlawal, 0) AS DECIMAL(18,2)) as plafon_baru'),
+                    DB::raw('CAST(ISNULL(b.mdlawal, 0) - ISNULL(a.mdlawal, 0) AS DECIMAL(18,2)) as selisih_plafon'),
+                    DB::raw('CAST(ISNULL(a.osmdlc, 0) AS DECIMAL(18,2)) as os_lama_saat_lunas'),
+                    DB::raw('CAST(ISNULL(b.osmdlc, 0) AS DECIMAL(18,2)) as os_baru_saat_ini'),
                     DB::raw('LTRIM(RTRIM(a.colbaru)) as coll_lama'),
                     DB::raw('LTRIM(RTRIM(b.colbaru)) as coll_baru'),
 
@@ -349,6 +405,9 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
                     'kontrak_baru'    => trim((string) ($row->kontrak_baru ?? '')),
                     'plafon_lama'     => (float) ($row->plafon_lama ?? 0),
                     'plafon_baru'     => (float) ($row->plafon_baru ?? 0),
+                    'selisih_plafon'  => (float) ($row->selisih_plafon ?? 0),
+                    'os_lama_saat_lunas' => (float) ($row->os_lama_saat_lunas ?? 0),
+                    'os_baru_saat_ini'=> (float) ($row->os_baru_saat_ini ?? 0),
                     'coll_lama'       => (string) ($row->coll_lama ?? '0'),
                     'coll_baru'       => (string) ($row->coll_baru ?? '0'),
                     'tgl_lunas'       => (string) ($row->tgl_lunas ?? '-'),
@@ -377,12 +436,15 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
      *
      * @return array<string, mixed>
      */
-    public function getTopUpSummary(): array
+    public function getTopUpSummary(array $filters = []): array
     {
-        $data = $this->getTopUp();
+        $data = $this->getTopUp($filters);
 
         $total        = $data->count();
         $totalVolume  = $data->sum('plafon_baru');
+        $totalDelta   = $data->sum('selisih_plafon');
+        $totalOsBaru  = $data->sum('os_baru_saat_ini');
+        $pindahAo     = $data->where('status_ao', 'Pindah AO')->count();
 
         // Distribusi Analisa Nasabah
         $countTopUp    = $data->where('analisa_nasabah', 'Top Up')->count();
@@ -397,12 +459,15 @@ class FinancingRestrukturisasiRepository extends MciBaseRepository implements Fi
         return [
             'total_kontrak'     => $total,
             'total_volume'      => $totalVolume,
+            'total_delta_plafon'=> $totalDelta,
+            'total_os_baru'     => $totalOsBaru,
             'count_topup'       => $countTopUp,
             'count_ulangan'     => $countUlangan,
             'count_retention'   => $countRetention,
             'count_naik'        => $countNaik,
             'count_turun'       => $countTurun,
             'count_tetap'       => $countTetap,
+            'count_pindah_ao'   => $pindahAo,
         ];
     }
 

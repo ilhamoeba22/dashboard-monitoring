@@ -8,6 +8,7 @@ use App\Models\Mci\Cif\Mcif;
 use App\Repositories\Interfaces\CifRepositoryInterface;
 use App\Services\Mci\MciBaseRepository;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -20,7 +21,7 @@ class CifRepository extends MciBaseRepository implements CifRepositoryInterface
         return 'mCIF';
     }
 
-    public function getList(array $filters = [], int $perPage = 50): LengthAwarePaginator
+    public function getList(array $filters = [], int $perPage = 50): LengthAwarePaginator|CursorPaginator
     {
         $query = Mcif::query()
             ->with(['ao:kdao,nmao', 'cabang:kdloc,nama'])
@@ -85,6 +86,8 @@ class CifRepository extends MciBaseRepository implements CifRepositoryInterface
 
             $aggregates = [
                 DB::raw('COUNT(mCIF.nocif) AS total_nasabah'),
+                DB::raw("SUM(CASE WHEN mCIF.golcust = 'I' THEN 1 ELSE 0 END) AS individu"),
+                DB::raw("SUM(CASE WHEN mCIF.golcust = 'B' THEN 1 ELSE 0 END) AS badan_hukum"),
             ];
 
             match ($groupBy) {
@@ -130,7 +133,7 @@ class CifRepository extends MciBaseRepository implements CifRepositoryInterface
                 'cabang:kdloc,nama',
                 'wilayah:kodewil,ket',
                 'tabungan:nocif,notab,sahirrp,stsrec',
-                'deposito:nocif,nodep,nomnl,stsrec',
+                'deposito:nocif,nodep,kdprd,nomrp,stsrec',
                 'pembiayaan:nocif,nokontrak,mdlawal,osmdlc,stsrec',
             ])
             ->where('nocif', $nocif)
@@ -180,7 +183,7 @@ class CifRepository extends MciBaseRepository implements CifRepositoryInterface
             return 0;
         }
         try {
-            return Carbon::parse($date)->diffInYears(Carbon::now());
+            return (int) Carbon::parse($date)->diffInYears(Carbon::now());
         } catch (\Exception $e) {
             return 0;
         }

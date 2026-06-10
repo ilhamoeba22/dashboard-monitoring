@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Models\Mci\Cif;
 
 use App\Models\Mci\Financing\Toflmb;
-use App\Models\Mci\Funding\Tofdep;
-use App\Models\Mci\Funding\Toftabb;
+use App\Models\Mci\Deposito\Tofdep;
+use App\Models\Mci\Saving\Toftabb;
 use App\Models\Mci\Marketing\Ao;
 use App\Models\Mci\Master\Cabang;
 use App\Models\Mci\Master\Segmen;

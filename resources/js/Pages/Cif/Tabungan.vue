@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import debounce from 'lodash/debounce'
 import DefaultLayout from '@/layouts/default.vue'
 import { useCifAuditStore } from '@/stores/cifAuditStore'
@@ -11,7 +11,6 @@ defineOptions({ layout: DefaultLayout })
 const store = useCifAuditStore()
 const { getCifStatus, isNikAnomaly, isNamaAnomaly, isHpAnomaly, isIbuAnomaly, exportToExcel } = useCifAuditLogic()
 
-const cabangList = ['ALL', 'Cabang 1', 'Cabang 2', 'Cabang 3', 'Cabang 4', 'Cabang 5']
 const statusList = ['ALL', 'Lengkap', 'Belum Lengkap', 'Cek Ulang']
 
 const headers = [
@@ -46,7 +45,6 @@ const headers = [
   { title: 'CABANG', key: 'cabang', align: 'left', width: '180px' }
 ]
 
-import { computed } from 'vue'
 const currentHeaders = computed(() => {
   if (store.activeTab === 'individu') {
     return headers.filter(h => h.key !== 'npwp')
@@ -115,7 +113,7 @@ onMounted(() => {
       <div class="d-flex flex-wrap gap-3" style="flex: 1;">
         <div style="width: 200px;">
           <div class="fin-filter-card__label mb-1">Cabang</div>
-          <v-select v-model="store.filters.cabang" :items="cabangList" variant="outlined" density="compact" hide-details bg-color="white" />
+          <v-select v-model="store.filters.cabang" :items="store.cabangOptions" variant="outlined" density="compact" hide-details bg-color="white" />
         </div>
         <div style="width: 200px;">
           <div class="fin-filter-card__label mb-1">Status CIF</div>
@@ -130,6 +128,16 @@ onMounted(() => {
         <v-btn variant="outlined" color="#1e293b" height="40" prepend-icon="ri-file-excel-2-line" @click="doExport">Export</v-btn>
       </div>
     </div>
+
+    <v-alert
+      v-if="store.errorMessage"
+      type="error"
+      variant="tonal"
+      class="mb-4"
+      density="comfortable"
+    >
+      {{ store.errorMessage }}
+    </v-alert>
 
     <div class="content-card">
       <div class="overflow-x-auto">

@@ -2,65 +2,41 @@
 import { ref, computed, onMounted } from 'vue'
 import DefaultLayout from '@/layouts/default.vue'
 import '@/assets/css/cif-shared.css'
+import { formatExactNumber, formatTruncatedPercentage } from '@/utils/money'
 
 defineOptions({ layout: DefaultLayout })
 
-// State
 const isLoading = ref(true)
 const rtData = ref(null)
 const hasData = computed(() => rtData.value !== null)
 
-// Mock API Call
 async function fetchSummary() {
   isLoading.value = true
   try {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800))
-    
-    // Mock data for Cif Overview
-    rtData.value = {
-      database: 'Dashboard_Data',
-      summary: {
-        total_nasabah: 125430,
-        persen_lengkap: 78.5,
-        persen_belum_lengkap: 21.5,
-        total_anomali: 15420
-      },
-      status_distribusi: [
-        { status: 'Lengkap', total: 98462, color: '#10B981' },
-        { status: 'Belum Lengkap', total: 20124, color: '#EF4444' },
-        { status: 'Cek Ulang', total: 6844, color: '#F59E0B' }
-      ],
-      top_anomali_cabang: [
-        { cabang: 'Cabang Utama', anomali: 4520 },
-        { cabang: 'Cabang A', anomali: 3100 },
-        { cabang: 'Cabang B', anomali: 2850 },
-        { cabang: 'Cabang C', anomali: 2100 },
-        { cabang: 'Cabang D', anomali: 1850 }
-      ]
+    const response = await fetch('/api/v1/cif/audit/summary')
+    const json = await response.json()
+    if (!response.ok || !json.success) {
+      throw new Error(json.message || 'Gagal memuat ringkasan CIF.')
     }
-  } catch (e) {
-    console.error('Error fetching CIF summary:', e)
+    rtData.value = json.data
+  } catch {
     rtData.value = null
   } finally {
     isLoading.value = false
   }
 }
 
-// Quick Links Configuration (3 Columns)
 const quickLinks = [
   { title: 'Audit CIF Pembiayaan', icon: 'ri-bank-line', color: '#10B981', bg: 'rgba(16,185,129,0.12)', route: '/cif/pembiayaan', desc: 'Pengecekan nasabah pembiayaan' },
   { title: 'Audit CIF Tabungan', icon: 'ri-wallet-3-line', color: '#0ea5e9', bg: 'rgba(14,165,233,0.12)', route: '/cif/tabungan', desc: 'Pengecekan nasabah tabungan' },
   { title: 'Audit CIF Deposito', icon: 'ri-safe-2-line', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', route: '/cif/deposito', desc: 'Pengecekan nasabah deposito' },
 ]
 
-// Formatting Helpers
 function formatNumber(value) {
-  if (!value && value !== 0) return '—'
-  return parseFloat(value).toLocaleString('id-ID')
+  if (value === null || value === undefined || value === '') return '-'
+  return formatExactNumber(value)
 }
 
-// Cards Configuration
 const cards = computed(() => [
   {
     id: 'total_nasabah',
@@ -76,7 +52,7 @@ const cards = computed(() => [
     title: 'Persentase Lengkap',
     value: rtData.value?.summary?.persen_lengkap ?? 0,
     format: 'percent',
-    subtitle: 'Data valid & lengkap',
+    subtitle: 'Data valid dan lengkap',
     icon: 'ri-checkbox-circle-line',
     color: 'success'
   },
@@ -101,15 +77,15 @@ const cards = computed(() => [
 ])
 
 function formatValue(value, format) {
-  if (value === null || value === undefined) return '—'
-  if (format === 'number') return parseInt(value).toLocaleString('id-ID')
-  if (format === 'percent') return `${parseFloat(value).toFixed(1)}%`
+  if (value === null || value === undefined) return '-'
+  if (format === 'number') return formatExactNumber(value)
+  if (format === 'percent') return formatTruncatedPercentage(value)
   return value
 }
 
 function getCardColor(color) {
   const colorMap = {
-    primary: '#10b981', // emerald
+    primary: '#10b981',
     success: '#10B981',
     error: '#EF4444',
     warning: '#F59E0B'
@@ -117,7 +93,6 @@ function getCardColor(color) {
   return colorMap[color] || '#10b981'
 }
 
-// Chart Configurations
 const donutChartOptions = computed(() => {
   const labels = []
   const colors = []
@@ -134,7 +109,7 @@ const donutChartOptions = computed(() => {
     stroke: { width: 0 },
     dataLabels: {
       enabled: true,
-      formatter: val => val.toFixed(1) + '%'
+      formatter: value => formatTruncatedPercentage(value)
     },
     plotOptions: {
       pie: {
@@ -143,10 +118,12 @@ const donutChartOptions = computed(() => {
           labels: {
             show: true,
             name: { show: true },
-            value: { show: true, formatter: val => formatNumber(val) },
+            value: { show: true, formatter: value => formatNumber(value) },
             total: {
-              show: true, showAlways: true, label: 'Total CIF',
-              formatter: w => formatNumber(w.globals.seriesTotals.reduce((a, b) => a + b, 0))
+              show: true,
+              showAlways: true,
+              label: 'Total CIF',
+              formatter: chart => formatNumber(chart.globals.seriesTotals.reduce((total, value) => total + value, 0))
             }
           }
         }
@@ -171,15 +148,10 @@ const barChartOptions = computed(() => {
   return {
     chart: { type: 'bar', fontFamily: 'Inter, sans-serif', toolbar: { show: false } },
     colors: ['#EF4444'],
-    plotOptions: {
-      bar: {
-        borderRadius: 4,
-        horizontal: true,
-      }
-    },
-    dataLabels: { enabled: true, formatter: val => formatNumber(val) },
-    xaxis: { categories, labels: { formatter: v => formatNumber(v) } },
-    tooltip: { y: { formatter: val => formatNumber(val) + ' CIF' } }
+    plotOptions: { bar: { borderRadius: 4, horizontal: true } },
+    dataLabels: { enabled: true, formatter: value => formatNumber(value) },
+    xaxis: { categories, labels: { formatter: value => formatNumber(value) } },
+    tooltip: { y: { formatter: value => `${formatNumber(value)} CIF` } }
   }
 })
 
@@ -201,7 +173,7 @@ onMounted(() => {
 <template>
   <div class="cif-page px-4 pt-0">
 
-    <!-- ── HERO HEADER ─────────────────────────────────────────── -->
+    <!-- HERO HEADER -->
     <div class="cif-hero mb-6">
       <div class="cif-hero__deco"></div>
       <div class="cif-hero__inner">
@@ -213,7 +185,7 @@ onMounted(() => {
             <h1 class="cif-hero__title">Dashboard CIF & Pengecekan Nasabah</h1>
             <p class="cif-hero__subtitle">Overview status kelengkapan dan anomali data Customer Information File (Individu & Badan Hukum).</p>
             <div class="cif-hero__badges">
-              <span class="cif-badge cif-badge--teal">🏦 Islamic Banking</span>
+              <span class="cif-badge cif-badge--teal">Islamic Banking</span>
               <span class="cif-badge cif-badge--glass">
                 <v-icon size="10" color="white">ri-database-2-line</v-icon>
                 {{ rtData?.database || 'Memuat...' }}
@@ -224,7 +196,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- ── LOADING SKELETON ─────────────────────────────────────── -->
+    <!-- LOADING SKELETON -->
     <div v-if="isLoading">
       <v-row class="mb-4">
         <v-col v-for="i in 4" :key="i" cols="12" sm="6" lg="3">
@@ -237,7 +209,7 @@ onMounted(() => {
       </v-row>
     </div>
 
-    <!-- ── DASHBOARD CONTENT ────────────────────────────────────── -->
+    <!-- DASHBOARD CONTENT -->
     <template v-else-if="hasData">
 
       <!-- Quick Links Navigation (3 Columns) -->
@@ -276,7 +248,7 @@ onMounted(() => {
               overflow: 'hidden',
               position: 'relative'
             }"
-            class="h-100 transition-swing kpi-card-hover"
+            class="transition-swing kpi-card-hover"
           >
             <!-- Background accent stripe -->
             <div
@@ -345,7 +317,7 @@ onMounted(() => {
       <v-row class="mt-4 mb-6">
         <!-- Donut Chart -->
         <v-col cols="12" lg="4">
-          <div class="content-card h-100">
+          <div class="content-card">
             <div class="content-card__accent-top" style="background: linear-gradient(90deg, #10B981, #34D399);"></div>
             <div class="content-card__header">
               <div>
@@ -373,7 +345,7 @@ onMounted(() => {
 
         <!-- Bar Chart -->
         <v-col cols="12" lg="8">
-          <div class="content-card h-100">
+          <div class="content-card">
             <div class="content-card__accent-top" style="background: linear-gradient(90deg, #EF4444, #F87171);"></div>
             <div class="content-card__header">
               <div>
@@ -382,7 +354,7 @@ onMounted(() => {
               </div>
               <a href="/cif/quality" style="text-decoration: none;">
                 <div class="cif-badge cif-badge--glass" style="background: rgba(239,68,68,0.12); color: #EF4444; border-color: rgba(239,68,68,0.2);">
-                  Audit Quality →
+                  Audit Quality ->
                 </div>
               </a>
             </div>

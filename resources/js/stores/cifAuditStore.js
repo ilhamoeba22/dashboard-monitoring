@@ -2,11 +2,11 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 export const useCifAuditStore = defineStore('cifAudit', () => {
-  // State
-  const activeTab = ref('individu') // 'individu' or 'badan_hukum'
   const isLoading = ref(false)
   const auditData = ref([])
   const totalItems = ref(0)
+  const errorMessage = ref('')
+  const activeTab = ref('individu')
   
   // Filters
   const filters = ref({
@@ -17,8 +17,17 @@ export const useCifAuditStore = defineStore('cifAudit', () => {
     perPage: 50
   })
 
-  // Getters
   const getAuditData = computed(() => auditData.value)
+  const golcust = computed(() => activeTab.value === 'badan_hukum' ? 'B' : 'I')
+  const cabangOptions = computed(() => {
+    const branches = auditData.value
+      .map(item => item.cabang)
+      .filter(Boolean)
+      .filter((value, index, source) => source.indexOf(value) === index)
+      .sort((left, right) => String(left).localeCompare(String(right), 'id-ID'))
+
+    return ['ALL', ...branches]
+  })
 
   // Actions
   const setTab = (tab) => {
@@ -34,98 +43,58 @@ export const useCifAuditStore = defineStore('cifAudit', () => {
     filters.value.page = page
   }
 
-  // Generate Mock Data for tables
-  const generateMockData = (type, count) => {
-    const data = []
-    for (let i = 0; i < count; i++) {
-      const isIndividu = activeTab.value === 'individu'
-      const stskawin = Math.random() > 0.3 ? 'KAWIN' : 'LAJANG'
-      
-      const row = {
-        id: i + 1,
-        nocif: `CIF${String(i + 1).padStart(7, '0')}`,
-        namanasabah: `Nasabah ${type} ${i + 1}${Math.random() > 0.9 ? "'" : ''}`,
-        noktp: `320101${String(Math.floor(Math.random() * 10000000000)).padStart(10, '0')}`,
-        jk: Math.random() > 0.5 ? 'L' : 'P',
-        tempat_lahir: 'JAKARTA',
-        tgllhr_ktp: '1990-01-01',
-        tgllhr: '1990-01-01',
-        usia: 34,
-        nohp: Math.random() > 0.1 ? `0812${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}` : '-',
-        sandi_dati: '0123',
-        nama_ibu: Math.random() > 0.1 ? `Ibu Nasabah ${i + 1}` : 'BINTI',
-        ket_stskawin: isIndividu ? stskawin : '-',
-        ket_kdhub: (isIndividu && stskawin === 'KAWIN') ? 'SUAMI' : '-',
-        nama_pasangan: (isIndividu && stskawin === 'KAWIN') ? `Pasangan ${i + 1}` : '-',
-        nik_pasangan: (isIndividu && stskawin === 'KAWIN') ? `320101${String(Math.floor(Math.random() * 10000000000)).padStart(10, '0')}` : '-',
-        hp_pasangan: (isIndividu && stskawin === 'KAWIN') ? '08123456789' : '-',
-        tgllhr_pasangan: (isIndividu && stskawin === 'KAWIN') ? '1992-02-02' : '-',
-        usia_pasangan: (isIndividu && stskawin === 'KAWIN') ? 32 : '-',
-        alamat: `Jl. Contoh Alamat No ${i + 1}`,
-        kelurahan: 'KELURAHAN A',
-        kecamatan: 'KECAMATAN B',
-        kota: 'KOTA C',
-        kodepos: '12345',
-        nama_marketing: `AO ${Math.floor(Math.random() * 10) + 1}`,
-        cabang: `Cabang ${Math.floor(Math.random() * 5) + 1}`,
+  const buildQuery = () => {
+    const params = new URLSearchParams({
+      perPage: String(filters.value.perPage || 50),
+      golcust: golcust.value,
+    })
+
+    if (filters.value.cabang && filters.value.cabang !== 'ALL') params.append('cabang', filters.value.cabang)
+    if (filters.value.status && filters.value.status !== 'ALL') params.append('status', filters.value.status)
+    if (filters.value.search) params.append('search', filters.value.search)
+
+    return params.toString()
+  }
+
+  const fetchAudit = async (segment) => {
+    isLoading.value = true
+    errorMessage.value = ''
+    try {
+      const response = await fetch(`/api/v1/cif/audit/${segment}?${buildQuery()}`)
+      const json = await response.json()
+      if (!response.ok || !json.success) {
+        throw new Error(json.message || `Gagal memuat audit CIF ${segment}.`)
       }
-
-      if (!isIndividu) {
-        row.npwp = `01.${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}.${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}.1-000.000`
-      }
-
-      data.push(row)
-    }
-    return data
-  }
-
-  // Mock API Fetchers
-  const fetchPembiayaan = async () => {
-    isLoading.value = true
-    try {
-      await new Promise(r => setTimeout(r, 600)) // delay
-      auditData.value = generateMockData('Pembiayaan', 50)
-      totalItems.value = 245
-    } catch (e) {
-      console.error(e)
+      auditData.value = Array.isArray(json.data)
+        ? json.data.map((item, index) => ({
+            ...item,
+            id: index + 1,
+            status_cif: item.status_cif || item.status || '',
+          }))
+        : []
+      totalItems.value = Number(json.meta?.total ?? json.data?.length ?? 0)
+    } catch (error) {
+      auditData.value = []
+      totalItems.value = 0
+      errorMessage.value = error.message || 'Gagal memuat data audit CIF.'
     } finally {
       isLoading.value = false
     }
   }
 
-  const fetchTabungan = async () => {
-    isLoading.value = true
-    try {
-      await new Promise(r => setTimeout(r, 600)) // delay
-      auditData.value = generateMockData('Tabungan', 50)
-      totalItems.value = 180
-    } catch (e) {
-      console.error(e)
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  const fetchDeposito = async () => {
-    isLoading.value = true
-    try {
-      await new Promise(r => setTimeout(r, 600)) // delay
-      auditData.value = generateMockData('Deposito', 50)
-      totalItems.value = 85
-    } catch (e) {
-      console.error(e)
-    } finally {
-      isLoading.value = false
-    }
-  }
+  const fetchPembiayaan = () => fetchAudit('pembiayaan')
+  const fetchTabungan = () => fetchAudit('tabungan')
+  const fetchDeposito = () => fetchAudit('deposito')
 
   return {
     activeTab,
     isLoading,
     auditData,
     totalItems,
+    errorMessage,
     filters,
     getAuditData,
+    cabangOptions,
     setTab,
     setFilters,
     setPage,

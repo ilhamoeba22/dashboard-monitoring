@@ -39,13 +39,6 @@ class CifController extends Controller
             if ($perPage === -1) {
                 $perPage = 100000; // High limit untuk "show all"
             }
-            // #region agent log
-            $this->debugLog('H5', 'app/Http/Controllers/Api/v1/CifController.php:45', 'CIF controller received per_page', [
-                'per_page' => $perPage,
-                'cursor' => $request->query('cursor'),
-                'search' => $request->query('search'),
-            ]);
-            // #endregion
             $data = $this->repository->getList($filters, $perPage);
 
             return response()->json([
@@ -61,13 +54,6 @@ class CifController extends Controller
                 ],
             ]);
         } catch (\Throwable $e) {
-            // #region agent log
-            $this->debugLog('H10', 'app/Http/Controllers/Api/v1/CifController.php:70', 'CIF endpoint exception', [
-                'exception_class' => $e::class,
-                'exception_message' => $e->getMessage(),
-            ]);
-
-            // #endregion
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memuat daftar nasabah',
@@ -128,24 +114,9 @@ class CifController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memuat detail nasabah',
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
 
-    // #region agent log
-    private function debugLog(string $hypothesisId, string $location, string $message, array $data = []): void
-    {
-        $payload = [
-            'sessionId' => 'f35f8f',
-            'runId' => 'pre-fix',
-            'hypothesisId' => $hypothesisId,
-            'location' => $location,
-            'message' => $message,
-            'data' => $data,
-            'timestamp' => (int) round(microtime(true) * 1000),
-        ];
-
-        @file_put_contents(base_path('debug-f35f8f.log'), json_encode($payload, JSON_UNESCAPED_SLASHES).PHP_EOL, FILE_APPEND);
-    }
-    // #endregion
 }

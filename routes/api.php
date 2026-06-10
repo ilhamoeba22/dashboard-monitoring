@@ -46,7 +46,6 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
     Route::prefix('cif')->group(function () {
         Route::get('/', [CifController::class, 'index']);
         Route::get('/rekapitulasi', [CifController::class, 'rekapitulasi']);
-        Route::get('/{nocif}', [CifController::class, 'detail']);
 
         Route::prefix('audit')->group(function () {
             Route::get('/summary', [\App\Http\Controllers\Api\v1\CifAuditController::class, 'summary']);
@@ -54,6 +53,8 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
             Route::get('/tabungan', [\App\Http\Controllers\Api\v1\CifAuditController::class, 'tabungan']);
             Route::get('/deposito', [\App\Http\Controllers\Api\v1\CifAuditController::class, 'deposito']);
         });
+
+        Route::get('/{nocif}', [CifController::class, 'detail']);
     });
 
     // ==========================================

@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import debounce from 'lodash/debounce'
 import DefaultLayout from '@/layouts/default.vue'
 import { useCifAuditStore } from '@/stores/cifAuditStore'
@@ -11,7 +11,6 @@ defineOptions({ layout: DefaultLayout })
 const store = useCifAuditStore()
 const { getCifStatus, isNikAnomaly, isNamaAnomaly, isHpAnomaly, isIbuAnomaly, exportToExcel } = useCifAuditLogic()
 
-const cabangList = ['ALL', 'Cabang 1', 'Cabang 2', 'Cabang 3', 'Cabang 4', 'Cabang 5']
 const statusList = ['ALL', 'Lengkap', 'Belum Lengkap', 'Cek Ulang']
 
 const headers = [
@@ -46,8 +45,6 @@ const headers = [
   { title: 'CABANG', key: 'cabang', align: 'left', width: '180px' }
 ]
 
-// Computed Headers: Hide NPWP if Individu
-import { computed } from 'vue'
 const currentHeaders = computed(() => {
   if (store.activeTab === 'individu') {
     return headers.filter(h => h.key !== 'npwp')
@@ -124,7 +121,7 @@ onMounted(() => {
           <div class="fin-filter-card__label mb-1">Cabang</div>
           <v-select
             v-model="store.filters.cabang"
-            :items="cabangList"
+            :items="store.cabangOptions"
             variant="outlined"
             density="compact"
             hide-details
@@ -169,6 +166,16 @@ onMounted(() => {
     </div>
 
     <!-- DATA TABLE -->
+    <v-alert
+      v-if="store.errorMessage"
+      type="error"
+      variant="tonal"
+      class="mb-4"
+      density="comfortable"
+    >
+      {{ store.errorMessage }}
+    </v-alert>
+
     <div class="content-card">
       <div class="overflow-x-auto">
         <v-data-table

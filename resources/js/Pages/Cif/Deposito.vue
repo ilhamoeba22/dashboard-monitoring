@@ -1,49 +1,20 @@
 <script setup>
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import debounce from 'lodash/debounce'
 import DefaultLayout from '@/layouts/default.vue'
 import { useCifAuditStore } from '@/stores/cifAuditStore'
-import { useCifAuditLogic } from '@/composables/useCifAuditLogic'
+import { cifAuditHeaders, useCifAuditLogic } from '@/composables/useCifAuditLogic'
 import '@/assets/css/cif-shared.css'
 
 defineOptions({ layout: DefaultLayout })
 
 const store = useCifAuditStore()
-const { getCifStatus, isNikAnomaly, isNamaAnomaly, isHpAnomaly, isIbuAnomaly, exportToExcel } = useCifAuditLogic()
+const { getCifStatus, isNikAnomaly, isNamaAnomaly, isHpAnomaly, isIbuAnomaly, exportToExcel, exportToPdf } = useCifAuditLogic()
 
 const statusList = ['ALL', 'Lengkap', 'Belum Lengkap', 'Cek Ulang']
-
-const headers = [
-  { title: 'NO', key: 'id', align: 'center', minWidth: 60, width: 60, fixed: true },
-  { title: 'NO CIF', key: 'nocif', align: 'center', minWidth: 120, width: 120, fixed: true },
-  { title: 'NAMA NASABAH', key: 'namanasabah', align: 'left', minWidth: 250, width: 250, fixed: true },
-  { title: 'NPWP', key: 'npwp', align: 'center', width: '180px' },
-  { title: 'NOMOR KTP', key: 'noktp', align: 'center', width: '160px' },
-  { title: 'CEK NIK', key: 'ceknik', align: 'center', width: '100px' },
-  { title: 'J/K', key: 'jk', align: 'center', width: '60px' },
-  { title: 'TEMPAT LAHIR', key: 'tempat_lahir', align: 'left', width: '150px' },
-  { title: 'TGL LAHIR KTP', key: 'tgllhr_ktp', align: 'center', width: '130px' },
-  { title: 'TGL LAHIR CIF', key: 'tgllhr', align: 'center', width: '130px' },
-  { title: 'USIA', key: 'usia', align: 'center', width: '80px' },
-  { title: 'NOMOR HP', key: 'nohp', align: 'center', width: '140px' },
-  { title: 'SANDI DATI', key: 'sandi_dati', align: 'center', width: '100px' },
-  { title: 'NAMA IBU KANDUNG', key: 'nama_ibu', align: 'left', width: '200px' },
-  { title: 'STATUS KAWIN', key: 'ket_stskawin', align: 'center', width: '130px' },
-  { title: 'HUBUNGAN PASANGAN', key: 'ket_kdhub', align: 'center', width: '160px' },
-  { title: 'NAMA PASANGAN', key: 'nama_pasangan', align: 'left', width: '200px' },
-  { title: 'NIK PASANGAN', key: 'nik_pasangan', align: 'center', width: '160px' },
-  { title: 'HP PASANGAN', key: 'hp_pasangan', align: 'center', width: '140px' },
-  { title: 'TGL LAHIR PASANGAN', key: 'tgllhr_pasangan', align: 'center', width: '160px' },
-  { title: 'USIA PASANGAN', key: 'usia_pasangan', align: 'center', width: '130px' },
-  { title: 'STATUS CIF', key: 'status_cif', align: 'center', width: '140px' },
-  { title: 'ALAMAT LENGKAP', key: 'alamat', align: 'left', width: '300px' },
-  { title: 'KELURAHAN', key: 'kelurahan', align: 'left', width: '150px' },
-  { title: 'KECAMATAN', key: 'kecamatan', align: 'left', width: '150px' },
-  { title: 'KOTA', key: 'kota', align: 'center', width: '150px' },
-  { title: 'KODE POS', key: 'kodepos', align: 'center', width: '100px' },
-  { title: 'NAMA MARKETING', key: 'nama_marketing', align: 'left', width: '180px' },
-  { title: 'CABANG', key: 'cabang', align: 'left', width: '180px' }
-]
+const exportMessage = ref('')
+const exportMessageType = ref('info')
+const headers = cifAuditHeaders
 
 const currentHeaders = computed(() => {
   if (store.activeTab === 'individu') {
@@ -52,9 +23,25 @@ const currentHeaders = computed(() => {
   return headers
 })
 
-const doExport = () => {
+const doExport = async () => {
   const suffix = store.activeTab === 'individu' ? 'Individu' : 'Badan_Hukum'
-  exportToExcel(store.auditData, `Deposito_${suffix}`)
+  await exportToExcel(store.auditData, `Deposito_${suffix}`)
+}
+
+const clearExportMessage = () => {
+  exportMessage.value = ''
+  exportMessageType.value = 'info'
+}
+
+const doExportPdf = async () => {
+  try {
+    const suffix = store.activeTab === 'individu' ? 'Individu' : 'Badan Hukum'
+    await exportToPdf(store.auditData, currentHeaders.value, 'Pengecekan CIF Deposito', suffix)
+  } catch (e) {
+    exportMessage.value = 'Gagal membuat PDF: ' + (e.message || e)
+    exportMessageType.value = 'error'
+    return
+  }
 }
 
 watch(() => store.activeTab, () => {
@@ -125,9 +112,36 @@ onMounted(() => {
         </div>
       </div>
       <div class="d-flex align-end">
-        <v-btn variant="outlined" color="#1e293b" height="40" prepend-icon="ri-file-excel-2-line" @click="doExport">Export</v-btn>
+        <div class="d-flex gap-2">
+          <v-btn variant="outlined" color="#64748b" height="40" prepend-icon="ri-refresh-line" @click="store.resetFilters(); store.fetchDeposito()">Reset</v-btn>
+          <v-btn variant="outlined" color="#1e293b" height="40" prepend-icon="ri-file-excel-2-line" @click="doExport">Excel</v-btn>
+          <v-btn variant="outlined" color="#b91c1c" height="40" prepend-icon="ri-file-pdf-2-line" @click="doExportPdf">PDF</v-btn>
+        </div>
       </div>
     </div>
+
+    <v-alert
+      v-if="exportMessage"
+      :type="exportMessageType === 'error' ? 'error' : 'info'"
+      variant="tonal"
+      class="mb-4"
+      density="comfortable"
+    >
+      {{ exportMessage }}
+      <template #append>
+        <v-btn size="small" variant="text" @click="clearExportMessage">Tutup</v-btn>
+      </template>
+    </v-alert>
+
+    <v-alert
+      v-if="!store.isLoading && !store.errorMessage && !store.auditData.length"
+      type="info"
+      variant="tonal"
+      class="mb-4"
+      density="comfortable"
+    >
+      Tidak ada data CIF deposito untuk filter ini.
+    </v-alert>
 
     <v-alert
       v-if="store.errorMessage"
@@ -185,10 +199,10 @@ onMounted(() => {
 
 <style scoped>
 .cif-table-frozen :deep(th:nth-child(1)), .cif-table-frozen :deep(td:nth-child(1)) { position: sticky; left: 0; z-index: 2; background: white; border-right: 1px solid #e2e8f0; }
-.cif-table-frozen :deep(th:nth-child(1)) { background: #0f172a !important; }
+.cif-table-frozen :deep(th:nth-child(1)), .cif-table-frozen :deep(th:nth-child(1) *) { background: #0f172a !important; color: #e5edf7 !important; }
 .cif-table-frozen :deep(th:nth-child(2)), .cif-table-frozen :deep(td:nth-child(2)) { position: sticky; left: 60px; z-index: 2; background: white; border-right: 1px solid #e2e8f0; }
-.cif-table-frozen :deep(th:nth-child(2)) { background: #0f172a !important; }
+.cif-table-frozen :deep(th:nth-child(2)), .cif-table-frozen :deep(th:nth-child(2) *) { background: #0f172a !important; color: #e5edf7 !important; }
 .cif-table-frozen :deep(th:nth-child(3)), .cif-table-frozen :deep(td:nth-child(3)) { position: sticky; left: 180px; z-index: 2; background: white; box-shadow: inset -4px 0 8px -4px rgba(0, 0, 0, 0.08); }
-.cif-table-frozen :deep(th:nth-child(3)) { background: #0f172a !important; box-shadow: inset -4px 0 8px -4px rgba(0, 0, 0, 0.4); }
+.cif-table-frozen :deep(th:nth-child(3)), .cif-table-frozen :deep(th:nth-child(3) *) { background: #0f172a !important; color: #e5edf7 !important; box-shadow: inset -4px 0 8px -4px rgba(0, 0, 0, 0.4); }
 .text-error { color: #e11d48 !important; }
 </style>

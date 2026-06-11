@@ -11,7 +11,6 @@ use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class CifRepository extends MciBaseRepository implements CifRepositoryInterface
@@ -78,51 +77,46 @@ class CifRepository extends MciBaseRepository implements CifRepositoryInterface
 
     public function getRekapitulasi(string $groupBy): Collection
     {
-        $cacheKey = "cif_rekapitulasi_{$groupBy}";
+        $query = Mcif::query()->where('mCIF.stsrec', 'A');
 
-        // Terapkan Rule #6: Cache 60 detik
-        return Cache::remember($cacheKey, 60, function () use ($groupBy) {
-            $query = Mcif::query()->where('mCIF.stsrec', 'A');
+        $aggregates = [
+            DB::raw('COUNT(mCIF.nocif) AS total_nasabah'),
+            DB::raw("SUM(CASE WHEN mCIF.golcust = 'I' THEN 1 ELSE 0 END) AS individu"),
+            DB::raw("SUM(CASE WHEN mCIF.golcust = 'B' THEN 1 ELSE 0 END) AS badan_hukum"),
+        ];
 
-            $aggregates = [
-                DB::raw('COUNT(mCIF.nocif) AS total_nasabah'),
-                DB::raw("SUM(CASE WHEN mCIF.golcust = 'I' THEN 1 ELSE 0 END) AS individu"),
-                DB::raw("SUM(CASE WHEN mCIF.golcust = 'B' THEN 1 ELSE 0 END) AS badan_hukum"),
-            ];
+        match ($groupBy) {
+            'cabang' => $query->join('CABANG as b', 'mCIF.kdloc', '=', 'b.kdloc')
+                ->select(array_merge(['b.nama as label', 'b.kdloc as id'], $aggregates))
+                ->groupBy('b.nama', 'b.kdloc')
+                ->orderBy('b.nama', 'asc'),
 
-            match ($groupBy) {
-                'cabang' => $query->join('CABANG as b', 'mCIF.kdloc', '=', 'b.kdloc')
-                    ->select(array_merge(['b.nama as label', 'b.kdloc as id'], $aggregates))
-                    ->groupBy('b.nama', 'b.kdloc')
-                    ->orderBy('b.nama', 'asc'),
+            'wilayah' => $query->join('WILAYAH as b', 'mCIF.kdwil', '=', 'b.kodewil')
+                ->select(array_merge(['b.ket as label', 'b.kodewil as id'], $aggregates))
+                ->groupBy('b.ket', 'b.kodewil')
+                ->orderBy('b.ket', 'asc'),
 
-                'wilayah' => $query->join('WILAYAH as b', 'mCIF.kdwil', '=', 'b.kodewil')
-                    ->select(array_merge(['b.ket as label', 'b.kodewil as id'], $aggregates))
-                    ->groupBy('b.ket', 'b.kodewil')
-                    ->orderBy('b.ket', 'asc'),
+            'ao' => $query->join('AO as b', 'mCIF.aohand', '=', 'b.kdao')
+                ->select(array_merge(['b.nmao as label', 'mCIF.aohand as id'], $aggregates))
+                ->groupBy('mCIF.aohand', 'b.nmao')
+                ->orderBy('b.nmao', 'asc'),
 
-                'ao' => $query->join('AO as b', 'mCIF.aohand', '=', 'b.kdao')
-                    ->select(array_merge(['b.nmao as label', 'mCIF.aohand as id'], $aggregates))
-                    ->groupBy('mCIF.aohand', 'b.nmao')
-                    ->orderBy('b.nmao', 'asc'),
+            'segmen' => $query->leftJoin('SEGMEN as b', 'mCIF.segmen', '=', 'b.kdseg')
+                ->select(array_merge([DB::raw('ISNULL(b.ket, mCIF.segmen) as label'), 'mCIF.segmen as id'], $aggregates))
+                ->groupBy('mCIF.segmen', 'b.ket')
+                ->orderBy('label', 'asc'),
 
-                'segmen' => $query->join('SEGMEN as b', 'mCIF.segmen', '=', 'b.kdseg')
-                    ->select(array_merge(['b.ket as label', 'mCIF.segmen as id'], $aggregates))
-                    ->groupBy('mCIF.segmen', 'b.ket')
-                    ->orderBy('b.ket', 'asc'),
+            'agama' => $query->select(array_merge([
+                DB::raw("CASE mCIF.agama WHEN '1' THEN 'ISLAM' WHEN '2' THEN 'KRISTEN PROTESTAN' WHEN '3' THEN 'KATOLIK' WHEN '4' THEN 'HINDU' WHEN '5' THEN 'BUDHA' ELSE 'LAINNYA' END as label"),
+                'mCIF.agama as id',
+            ], $aggregates))
+                ->groupBy('mCIF.agama')
+                ->orderBy('mCIF.agama', 'asc'),
 
-                'agama' => $query->select(array_merge([
-                    DB::raw("CASE mCIF.agama WHEN '1' THEN 'ISLAM' WHEN '2' THEN 'KRISTEN PROTESTAN' WHEN '3' THEN 'KATOLIK' WHEN '4' THEN 'HINDU' WHEN '5' THEN 'BUDHA' ELSE 'LAINNYA' END as label"),
-                    'mCIF.agama as id',
-                ], $aggregates))
-                    ->groupBy('mCIF.agama')
-                    ->orderBy('mCIF.agama', 'asc'),
+            default => throw new \InvalidArgumentException('Invalid group_by parameter')
+        };
 
-                default => throw new \InvalidArgumentException('Invalid group_by parameter')
-            };
-
-            return $query->get();
-        });
+        return $query->get();
     }
 
     public function getDetail(string $nocif): array
@@ -140,20 +134,42 @@ class CifRepository extends MciBaseRepository implements CifRepositoryInterface
             ->where('stsrec', 'A')
             ->firstOrFail();
 
+        $pasangan = DB::connection($this->connection)->table('mCIFKLG')
+            ->where('nocif', $nocif)
+            ->whereIn('kdhub', ['S', 'I'])
+            ->orderBy('urut')
+            ->first();
+
+        $statusData = $this->determineStatusData((string) $cif->stskawin, $pasangan);
+
         return [
             'nocif' => $cif->nocif,
             'nama' => ucwords(strtolower((string) $cif->nm)),
             'ktp' => $cif->noid,
             'npwp' => $cif->npwp,
+            'jenis_kelamin' => $this->mapGender((string) $cif->sex),
             'tempat_lahir' => $cif->tmplhr,
             'tanggal_lahir' => $this->formatSafeDate((string) $cif->tgllhr),
             'umur' => $this->calculateAge((string) $cif->tgllhr),
+            'email' => $cif->email ?: '-',
             'alamat' => $cif->alamat,
             'kelurahan' => $cif->kelurahan,
             'kecamatan' => $cif->kecamatan,
             'kota' => $cif->kota,
+            'kode_pos' => $cif->kdpos,
             'telp' => $cif->hp ?? $cif->telprmh,
             'ibu_kandung' => ucwords(strtolower((string) $cif->nmibu)),
+            'status_data' => $statusData['status'],
+            'anomali' => $statusData['anomali'],
+            'status_pernikahan' => $this->mapMaritalStatus((string) $cif->stskawin),
+            'nama_pasangan' => $pasangan?->nama ? ucwords(strtolower((string) $pasangan->nama)) : '-',
+            'hubungan_pasangan' => $this->mapFamilyRelation((string) ($pasangan?->kdhub ?? '')),
+            'nik_pasangan' => $pasangan?->noid ?: '-',
+            'hp_pasangan' => $pasangan?->hp ?: '-',
+            'tgl_lahir_pasangan' => $this->formatSafeDate((string) ($pasangan?->tgllahir ?? '')),
+            'usia_pasangan' => $this->calculateAge((string) ($pasangan?->tgllahir ?? '')),
+            'pekerjaan' => $cif->kdkerja ?: '-',
+            'penghasilan' => $cif->kdhasil ?: '-',
             'cabang' => optional($cif->cabang)->nama,
             'ao' => optional($cif->ao)->nmao,
             'tanggal_buka' => $this->formatSafeDate((string) $cif->tglbuka),
@@ -163,6 +179,70 @@ class CifRepository extends MciBaseRepository implements CifRepositoryInterface
                 'pembiayaan' => $cif->pembiayaan->where('stsrec', 'A')->values(),
             ],
         ];
+    }
+
+    private function determineStatusData(string $maritalStatus, mixed $pasangan): array
+    {
+        $identityValid = $this->isValidNik((string) ($pasangan?->noid ?? ''));
+        $hasSpouseData = $pasangan
+            && ! empty(trim((string) $pasangan->nama))
+            && ! empty(trim((string) $pasangan->kdhub))
+            && $this->formatSafeDate((string) $pasangan->tgllahir) !== '-';
+
+        if ($maritalStatus === 'K' && $identityValid && $hasSpouseData) {
+            return ['status' => 'Lengkap', 'anomali' => '-'];
+        }
+
+        if ($maritalStatus === 'K') {
+            return [
+                'status' => 'Belum Lengkap',
+                'anomali' => 'Data pasangan wajib dilengkapi: nama, hubungan, NIK valid 16 digit, dan tanggal lahir.',
+            ];
+        }
+
+        if (trim($maritalStatus) === '') {
+            return [
+                'status' => 'Belum Lengkap',
+                'anomali' => 'Status pernikahan belum terisi pada data CIF.',
+            ];
+        }
+
+        return ['status' => 'Cek Ulang', 'anomali' => 'Status CIF perlu dicek ulang sesuai rule audit data nasabah.'];
+    }
+
+    private function isValidNik(string $nik): bool
+    {
+        $cleanNik = preg_replace('/\D/', '', $nik) ?? '';
+
+        return strlen($cleanNik) === 16 && ! preg_match('/^(\d)\1{15}$/', $cleanNik);
+    }
+
+    private function mapGender(string $gender): string
+    {
+        return match (strtoupper(trim($gender))) {
+            'L', 'M', '1' => 'Laki-laki',
+            'P', 'F', '2' => 'Perempuan',
+            default => '-',
+        };
+    }
+
+    private function mapMaritalStatus(string $status): string
+    {
+        return match (strtoupper(trim($status))) {
+            'L' => 'LAJANG',
+            'K' => 'KAWIN',
+            'D' => 'DUDA/JANDA',
+            default => 'TIDAK DIKETAHUI',
+        };
+    }
+
+    private function mapFamilyRelation(string $relation): string
+    {
+        return match (strtoupper(trim($relation))) {
+            'S' => 'SUAMI',
+            'I' => 'ISTRI',
+            default => '-',
+        };
     }
 
     private function formatSafeDate(string $date): string

@@ -1,4 +1,34 @@
-import * as XLSX from 'xlsx'
+export const cifAuditHeaders = [
+  { title: 'NO', key: 'id', align: 'center', minWidth: 60, width: 60, fixed: true },
+  { title: 'NO CIF', key: 'nocif', align: 'center', minWidth: 120, width: 120, fixed: true },
+  { title: 'NAMA NASABAH', key: 'namanasabah', align: 'left', minWidth: 250, width: 250, fixed: true },
+  { title: 'NPWP', key: 'npwp', align: 'center', width: '180px' },
+  { title: 'NOMOR KTP', key: 'noktp', align: 'center', width: '160px' },
+  { title: 'CEK NIK', key: 'ceknik', align: 'center', width: '100px' },
+  { title: 'J/K', key: 'jk', align: 'center', width: '60px' },
+  { title: 'TEMPAT LAHIR', key: 'tempat_lahir', align: 'left', width: '150px' },
+  { title: 'TGL LAHIR KTP', key: 'tgllhr_ktp', align: 'center', width: '130px' },
+  { title: 'TGL LAHIR CIF', key: 'tgllhr', align: 'center', width: '130px' },
+  { title: 'USIA', key: 'usia', align: 'center', width: '80px' },
+  { title: 'NOMOR HP', key: 'nohp', align: 'center', width: '140px' },
+  { title: 'SANDI DATI', key: 'sandi_dati', align: 'center', width: '100px' },
+  { title: 'NAMA IBU KANDUNG', key: 'nama_ibu', align: 'left', width: '200px' },
+  { title: 'STATUS KAWIN', key: 'ket_stskawin', align: 'center', width: '130px' },
+  { title: 'HUBUNGAN PASANGAN', key: 'ket_kdhub', align: 'center', width: '160px' },
+  { title: 'NAMA PASANGAN', key: 'nama_pasangan', align: 'left', width: '200px' },
+  { title: 'NIK PASANGAN', key: 'nik_pasangan', align: 'center', width: '160px' },
+  { title: 'HP PASANGAN', key: 'hp_pasangan', align: 'center', width: '140px' },
+  { title: 'TGL LAHIR PASANGAN', key: 'tgllhr_pasangan', align: 'center', width: '160px' },
+  { title: 'USIA PASANGAN', key: 'usia_pasangan', align: 'center', width: '130px' },
+  { title: 'STATUS CIF', key: 'status_cif', align: 'center', width: '140px' },
+  { title: 'ALAMAT LENGKAP', key: 'alamat', align: 'left', width: '300px' },
+  { title: 'KELURAHAN', key: 'kelurahan', align: 'left', width: '150px' },
+  { title: 'KECAMATAN', key: 'kecamatan', align: 'left', width: '150px' },
+  { title: 'KOTA', key: 'kota', align: 'center', width: '150px' },
+  { title: 'KODE POS', key: 'kodepos', align: 'center', width: '100px' },
+  { title: 'NAMA MARKETING', key: 'nama_marketing', align: 'left', width: '180px' },
+  { title: 'CABANG', key: 'cabang', align: 'left', width: '180px' },
+]
 
 export function useCifAuditLogic() {
   /**
@@ -59,8 +89,9 @@ export function useCifAuditLogic() {
     return false
   }
 
-  const exportToExcel = (data, type = 'Pembiayaan') => {
+  const exportToExcel = async (data, type = 'Pembiayaan') => {
     if (!data || !data.length) return
+    const XLSX = await import('xlsx')
 
     const formattedData = data.map((row, index) => {
       const noktpClean = String(row.noktp || '').replace(/\D/g, '')
@@ -120,12 +151,49 @@ export function useCifAuditLogic() {
     XLSX.writeFile(workbook, `Export_CIF_${safeType}_${new Date().toISOString().split('T')[0]}.xlsx`)
   }
 
+  const exportToPdf = async (data, headers, title = 'Audit CIF', type = 'Individu') => {
+    if (!data || !data.length) return
+    const { default: jsPDF } = await import('jspdf')
+    const { default: autoTable } = await import('jspdf-autotable')
+
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+    doc.setFillColor(15, 23, 42)
+    doc.rect(0, 0, 297, 22, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(14)
+    doc.text(title, 14, 13)
+    doc.setFontSize(9)
+    doc.text(`Tipe: ${type} | Jumlah Data: ${data.length} | Tanggal Export: ${new Date().toLocaleDateString('id-ID')}`, 14, 19)
+    doc.setTextColor(15, 23, 42)
+
+    autoTable(doc, {
+      startY: 30,
+      head: [headers.map(header => header.title)],
+      body: data.map(row => headers.map(header => {
+        if (header.key === 'status_cif') return getCifStatus(row)
+        if (header.key === 'ceknik') {
+          const length = String(row.noktp || '').replace(/\D/g, '').length
+          return length === 16 ? 'Valid (16)' : `Invalid (${length})`
+        }
+        return row[header.key] ?? '-'
+      })),
+      styles: { fontSize: 6.5, cellPadding: 1.2, overflow: 'linebreak' },
+      headStyles: { fillColor: [15, 23, 42], textColor: 255, halign: 'center', fontSize: 6.5 },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      margin: { left: 8, right: 8 },
+    })
+
+    const safeType = `${title}_${type}`.replace(/[^a-zA-Z0-9]+/g, '_')
+    doc.save(`Export_${safeType}_${new Date().toISOString().split('T')[0]}.pdf`)
+  }
+
   return {
     getCifStatus,
     isNikAnomaly,
     isNamaAnomaly,
     isHpAnomaly,
     isIbuAnomaly,
-    exportToExcel
+    exportToExcel,
+    exportToPdf
   }
 }

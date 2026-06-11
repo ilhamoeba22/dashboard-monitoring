@@ -43,6 +43,16 @@ export const useCifAuditStore = defineStore('cifAudit', () => {
     filters.value.page = page
   }
 
+  const resetFilters = () => {
+    filters.value = {
+      cabang: 'ALL',
+      status: 'ALL',
+      search: '',
+      page: 1,
+      perPage: 50
+    }
+  }
+
   const buildQuery = () => {
     const params = new URLSearchParams({
       perPage: String(filters.value.perPage || 50),
@@ -98,6 +108,7 @@ export const useCifAuditStore = defineStore('cifAudit', () => {
     setTab,
     setFilters,
     setPage,
+    resetFilters,
     fetchPembiayaan,
     fetchTabungan,
     fetchDeposito

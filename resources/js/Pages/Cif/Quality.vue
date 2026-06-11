@@ -359,7 +359,8 @@ onMounted(fetchQualitySummary)
   border-right: 1px solid #e2e8f0;
 }
 
-.cif-table-frozen :deep(th:nth-child(1)) { background: #0f172a !important; }
+.cif-table-frozen :deep(th:nth-child(1)),
+.cif-table-frozen :deep(th:nth-child(1) *) { background: #0f172a !important; color: #e5edf7 !important; }
 
 .cif-table-frozen :deep(th:nth-child(2)),
 .cif-table-frozen :deep(td:nth-child(2)) {
@@ -372,8 +373,10 @@ onMounted(fetchQualitySummary)
 
 .cif-table-frozen :deep(th:nth-child(2)) {
   background: #0f172a !important;
+  color: #e5edf7 !important;
   box-shadow: inset -4px 0 8px -4px rgba(0, 0, 0, 0.4);
 }
+.cif-table-frozen :deep(th:nth-child(2) *) { color: #e5edf7 !important; }
 
 .text-muted { color: #64748b !important; }
 .font-monospace { font-family: monospace; }

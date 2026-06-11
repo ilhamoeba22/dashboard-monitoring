@@ -1,5 +1,5 @@
-import VueApexCharts from 'vue3-apexcharts'
+import { defineAsyncComponent } from 'vue'
 
 export default function (app) {
-  app.use(VueApexCharts)
+  app.component('apexchart', defineAsyncComponent(() => import('vue3-apexcharts')))
 }

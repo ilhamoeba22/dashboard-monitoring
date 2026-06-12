@@ -42,6 +42,24 @@ const props = defineProps({
     display: flex;
     align-items: center;
     cursor: pointer;
+    min-block-size: 38px;
+    padding-inline: 0.65rem 0.5rem;
+    gap: 0.55rem;
+    border-radius: 0.875rem;
+  }
+
+  .nav-link .nav-item-icon {
+    flex: 0 0 1.125rem;
+    inline-size: 1.125rem;
+    font-size: 1.125rem;
+  }
+
+  .nav-link .nav-item-title {
+    overflow: hidden;
+    font-size: 0.7625rem;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 </style>

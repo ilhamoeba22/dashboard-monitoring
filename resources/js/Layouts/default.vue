@@ -89,7 +89,32 @@ const navItems = [
   },
 
   // ========== FUNDING ==========
-  { title: 'Funding', subtitle: 'Tabungan & Deposito', icon: 'ri-safe-2-line', href: '/funding' },
+  {
+    title: 'Funding',
+    subtitle: 'Tabungan & Deposito',
+    icon: 'ri-safe-2-line',
+    value: 'funding',
+    children: [
+      { title: 'Overview', icon: 'ri-dashboard-3-line', href: '/funding' },
+      { type: 'subheader', title: 'TABUNGAN' },
+      { title: 'Nominatif Tabungan', icon: 'ri-list-check-3', href: '/funding/tabungan/nominatif' },
+      { title: 'Rekapitulasi Tabungan', icon: 'ri-bar-chart-grouped-line', href: '/funding/tabungan/rekapitulasi' },
+      { title: 'Dormant Tabungan', icon: 'ri-time-line', href: '/funding/tabungan/dormant' },
+      { type: 'subheader', title: 'DEPOSITO' },
+      { title: 'Nominatif Deposito', icon: 'ri-safe-2-line', href: '/funding/deposito/nominatif' },
+      { title: 'Rekapitulasi Deposito', icon: 'ri-bar-chart-box-line', href: '/funding/deposito/rekapitulasi' },
+      { title: 'Deposito Jatuh Tempo', icon: 'ri-calendar-event-line', href: '/funding/deposito/jatuh-tempo' },
+      { type: 'subheader', title: 'ANALITIK & TARGET' },
+      { title: 'Perkembangan', icon: 'ri-line-chart-line', href: '/funding/perkembangan' },
+      { title: 'Target', icon: 'ri-crosshair-2-line', href: '/funding/target' },
+      { title: 'Mutasi', icon: 'ri-arrow-left-right-line', href: '/funding/mutasi' },
+      { type: 'subheader', title: 'RISIKO & LIKUIDITAS' },
+      { title: 'Risk Funding', icon: 'ri-radar-line', href: '/funding/risk' },
+      { title: 'Nasabah Terbesar', icon: 'ri-user-star-line', href: '/funding/concentration' },
+      { type: 'subheader', title: 'BAGI HASIL & PAJAK' },
+      { title: 'Bagi Hasil', icon: 'ri-percent-line', href: '/funding/baghas' },
+    ],
+  },
 
   // ========== LAPORAN ==========
   { title: 'Laporan', subtitle: 'Reporting Module', icon: 'ri-file-chart-2-line', href: '/reporting' },
@@ -222,8 +247,7 @@ function navigate(href) {
                 <!-- Subheader -->
                 <VListSubheader 
                   v-if="child.type === 'subheader'" 
-                  class="text-uppercase font-weight-bold text-slate-500 mt-2 mb-1"
-                  style="font-size: 9px !important; height: 24px; padding-inline-start: 16px !important;"
+                  class="text-uppercase font-weight-bold text-slate-500 mt-2 mb-1 nav-child-subheader"
                 >
                   {{ child.title }}
                 </VListSubheader>
@@ -236,7 +260,7 @@ function navigate(href) {
                   :active="isActive(child.href, true)"
                   color="primary"
                   rounded="xl"
-                  class="mb-1 ms-3"
+                  class="mb-1 nav-child-item"
                   @click="navigate(child.href)"
                 >
                   <template #prepend>
@@ -389,4 +413,41 @@ function navigate(href) {
 .v-card-subtitle { opacity: 0.72 !important; }
 .text-high-emphasis { color: rgb(var(--v-theme-on-surface)) !important; opacity: 0.95 !important; }
 .text-medium-emphasis { color: rgb(var(--v-theme-on-surface)) !important; opacity: 0.70 !important; }
+
+.v-navigation-drawer .v-list-group__items {
+  --indent-padding: 0px !important;
+}
+
+.v-navigation-drawer .nav-child-subheader {
+  block-size: 22px !important;
+  min-block-size: 22px !important;
+  padding-inline-start: 18px !important;
+  color: rgba(var(--v-theme-on-surface), 0.58) !important;
+  font-size: 8.5px !important;
+  letter-spacing: 0.06em !important;
+}
+
+.v-navigation-drawer .nav-child-item {
+  min-block-size: 38px !important;
+  padding-inline: 10px 8px !important;
+  margin-inline-start: 12px !important;
+  inline-size: calc(100% - 12px) !important;
+}
+
+.v-navigation-drawer .nav-child-item .v-list-item__prepend {
+  inline-size: 30px !important;
+  margin-inline-end: 6px !important;
+}
+
+.v-navigation-drawer .nav-child-item .v-list-item__spacer {
+  inline-size: 6px !important;
+}
+
+.v-navigation-drawer .nav-child-item .v-list-item-title {
+  overflow: hidden;
+  font-size: 12.2px !important;
+  line-height: 1.25 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 </style>

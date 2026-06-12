@@ -58,6 +58,9 @@ const isOpen = ref(false)
 
       .nav-group-children {
         overflow: hidden;
+        padding-inline-start: 0.85rem;
+        margin-block: 0.25rem;
+        margin-inline: 0;
       }
     }
 

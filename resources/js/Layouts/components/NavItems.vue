@@ -58,13 +58,38 @@ import VerticalNavLink from '@layouts/components/VerticalNavLink.vue'
     <VerticalNavLink :item="{ title: 'Quality Audit', to: '/cif/quality', icon: 'ri-shield-check-line' }" />
   </VerticalNavGroup>
 
-  <VerticalNavLink
+  <VerticalNavGroup
     :item="{
       title: 'Funding',
       icon: 'ri-safe-2-line',
-      to: '/funding',
+      badgeContent: 'DPK',
+      badgeClass: 'bg-info',
     }"
-  />
+  >
+    <VerticalNavLink :item="{ title: 'Overview', to: '/funding', icon: 'ri-dashboard-3-line' }" />
+
+    <VerticalNavSectionTitle :item="{ heading: 'TABUNGAN' }" />
+    <VerticalNavLink :item="{ title: 'Nominatif Tabungan', to: '/funding/tabungan/nominatif', icon: 'ri-list-check-3' }" />
+    <VerticalNavLink :item="{ title: 'Rekapitulasi Tabungan', to: '/funding/tabungan/rekapitulasi', icon: 'ri-bar-chart-grouped-line' }" />
+    <VerticalNavLink :item="{ title: 'Dormant Tabungan', to: '/funding/tabungan/dormant', icon: 'ri-time-line' }" />
+
+    <VerticalNavSectionTitle :item="{ heading: 'DEPOSITO' }" />
+    <VerticalNavLink :item="{ title: 'Nominatif Deposito', to: '/funding/deposito/nominatif', icon: 'ri-safe-2-line' }" />
+    <VerticalNavLink :item="{ title: 'Rekapitulasi Deposito', to: '/funding/deposito/rekapitulasi', icon: 'ri-bar-chart-box-line' }" />
+    <VerticalNavLink :item="{ title: 'Deposito Jatuh Tempo', to: '/funding/deposito/jatuh-tempo', icon: 'ri-calendar-event-line' }" />
+
+    <VerticalNavSectionTitle :item="{ heading: 'ANALITIK & TARGET' }" />
+    <VerticalNavLink :item="{ title: 'Perkembangan', to: '/funding/perkembangan', icon: 'ri-line-chart-line' }" />
+    <VerticalNavLink :item="{ title: 'Target', to: '/funding/target', icon: 'ri-crosshair-2-line' }" />
+    <VerticalNavLink :item="{ title: 'Mutasi', to: '/funding/mutasi', icon: 'ri-arrow-left-right-line' }" />
+
+    <VerticalNavSectionTitle :item="{ heading: 'RISIKO & LIKUIDITAS' }" />
+    <VerticalNavLink :item="{ title: 'Risk Funding', to: '/funding/risk', icon: 'ri-radar-line' }" />
+    <VerticalNavLink :item="{ title: 'Nasabah Terbesar', to: '/funding/concentration', icon: 'ri-user-star-line' }" />
+
+    <VerticalNavSectionTitle :item="{ heading: 'BAGI HASIL & PAJAK' }" />
+    <VerticalNavLink :item="{ title: 'Bagi Hasil', to: '/funding/baghas', icon: 'ri-percent-line' }" />
+  </VerticalNavGroup>
 
   <VerticalNavLink
     :item="{

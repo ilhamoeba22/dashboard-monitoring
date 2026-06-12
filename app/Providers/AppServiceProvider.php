@@ -11,6 +11,9 @@ use App\Repositories\Interfaces\FinancingPerformanceRepositoryInterface;
 use App\Repositories\Interfaces\FinancingRepositoryInterface;
 use App\Repositories\Interfaces\FinancingRestrukturisasiRepositoryInterface;
 use App\Repositories\Interfaces\FinancingTunggakanRepositoryInterface;
+use App\Repositories\Interfaces\FundingAnalyticsRepositoryInterface;
+use App\Repositories\Interfaces\FundingBaghasRepositoryInterface;
+use App\Repositories\Interfaces\FundingRiskRepositoryInterface;
 use App\Repositories\Interfaces\ReportingRepositoryInterface;
 use App\Repositories\Interfaces\SavingRepositoryInterface;
 use App\Repositories\Interfaces\CifAuditRepositoryInterface;
@@ -22,6 +25,9 @@ use App\Repositories\Mci\FinancingPerformanceRepository;
 use App\Repositories\Mci\FinancingRepository;
 use App\Repositories\Mci\FinancingRestrukturisasiRepository;
 use App\Repositories\Mci\FinancingTunggakanRepository;
+use App\Repositories\Mci\FundingAnalyticsRepository;
+use App\Repositories\Mci\FundingBaghasRepository;
+use App\Repositories\Mci\FundingRiskRepository;
 use App\Repositories\Mci\ReportingRepository;
 use App\Repositories\Mci\SavingRepository;
 use App\Services\Mci\MciConnectionService;
@@ -50,6 +56,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(CifAuditRepositoryInterface::class, CifAuditRepository::class);
         $this->app->bind(SavingRepositoryInterface::class, SavingRepository::class);
         $this->app->bind(DepositRepositoryInterface::class, DepositRepository::class);
+        $this->app->bind(FundingAnalyticsRepositoryInterface::class, FundingAnalyticsRepository::class);
+        $this->app->bind(FundingBaghasRepositoryInterface::class, FundingBaghasRepository::class);
+        $this->app->bind(FundingRiskRepositoryInterface::class, FundingRiskRepository::class);
         $this->app->bind(ReportingRepositoryInterface::class, ReportingRepository::class);
     }
 

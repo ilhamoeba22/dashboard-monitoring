@@ -129,8 +129,8 @@ return [
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
-            'encrypt' => env('SQL_SERVER_ENCRYPT', 'no'),
-            'trust_server_certificate' => env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
+            'encrypt' => filter_var(env('SQL_SERVER_ENCRYPT', false), FILTER_VALIDATE_BOOLEAN) ? 'yes' : 'no',
+            'trust_server_certificate' => filter_var(env('SQL_SERVER_TRUST_CERTIFICATE', true), FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false',
         ],
 
         // HISTORY: Maret 2026 (MCI_MAR26_01042026)
@@ -143,8 +143,8 @@ return [
             'password' => env('SQL_SERVER_PASSWORD', ''),
             'charset' => 'utf8',
             'prefix' => '',
-            'encrypt' => env('SQL_SERVER_ENCRYPT', 'no'),
-            'trust_server_certificate' => env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
+            'encrypt' => filter_var(env('SQL_SERVER_ENCRYPT', false), FILTER_VALIDATE_BOOLEAN) ? 'yes' : 'no',
+            'trust_server_certificate' => filter_var(env('SQL_SERVER_TRUST_CERTIFICATE', true), FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false',
         ],
 
         // HISTORY: Februari 2026 (MCI_FEB26_01032026)
@@ -157,8 +157,8 @@ return [
             'password' => env('SQL_SERVER_PASSWORD', ''),
             'charset' => 'utf8',
             'prefix' => '',
-            'encrypt' => env('SQL_SERVER_ENCRYPT', 'no'),
-            'trust_server_certificate' => env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
+            'encrypt' => filter_var(env('SQL_SERVER_ENCRYPT', false), FILTER_VALIDATE_BOOLEAN) ? 'yes' : 'no',
+            'trust_server_certificate' => filter_var(env('SQL_SERVER_TRUST_CERTIFICATE', true), FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false',
         ],
 
         // HISTORY: Januari 2026 (MCI_JAN_31012026)
@@ -171,8 +171,8 @@ return [
             'password' => env('SQL_SERVER_PASSWORD', ''),
             'charset' => 'utf8',
             'prefix' => '',
-            'encrypt' => env('SQL_SERVER_ENCRYPT', 'no'),
-            'trust_server_certificate' => env('SQL_SERVER_TRUST_CERTIFICATE', 'true'),
+            'encrypt' => filter_var(env('SQL_SERVER_ENCRYPT', false), FILTER_VALIDATE_BOOLEAN) ? 'yes' : 'no',
+            'trust_server_certificate' => filter_var(env('SQL_SERVER_TRUST_CERTIFICATE', true), FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false',
         ],
 
     ],

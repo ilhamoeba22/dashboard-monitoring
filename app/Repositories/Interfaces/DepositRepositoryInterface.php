@@ -9,9 +9,13 @@ use Illuminate\Support\Collection;
 
 interface DepositRepositoryInterface
 {
+    public function getSummary(): array;
+
+    public function getFilterOptions(): array;
+
     public function getNominative(array $filters = [], int $perPage = 50): CursorPaginator;
 
-    public function getRekapitulasi(string $groupBy): Collection;
+    public function getRekapitulasi(string $groupBy, array $filters = []): Collection;
 
     public function getJatuhTempo(array $filters = [], int $perPage = 50): CursorPaginator;
 }

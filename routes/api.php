@@ -12,6 +12,9 @@ use App\Http\Controllers\Api\v1\FinancingPerformanceController;
 use App\Http\Controllers\Api\v1\FinancingPenyelesaianController;
 use App\Http\Controllers\Api\v1\FinancingRestrukturisasiController;
 use App\Http\Controllers\Api\v1\FinancingTunggakanController;
+use App\Http\Controllers\Api\v1\FundingAnalyticsController;
+use App\Http\Controllers\Api\v1\FundingBaghasController;
+use App\Http\Controllers\Api\v1\FundingRiskController;
 use App\Http\Controllers\Api\v1\ReportingController;
 use App\Http\Controllers\Api\v1\SavingController;
 use App\Http\Controllers\Api\v1\TargetController;
@@ -61,15 +64,28 @@ Route::prefix('v1')->middleware(['throttle:100,1'])->group(function () {
     // FUNDING MODULE API (SAVING & DEPOSIT)
     // ==========================================
     Route::prefix('saving')->group(function () {
+        Route::get('/summary', [SavingController::class, 'summary']);
+        Route::get('/filters', [SavingController::class, 'filterOptions']);
         Route::get('/nominative', [SavingController::class, 'nominative']);
         Route::get('/rekapitulasi', [SavingController::class, 'rekapitulasi']);
         Route::get('/doormant', [SavingController::class, 'doormant']);
     });
 
     Route::prefix('deposit')->group(function () {
+        Route::get('/summary', [DepositController::class, 'summary']);
+        Route::get('/filters', [DepositController::class, 'filterOptions']);
         Route::get('/nominative', [DepositController::class, 'nominative']);
         Route::get('/rekapitulasi', [DepositController::class, 'rekapitulasi']);
         Route::get('/jatuh-tempo', [DepositController::class, 'jatuhTempo']);
+    });
+
+    Route::prefix('funding')->group(function () {
+        Route::get('/perkembangan', [FundingAnalyticsController::class, 'perkembangan']);
+        Route::get('/target', [FundingAnalyticsController::class, 'target']);
+        Route::get('/mutasi', [FundingAnalyticsController::class, 'mutasi']);
+        Route::get('/baghas/overview', [FundingBaghasController::class, 'overview']);
+        Route::get('/concentration', [FundingRiskController::class, 'concentration']);
+        Route::get('/risk/overview', [FundingRiskController::class, 'overview']);
     });
 
     // ==========================================

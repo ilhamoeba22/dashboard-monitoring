@@ -323,10 +323,16 @@ class MciConnectionService
             Config::set("database.connections.{$this->connectionName}.database", $activeDb);
             DB::purge($this->connectionName);
 
-            return DB::reconnect($this->connectionName);
+            $connection = DB::reconnect($this->connectionName);
+            $connection->getPdo();
+
+            return $connection;
         }
 
-        return DB::connection($this->connectionName);
+        $connection = DB::connection($this->connectionName);
+        $connection->getPdo();
+
+        return $connection;
     }
 
     /**

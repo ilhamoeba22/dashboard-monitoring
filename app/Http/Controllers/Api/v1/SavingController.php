@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\v1;
 
+use App\Http\Controllers\Api\v1\Concerns\UsesMciSnapshotDatabase;
 use App\Http\Controllers\Controller;
 use App\Repositories\Interfaces\SavingRepositoryInterface;
 use Illuminate\Http\JsonResponse;
@@ -11,11 +12,31 @@ use Illuminate\Http\Request;
 
 class SavingController extends Controller
 {
+    use UsesMciSnapshotDatabase;
+
     private SavingRepositoryInterface $repository;
 
     public function __construct(SavingRepositoryInterface $repository)
     {
         $this->repository = $repository;
+    }
+
+    public function summary(Request $request): JsonResponse
+    {
+        try {
+            return $this->withRequestedMciDatabase($request, fn () => response()->json(['success' => true, 'data' => $this->repository->getSummary()]));
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal memuat ringkasan tabungan'], 500);
+        }
+    }
+
+    public function filterOptions(Request $request): JsonResponse
+    {
+        try {
+            return $this->withRequestedMciDatabase($request, fn () => response()->json(['success' => true, 'data' => $this->repository->getFilterOptions()]));
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal memuat filter tabungan'], 500);
+        }
     }
 
     public function nominative(Request $request): JsonResponse
@@ -28,13 +49,7 @@ class SavingController extends Controller
             ];
 
             $perPage = (int) $request->query('per_page', '50');
-            // #region agent log
-            $this->debugLog('H5', 'app/Http/Controllers/Api/v1/SavingController.php:33', 'Saving controller received per_page', [
-                'per_page' => $perPage,
-                'cursor' => $request->query('cursor'),
-            ]);
-            // #endregion
-            $data = $this->repository->getNominative($filters, $perPage);
+            $data = $this->withRequestedMciDatabase($request, fn () => $this->repository->getNominative($filters, $perPage));
 
             return response()->json(['success' => true, 'data' => $data]);
         } catch (\Throwable $e) {
@@ -46,12 +61,18 @@ class SavingController extends Controller
     {
         try {
             $groupBy = $request->query('group_by', 'cabang');
-            $validGroups = ['cabang', 'wilayah', 'ao'];
+            $validGroups = ['cabang', 'wilayah', 'ao', 'produk'];
             if (! in_array($groupBy, $validGroups)) {
                 return response()->json(['success' => false, 'message' => 'Invalid group_by'], 422);
             }
 
-            $data = $this->repository->getRekapitulasi($groupBy);
+            $filters = [
+                'search' => $request->query('search'),
+                'cabang' => $request->query('cabang'),
+                'ao' => $request->query('ao'),
+            ];
+
+            $data = $this->withRequestedMciDatabase($request, fn () => $this->repository->getRekapitulasi($groupBy, $filters));
 
             return response()->json(['success' => true, 'data' => $data]);
         } catch (\Throwable $e) {
@@ -62,36 +83,17 @@ class SavingController extends Controller
     public function doormant(Request $request): JsonResponse
     {
         try {
-            $filters = ['cabang' => $request->query('cabang')];
+            $filters = [
+                'search' => $request->query('search'),
+                'cabang' => $request->query('cabang'),
+                'ao' => $request->query('ao'),
+            ];
             $perPage = (int) $request->query('per_page', '50');
-            // #region agent log
-            $this->debugLog('H5', 'app/Http/Controllers/Api/v1/SavingController.php:66', 'Saving doormant controller received per_page', [
-                'per_page' => $perPage,
-                'cursor' => $request->query('cursor'),
-            ]);
-            // #endregion
-            $data = $this->repository->getDoormant($filters, $perPage);
+            $data = $this->withRequestedMciDatabase($request, fn () => $this->repository->getDoormant($filters, $perPage));
 
             return response()->json(['success' => true, 'data' => $data]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => 'Gagal memuat data doormant'], 500);
         }
     }
-
-    // #region agent log
-    private function debugLog(string $hypothesisId, string $location, string $message, array $data = []): void
-    {
-        $payload = [
-            'sessionId' => 'f35f8f',
-            'runId' => 'pre-fix',
-            'hypothesisId' => $hypothesisId,
-            'location' => $location,
-            'message' => $message,
-            'data' => $data,
-            'timestamp' => (int) round(microtime(true) * 1000),
-        ];
-
-        @file_put_contents(base_path('debug-f35f8f.log'), json_encode($payload, JSON_UNESCAPED_SLASHES).PHP_EOL, FILE_APPEND);
-    }
-    // #endregion
 }

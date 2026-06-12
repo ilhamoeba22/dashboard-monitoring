@@ -56,8 +56,64 @@ Route::prefix('cif')->group(function () {
 });
 
 Route::get('/funding', function () {
-    return Inertia::render('Funding/Index');
-});
+    return Inertia::render('Funding/Index', ['initialDomain' => 'overview']);
+})->name('funding.index');
+
+Route::get('/funding/tabungan', function () {
+    return Inertia::render('Funding/Index', ['initialDomain' => 'tabungan', 'initialFeature' => 'nominatif']);
+})->name('funding.tabungan');
+
+Route::get('/funding/tabungan/nominatif', function () {
+    return Inertia::render('Funding/Index', ['initialDomain' => 'tabungan', 'initialFeature' => 'nominatif']);
+})->name('funding.tabungan.nominatif');
+
+Route::get('/funding/tabungan/rekapitulasi', function () {
+    return Inertia::render('Funding/Index', ['initialDomain' => 'tabungan', 'initialFeature' => 'rekapitulasi']);
+})->name('funding.tabungan.rekapitulasi');
+
+Route::get('/funding/tabungan/dormant', function () {
+    return Inertia::render('Funding/Index', ['initialDomain' => 'tabungan', 'initialFeature' => 'dormant']);
+})->name('funding.tabungan.dormant');
+
+Route::get('/funding/deposito', function () {
+    return Inertia::render('Funding/Index', ['initialDomain' => 'deposito', 'initialFeature' => 'nominatif']);
+})->name('funding.deposito');
+
+Route::get('/funding/deposito/nominatif', function () {
+    return Inertia::render('Funding/Index', ['initialDomain' => 'deposito', 'initialFeature' => 'nominatif']);
+})->name('funding.deposito.nominatif');
+
+Route::get('/funding/deposito/rekapitulasi', function () {
+    return Inertia::render('Funding/Index', ['initialDomain' => 'deposito', 'initialFeature' => 'rekapitulasi']);
+})->name('funding.deposito.rekapitulasi');
+
+Route::get('/funding/deposito/jatuh-tempo', function () {
+    return Inertia::render('Funding/Index', ['initialDomain' => 'deposito', 'initialFeature' => 'jatuh-tempo']);
+})->name('funding.deposito.jatuh-tempo');
+
+Route::get('/funding/perkembangan', function () {
+    return Inertia::render('Funding/Index', ['initialDomain' => 'perkembangan']);
+})->name('funding.perkembangan');
+
+Route::get('/funding/target', function () {
+    return Inertia::render('Funding/Index', ['initialDomain' => 'target']);
+})->name('funding.target');
+
+Route::get('/funding/mutasi', function () {
+    return Inertia::render('Funding/Index', ['initialDomain' => 'mutasi']);
+})->name('funding.mutasi');
+
+Route::get('/funding/risk', function () {
+    return Inertia::render('Funding/Index', ['initialDomain' => 'risk']);
+})->name('funding.risk');
+
+Route::get('/funding/concentration', function () {
+    return Inertia::render('Funding/Index', ['initialDomain' => 'concentration']);
+})->name('funding.concentration');
+
+Route::get('/funding/baghas', function () {
+    return Inertia::render('Funding/Index', ['initialDomain' => 'baghas']);
+})->name('funding.baghas');
 
 Route::get('/reporting', function () {
     return Inertia::render('Reporting/Index');
